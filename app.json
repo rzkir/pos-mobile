@@ -9,7 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Aplikasi memerlukan akses kamera untuk mengambil foto properti dan dokumen",
+        "NSBluetoothAlwaysUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk koneksi dengan perangkat eksternal",
+        "NSBluetoothPeripheralUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk koneksi dengan perangkat eksternal",
+        "NSLocationWhenInUseUsageDescription": "Aplikasi memerlukan akses lokasi untuk fitur Bluetooth"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +25,15 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",

@@ -1,35 +1,36 @@
 import { Tabs } from 'expo-router';
+
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
+
+import { View } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+    return (
+        <View className='flex-1'>
+            <Tabs>
+                <Tabs.Screen name="beranda" options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="home" color={color} size={size} />
+                    ),
+                }} />
+                <Tabs.Screen name="favorit" options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <AntDesign name="heart" color={color} size={size} />
+                    ),
+                }} />
+                <Tabs.Screen name="pesan" options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <AntDesign name="message" color={color} size={size} />
+                    ),
+                }} />
+                <Tabs.Screen name="profil" options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="person" color={color} size={size} />
+                    ),
+                }} />
+            </Tabs>
+        </View>
+    );
 }
