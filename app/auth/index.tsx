@@ -36,6 +36,7 @@ export default function OnboardingScreen() {
         if (currentIndex < onboardingData.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
+            // This is the last step, proceed to get started
             handleGetStarted();
         }
     };
@@ -48,12 +49,12 @@ export default function OnboardingScreen() {
 
     const handleSkip = async () => {
         await AsyncStorage.setItem('onboarding_completed', 'true');
-        router.replace('/auth');
+        router.replace('/auth/signin');
     };
 
     const handleGetStarted = async () => {
         await AsyncStorage.setItem('onboarding_completed', 'true');
-        router.replace('/auth');
+        router.replace('/auth/signin');
     };
 
     const currentData = onboardingData[currentIndex];
@@ -98,8 +99,8 @@ export default function OnboardingScreen() {
                     {onboardingData.map((_, index) => (
                         <View
                             key={index}
-                            className={`w-3 h-3 rounded-full mx-2 ${index === currentIndex ? 'bg-black' : 'bg-gray-300'
-                                }`}
+                            className={`w-3 h-3 rounded-full mx-2 transition-all duration-300 ${index <= currentIndex ? 'bg-red-500' : 'bg-gray-300'
+                                } ${index === currentIndex ? 'scale-110' : ''}`}
                         />
                     ))}
                 </View>
@@ -109,16 +110,16 @@ export default function OnboardingScreen() {
                     <TouchableOpacity
                         onPress={handlePrev}
                         disabled={currentIndex === 0}
-                        className={`${currentIndex === 0 ? 'opacity-30' : ''}`}
+                        className={`px-6 py-3 rounded-lg ${currentIndex === 0 ? 'opacity-30' : 'bg-gray-100'}`}
                     >
-                        <Text className={`text-xl ${currentIndex === 0 ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <Text className={`text-lg font-medium ${currentIndex === 0 ? 'text-gray-400' : 'text-gray-600'}`}>
                             Prev
                         </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={handleNext}
-                        className="bg-red-500 px-10 py-4 rounded-lg"
+                        className={`px-10 py-4 rounded-lg ${currentIndex === onboardingData.length - 1 ? 'bg-green-500' : 'bg-red-500'}`}
                     >
                         <Text className="text-white font-medium text-xl">
                             {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
