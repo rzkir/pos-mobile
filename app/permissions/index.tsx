@@ -123,6 +123,18 @@ const PermissionScreen = () => {
                             </Text>
                         </View>
                     </View>
+
+                    <View className="flex-row items-center py-4 px-4 bg-card rounded-xl mb-3">
+                        <View className="w-12 h-12 rounded-full bg-white items-center justify-center mr-4 shadow">
+                            <Ionicons name="folder" size={24} color="#10B981" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-base font-semibold text-primary mb-1">Penyimpanan</Text>
+                            <Text className="text-sm text-secondary leading-5">
+                                Untuk memilih dan menyimpan foto ke galeri
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 {/* Action Buttons */}

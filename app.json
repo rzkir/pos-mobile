@@ -11,10 +11,12 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Aplikasi memerlukan akses kamera untuk mengambil foto properti dan dokumen",
+        "NSCameraUsageDescription": "Aplikasi memerlukan akses kamera untuk scan barcode produk dan mengambil foto properti",
         "NSBluetoothAlwaysUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk koneksi dengan perangkat eksternal",
         "NSBluetoothPeripheralUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk koneksi dengan perangkat eksternal",
-        "NSLocationWhenInUseUsageDescription": "Aplikasi memerlukan akses lokasi untuk fitur Bluetooth"
+        "NSLocationWhenInUseUsageDescription": "Aplikasi memerlukan akses lokasi untuk fitur Bluetooth",
+        "NSPhotoLibraryUsageDescription": "Aplikasi memerlukan akses ke galeri untuk memilih dan menyimpan foto",
+        "NSPhotoLibraryAddUsageDescription": "Aplikasi memerlukan izin untuk menyimpan foto ke galeri"
       }
     },
     "android": {
@@ -32,7 +34,11 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -52,7 +58,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -16,37 +16,42 @@ import { PermissionProvider } from '@/context/PermissionContext';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { ProductProvider } from '@/context';
+
 export const unstable_settings = {
-  anchor: '(tabs)',
+  initialRouteName: 'index',
 };
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <StatusBar hidden={false} translucent />
         <AuthProvider>
           <PermissionProvider>
-            <ThemeProvider value={DefaultTheme}>
-              <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    animation: 'slide_from_right',
-                    animationDuration: 300,
-                    contentStyle: { backgroundColor: '#ffffff' },
-                  }}
-                >
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="onboarding" />
-                  <Stack.Screen name="permissions" />
-                  <Stack.Screen name="auth" />
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-                <Toast />
-                <StatusBar style="dark" />
-              </SafeAreaView>
-            </ThemeProvider>
+            <ProductProvider>
+              <ThemeProvider value={DefaultTheme}>
+                <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                      animationDuration: 300,
+                      contentStyle: { backgroundColor: '#ffffff' },
+                    }}
+                  >
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="onboarding" />
+                    <Stack.Screen name="permissions" />
+                    <Stack.Screen name="auth" />
+                    <Stack.Screen name="(tabs)/admin" />
+                    <Stack.Screen name="(tabs)/karywan" />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <Toast />
+                </SafeAreaView>
+              </ThemeProvider>
+            </ProductProvider>
           </PermissionProvider>
         </AuthProvider>
       </SafeAreaProvider>

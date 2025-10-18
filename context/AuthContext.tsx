@@ -2,17 +2,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+export type Role = 'admins' | 'karyawan';
+
 export interface User {
     id: string;
     name: string;
     email: string;
+    role: Role;
 }
 
 export interface AuthContextType {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<boolean>;
+    signUp: (name: string, email: string, password: string, role: Role) => Promise<boolean>;
     signOut: () => Promise<void>;
+    changeRole: (newRole: Role) => Promise<void>;
     isAuthenticated: boolean;
 }
 
@@ -59,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     id: '1',
                     name: 'User',
                     email: email,
+                    role: 'karyawan', // default role for mock sign in
                 };
                 setUser(userData);
                 await AsyncStorage.setItem('user_data', JSON.stringify(userData));
@@ -68,6 +74,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return false;
         } catch (error) {
             console.error('Error signing in:', error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const signUp = async (name: string, email: string, password: string, role: Role): Promise<boolean> => {
+        try {
+            setLoading(true);
+            // Simulate API call - replace with actual registration logic
+            if (name && email && password && role) {
+                const userData: User = {
+                    id: '1',
+                    name,
+                    email,
+                    role,
+                };
+                setUser(userData);
+                await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+                await AsyncStorage.setItem('has_visited_auth', 'true');
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error signing up:', error);
             return false;
         } finally {
             setLoading(false);
@@ -87,11 +118,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const changeRole = async (newRole: Role): Promise<void> => {
+        try {
+            setLoading(true);
+            if (user) {
+                const updatedUser = { ...user, role: newRole };
+                setUser(updatedUser);
+                await AsyncStorage.setItem('user_data', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error('Error changing role:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const value: AuthContextType = {
         user,
         loading,
         signIn,
+        signUp,
         signOut,
+        changeRole,
         isAuthenticated,
     };
 

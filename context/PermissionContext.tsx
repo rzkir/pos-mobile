@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-
 import { useCameraPermissions } from 'expo-camera';
+
+import * as MediaLibrary from 'expo-media-library';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface PermissionContextType {
     cameraPermission: boolean | null;
     bluetoothPermission: boolean | null;
+    storagePermission: boolean | null;
     allPermissionsGranted: boolean;
     requestPermissions: () => Promise<void>;
     checkPermissions: () => Promise<void>;
@@ -26,11 +28,13 @@ export const usePermissions = () => {
 
 export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+    const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
     const [bluetoothPermission, setBluetoothPermission] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
 
     const allPermissionsGranted =
         cameraPermission?.granted === true &&
+        (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all') &&
         bluetoothPermission === true;
 
 
@@ -40,6 +44,8 @@ export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             // Simplified approach: Always set Bluetooth as true for now
             setBluetoothPermission(true);
+
+            // Avoid calling media APIs without permission; just rely on hook state
 
             // Save permission status to storage
             await AsyncStorage.setItem('permissions_checked', 'true');
@@ -60,6 +66,13 @@ export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 await requestCameraPermission();
             }
 
+            // Request media library permission (read/save photos)
+            if (
+                !(mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all')
+            ) {
+                await requestMediaPermission();
+            }
+
             // Always set Bluetooth as granted (simplified approach)
             setBluetoothPermission(true);
             await AsyncStorage.setItem('bluetooth_permission_granted', 'true');
@@ -77,18 +90,24 @@ export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     useEffect(() => {
         checkPermissions();
+
     }, []);
 
     // Add effect to handle permission state changes
     useEffect(() => {
-        if (cameraPermission?.granted === true && bluetoothPermission === true) {
+        if (
+            cameraPermission?.granted === true &&
+            (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all') &&
+            bluetoothPermission === true
+        ) {
             // All permissions granted, no need to keep checking
         }
-    }, [cameraPermission?.granted, bluetoothPermission]);
+    }, [cameraPermission?.granted, mediaPermission?.granted, mediaPermission?.accessPrivileges, bluetoothPermission]);
 
     const value: PermissionContextType = {
         cameraPermission: cameraPermission?.granted || null,
         bluetoothPermission,
+        storagePermission: (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all') ? true : (mediaPermission ? false : null),
         allPermissionsGranted,
         requestPermissions,
         checkPermissions,

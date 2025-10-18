@@ -36,7 +36,6 @@ export default function OnboardingScreen() {
         if (currentIndex < onboardingData.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
-            // This is the last step, proceed to get started
             handleGetStarted();
         }
     };
@@ -99,8 +98,7 @@ export default function OnboardingScreen() {
                     {onboardingData.map((_, index) => (
                         <View
                             key={index}
-                            className={`w-3 h-3 rounded-full mx-2 transition-all duration-300 ${index <= currentIndex ? 'bg-red-500' : 'bg-gray-300'
-                                } ${index === currentIndex ? 'scale-110' : ''}`}
+                            className={`${index === currentIndex ? 'w-4 h-4' : 'w-3 h-3'} rounded-full mx-2 ${index <= currentIndex ? 'bg-red-500' : 'bg-gray-300'}`}
                         />
                     ))}
                 </View>

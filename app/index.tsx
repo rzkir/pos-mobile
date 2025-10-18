@@ -27,14 +27,20 @@ export default function Index() {
 
         if (user) {
           hasRedirected.current = true;
-          router.replace('/(tabs)/beranda');
+          // Redirect based on user role
+          if (user.role === 'admins') {
+            router.replace('/(tabs)/admin/beranda');
+          } else {
+            router.replace('/(tabs)/karywan/beranda');
+          }
         }
         else if (hasVisitedAuth !== 'true') {
           hasRedirected.current = true;
           router.replace('/auth');
         } else {
           hasRedirected.current = true;
-          router.replace('/(tabs)/beranda');
+          // Default redirect to auth if no user
+          router.replace('/auth');
         }
       } catch {
         hasRedirected.current = true;
