@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ProductSizeService } from "../services/productSizeService";
 
 export const useSizes = () => {
@@ -6,7 +6,7 @@ export const useSizes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSizes = async () => {
+  const fetchSizes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -17,11 +17,11 @@ export const useSizes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSizes();
-  }, []);
+  }, [fetchSizes]);
 
   return {
     sizes,
