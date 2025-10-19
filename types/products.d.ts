@@ -10,7 +10,6 @@ interface Product {
   image_url?: string;
   barcode: string;
   is_active: boolean;
-  sku: string;
   min_stock: number;
   discount: number;
   description?: string;
@@ -18,7 +17,6 @@ interface Product {
   size_id?: number;
   supplier_id?: number;
   expiration_date?: string;
-  tax: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -26,6 +24,7 @@ interface Product {
 
 interface ProductCategory {
   id: number;
+  uid: string;
   name: string;
   description?: string;
   is_active: boolean;
@@ -35,8 +34,8 @@ interface ProductCategory {
 
 interface ProductSize {
   id: number;
+  uid: string;
   name: string;
-  description?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;

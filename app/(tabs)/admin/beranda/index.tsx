@@ -2,9 +2,10 @@ import { useAuth } from '@/context/AuthContext'
 
 import { router } from 'expo-router'
 
-import React from 'react'
 
 import { Alert, Text, TouchableOpacity, View } from 'react-native'
+
+import Toast from 'react-native-toast-message'
 
 export default function Beranda() {
     const { user, signOut, changeRole, loading } = useAuth()
@@ -38,6 +39,7 @@ export default function Beranda() {
                     text: 'Ubah',
                     onPress: async () => {
                         await changeRole(newRole)
+                        Toast.show({ type: 'success', text1: `Role diubah ke ${newRole}` })
                         // Navigate to appropriate tab based on new role
                         if (newRole === 'admins') {
                             router.replace('/(tabs)/admin/beranda')

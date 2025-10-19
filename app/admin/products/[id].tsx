@@ -2,13 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useEffect, useRef, useState } from 'react';
 
-import {
-    Alert,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -25,6 +21,8 @@ import { useProducts } from '@/hooks/useProducts';
 import { useSizes } from '@/hooks/useSizes';
 
 import { useSuppliers } from '@/hooks/useSuppliers';
+
+import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProduct() {
     const { id } = useLocalSearchParams();
@@ -47,7 +45,7 @@ export default function EditProduct() {
         price: '',
         modal: '',
         stock: '',
-        unit: 'pcs',
+        unit: '',
         barcode: '',
         category_id: '',
         size_id: '',
@@ -55,7 +53,7 @@ export default function EditProduct() {
         description: '',
         min_stock: '',
         discount: '',
-        tax: ''
+        image_url: ''
     });
 
     // Refs for focus management
@@ -63,12 +61,10 @@ export default function EditProduct() {
     const priceRef = useRef<TextInput>(null);
     const modalRef = useRef<TextInput>(null);
     const stockRef = useRef<TextInput>(null);
-    const unitRef = useRef<TextInput>(null);
     const barcodeRef = useRef<TextInput>(null);
     const descriptionRef = useRef<TextInput>(null);
     const minStockRef = useRef<TextInput>(null);
     const discountRef = useRef<TextInput>(null);
-    const taxRef = useRef<TextInput>(null);
 
 
     useEffect(() => {
@@ -83,7 +79,7 @@ export default function EditProduct() {
                     price: priceValue,
                     modal: modalValue,
                     stock: product.stock?.toString() || '',
-                    unit: product.unit || 'pcs',
+                    unit: product.unit || '',
                     barcode: product.barcode || '',
                     category_id: product.category_id?.toString() || '',
                     size_id: product.size_id?.toString() || '',
@@ -91,7 +87,7 @@ export default function EditProduct() {
                     description: product.description || '',
                     min_stock: product.min_stock?.toString() || '',
                     discount: product.discount?.toString() || '',
-                    tax: product.tax?.toString() || ''
+                    image_url: product.image_url || ''
                 });
 
             }
@@ -127,6 +123,30 @@ export default function EditProduct() {
         setShowScanner(false);
     };
 
+    const handlePickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Toast.show({ type: 'error', text1: 'Izin galeri diperlukan untuk memilih gambar' });
+                return;
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const uri = result.assets[0].uri;
+                setFormData(prev => ({ ...prev, image_url: uri }));
+            }
+        } catch {
+            Toast.show({ type: 'error', text1: 'Gagal memilih gambar' });
+        }
+    };
+
     const handleCategorySelect = (value: string | number) => {
         setFormData(prev => ({
             ...prev,
@@ -148,17 +168,24 @@ export default function EditProduct() {
         }));
     };
 
+    const handleUnitSelect = (value: string | number) => {
+        setFormData(prev => ({
+            ...prev,
+            unit: value.toString()
+        }));
+    };
+
     const validateForm = () => {
         if (!formData.name.trim()) {
-            Alert.alert('Error', 'Nama produk harus diisi');
+            Toast.show({ type: 'error', text1: 'Nama produk harus diisi' });
             return false;
         }
         if (!formData.price || parseFloat(formData.price) <= 0) {
-            Alert.alert('Error', 'Harga harus diisi dan lebih dari 0');
+            Toast.show({ type: 'error', text1: 'Harga harus diisi dan lebih dari 0' });
             return false;
         }
         if (!formData.stock || parseInt(formData.stock) < 0) {
-            Alert.alert('Error', 'Stok harus diisi dan tidak boleh negatif');
+            Toast.show({ type: 'error', text1: 'Stok harus diisi dan tidak boleh negatif' });
             return false;
         }
         return true;
@@ -175,33 +202,31 @@ export default function EditProduct() {
                 modal: parseFloat(formData.modal) || 0,
                 stock: parseInt(formData.stock),
                 sold: 0,
-                unit: formData.unit,
-                image_url: '',
+                unit: formData.unit || 'pcs',
+                image_url: formData.image_url || '',
                 barcode: formData.barcode || `BC${Date.now()}`,
                 is_active: true,
-                sku: `SKU${Date.now()}`,
                 category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
                 size_id: formData.size_id ? parseInt(formData.size_id) : undefined,
                 supplier_id: formData.supplier_id ? parseInt(formData.supplier_id) : undefined,
                 description: formData.description,
                 min_stock: parseInt(formData.min_stock) || 0,
                 discount: parseFloat(formData.discount) || 0,
-                tax: parseFloat(formData.tax) || 0,
                 expiration_date: '',
                 created_by: 'admins'
             };
 
             if (isEdit) {
                 await updateProduct(parseInt(id as string), productData);
-                Alert.alert('Sukses', 'Produk berhasil diperbarui');
+                Toast.show({ type: 'success', text1: 'Produk berhasil diperbarui' });
             } else {
                 await createProduct(productData);
-                Alert.alert('Sukses', 'Produk berhasil ditambahkan');
+                Toast.show({ type: 'success', text1: 'Produk berhasil ditambahkan' });
             }
 
             router.back();
         } catch (error) {
-            Alert.alert('Error', 'Gagal menyimpan produk');
+            Toast.show({ type: 'error', text1: 'Gagal menyimpan produk' });
             console.error('Error saving product:', error);
         }
     };
@@ -222,6 +247,19 @@ export default function EditProduct() {
         label: supplier.name,
         value: supplier.id
     }));
+
+    const unitOptions = [
+        { label: 'Pcs (Satuan)', value: 'pcs' },
+        { label: 'Kg (Kilogram)', value: 'kg' },
+        { label: 'Liter', value: 'liter' },
+        { label: 'Meter', value: 'meter' },
+        { label: 'Box (Kotak)', value: 'box' },
+        { label: 'Pack (Paket)', value: 'pack' },
+        { label: 'Botol', value: 'botol' },
+        { label: 'Gram', value: 'gram' },
+        { label: 'Dus', value: 'dus' },
+        { label: 'Roll', value: 'roll' }
+    ];
 
     return (
         <View className="flex-1 bg-white">
@@ -250,6 +288,24 @@ export default function EditProduct() {
                 resetScrollToCoords={{ x: 0, y: 0 }}
                 scrollEnabled={true}
             >
+                {/* Image Picker */}
+                <View className="mb-4 bg-white rounded-xl p-4 border border-gray-200">
+                    <View className="items-center">
+                        {formData.image_url ? (
+                            <Image
+                                source={{ uri: formData.image_url }}
+                                style={{ width: 120, height: 120, borderRadius: 12, marginBottom: 12 }}
+                            />
+                        ) : (
+                            <View className="w-30 h-30 mb-3 items-center justify-center rounded-xl bg-gray-100" style={{ width: 120, height: 120 }}>
+                                <Text className="text-gray-400">Tidak ada gambar</Text>
+                            </View>
+                        )}
+                        <TouchableOpacity onPress={handlePickImage} className="bg-blue-600 px-4 py-2 rounded-lg">
+                            <Text className="text-white font-medium">Pilih Gambar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
                 {/* Barcode Scanner */}
                 <View className="mb-4">
                     <Text className="text-gray-700 font-medium mb-2">Barcode</Text>
@@ -313,30 +369,25 @@ export default function EditProduct() {
                     </View>
                 </View>
 
-                <View className="flex-row space-x-2">
-                    <View className="flex-1">
-                        <Input
-                            ref={stockRef}
-                            label="Stok *"
-                            value={formData.stock}
-                            onChangeText={(text) => handleInputChange('stock', text)}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            returnKeyType="next"
-                            onSubmitEditing={() => unitRef.current?.focus()}
-                        />
-                    </View>
-                    <View className="flex-1">
-                        <Input
-                            ref={unitRef}
-                            label="Unit"
-                            value={formData.unit}
-                            onChangeText={(text) => handleInputChange('unit', text)}
-                            placeholder="pcs"
-                            returnKeyType="next"
-                            onSubmitEditing={() => descriptionRef.current?.focus()}
-                        />
-                    </View>
+                <Input
+                    ref={stockRef}
+                    label="Stok *"
+                    value={formData.stock}
+                    onChangeText={(text) => handleInputChange('stock', text)}
+                    placeholder="0"
+                    keyboardType="numeric"
+                    returnKeyType="next"
+                    onSubmitEditing={() => descriptionRef.current?.focus()}
+                />
+
+                <View className="mb-4">
+                    <Text className="text-gray-700 font-medium mb-2">Unit</Text>
+                    <Select
+                        options={unitOptions}
+                        value={formData.unit}
+                        onSelect={handleUnitSelect}
+                        placeholder="Pilih satuan"
+                    />
                 </View>
 
                 {/* Categories and Sizes */}
@@ -403,20 +454,11 @@ export default function EditProduct() {
                             placeholder="0"
                             keyboardType="numeric"
                             returnKeyType="next"
-                            onSubmitEditing={() => taxRef.current?.focus()}
+                            onSubmitEditing={() => { }}
                         />
                     </View>
                 </View>
 
-                <Input
-                    ref={taxRef}
-                    label="Pajak (%)"
-                    value={formData.tax}
-                    onChangeText={(text) => handleInputChange('tax', text)}
-                    placeholder="0"
-                    keyboardType="numeric"
-                    returnKeyType="done"
-                />
             </KeyboardAwareScrollView>
 
             {/* Barcode Scanner Modal */}

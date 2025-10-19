@@ -2,9 +2,11 @@ import { useAuth } from '@/context/AuthContext';
 
 import { router } from 'expo-router';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,15 +18,15 @@ export default function AuthIndex() {
 
     const handleSignUp = async () => {
         if (!name || !email || !password) {
-            Alert.alert('Error', 'Please enter name, email and password');
+            Toast.show({ type: 'error', text1: 'Please enter name, email and password' });
             return;
         }
 
         const success = await signUp(name, email, password, 'karyawan');
         if (success) {
-            router.replace('/(tabs)/beranda');
+            router.replace('/auth/signin');
         } else {
-            Alert.alert('Error', 'Failed to create account');
+            Toast.show({ type: 'error', text1: 'Failed to create account' });
         }
     };
 
@@ -32,8 +34,8 @@ export default function AuthIndex() {
         <SafeAreaView className="flex-1 bg-background">
             <View className="flex-1 px-6 py-8 justify-center">
                 <View className="mb-8">
-                    <Text className="text-3xl font-bold text-primary mb-2">Welcome Back</Text>
-                    <Text className="text-base text-secondary">Sign in to continue</Text>
+                    <Text className="text-3xl font-bold text-primary mb-2">Welcome</Text>
+                    <Text className="text-base text-secondary">Create an account to continue</Text>
                 </View>
 
                 <View className="mb-6">

@@ -2,9 +2,11 @@ import { useAuth } from '@/context/AuthContext';
 
 import { router } from 'expo-router';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
 
 export default function AuthIndex() {
     const [email, setEmail] = useState('');
@@ -13,7 +15,7 @@ export default function AuthIndex() {
 
     const handleSignIn = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+            Toast.show({ type: 'error', text1: 'Please enter both email and password' });
             return;
         }
 
@@ -21,7 +23,7 @@ export default function AuthIndex() {
         if (success) {
             router.replace('/(tabs)/admin/beranda');
         } else {
-            Alert.alert('Error', 'Invalid credentials');
+            Toast.show({ type: 'error', text1: 'Invalid credentials' });
         }
     };
 

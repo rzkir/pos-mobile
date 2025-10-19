@@ -2,15 +2,9 @@ import { useRouter } from 'expo-router';
 
 import { useEffect, useState } from 'react';
 
-import {
-    Alert,
-    FlatList,
-    RefreshControl,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import { Alert, FlatList, Image, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
 
 import { Ionicons } from '@expo/vector-icons';
 
@@ -21,6 +15,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSizes } from '@/hooks/useSizes';
 
 import { useSuppliers } from '@/hooks/useSuppliers';
+
 
 export default function Products() {
     const router = useRouter();
@@ -71,17 +66,19 @@ export default function Products() {
         router.push('/admin/products/new');
     };
 
-    const handleAddCategory = () => {
+    const handleNavigateToCategory = () => {
         router.push('/admin/products/category');
     };
 
-    const handleAddSize = () => {
+    const handleNavigateToSize = () => {
         router.push('/admin/products/size');
     };
 
-    const handleAddSupplier = () => {
+    const handleNavigateToSupplier = () => {
         router.push('/admin/products/supplier');
     };
+
+
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -112,9 +109,9 @@ export default function Products() {
                     onPress: async () => {
                         try {
                             await deleteProduct(product.id);
-                            Alert.alert('Sukses', 'Produk berhasil dihapus');
+                            Toast.show({ type: 'success', text1: 'Produk berhasil dihapus' });
                         } catch {
-                            Alert.alert('Error', 'Gagal menghapus produk');
+                            Toast.show({ type: 'error', text1: 'Gagal menghapus produk' });
                         }
                     }
                 }
@@ -125,25 +122,38 @@ export default function Products() {
     const handleStockUpdate = (product: any, newStock: string) => {
         const stock = parseInt(newStock);
         if (isNaN(stock) || stock < 0) {
-            Alert.alert('Error', 'Stok harus berupa angka positif');
+            Toast.show({ type: 'error', text1: 'Stok harus berupa angka positif' });
             return;
         }
 
         updateProductStock(product.id, stock);
     };
 
-    const renderProduct = ({ item }: { item: any }) => (
+
+    const renderProductList = ({ item }: { item: any }) => (
         <View className="bg-white p-4 mb-3 rounded-lg shadow-sm border border-gray-200">
             <View className="flex-row justify-between items-start mb-2">
+                {/* Product Image */}
+                <View className="mr-3">
+                    {item.image_url ? (
+                        <Image
+                            source={{ uri: item.image_url }}
+                            style={{ width: 60, height: 60, borderRadius: 8 }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View className="w-15 h-15 bg-gray-100 rounded-lg items-center justify-center" style={{ width: 60, height: 60 }}>
+                            <Ionicons name="image-outline" size={24} color="#9CA3AF" />
+                        </View>
+                    )}
+                </View>
+
                 <View className="flex-1">
                     <Text className="text-lg font-semibold text-gray-800 mb-1">
                         {item.name}
                     </Text>
                     <Text className="text-sm text-gray-600 mb-1">
                         Barcode: {item.barcode}
-                    </Text>
-                    <Text className="text-sm text-gray-600">
-                        SKU: {item.sku}
                     </Text>
                 </View>
                 <View className="flex-row space-x-2">
@@ -234,19 +244,18 @@ export default function Products() {
                 <View className="flex-row flex-wrap">
                     {/* Categories Section */}
                     <View className="w-1/2 pr-2 mb-4">
-                        <View className="bg-gray-50 p-3 rounded-lg">
+                        <TouchableOpacity
+                            onPress={handleNavigateToCategory}
+                            className="bg-gray-50 p-3 rounded-lg active:bg-gray-100"
+                        >
                             <View className="flex-row justify-between items-center mb-2">
                                 <View className="flex-row items-center">
                                     <Ionicons name="grid-outline" size={16} color="#374151" />
                                     <Text className="text-base font-medium text-gray-700 ml-2">Kategori</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={handleAddCategory}
-                                    className="bg-green-500 px-2 py-1 rounded flex-row items-center"
-                                >
-                                    <Ionicons name="add" size={12} color="white" />
-                                    <Text className="text-white text-xs ml-1">Tambah</Text>
-                                </TouchableOpacity>
+                                <View className="bg-green-100 px-2 py-1 rounded">
+                                    <Text className="text-green-700 text-xs font-semibold">{categories.length}</Text>
+                                </View>
                             </View>
                             <View className="flex-row flex-wrap">
                                 {categories.length > 0 ? (
@@ -264,24 +273,23 @@ export default function Products() {
                                     </View>
                                 )}
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Sizes Section */}
                     <View className="w-1/2 pl-2 mb-4">
-                        <View className="bg-gray-50 p-3 rounded-lg">
+                        <TouchableOpacity
+                            onPress={handleNavigateToSize}
+                            className="bg-gray-50 p-3 rounded-lg active:bg-gray-100"
+                        >
                             <View className="flex-row justify-between items-center mb-2">
                                 <View className="flex-row items-center">
                                     <Ionicons name="resize-outline" size={16} color="#374151" />
                                     <Text className="text-base font-medium text-gray-700 ml-2">Ukuran</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={handleAddSize}
-                                    className="bg-green-500 px-2 py-1 rounded flex-row items-center"
-                                >
-                                    <Ionicons name="add" size={12} color="white" />
-                                    <Text className="text-white text-xs ml-1">Tambah</Text>
-                                </TouchableOpacity>
+                                <View className="bg-green-100 px-2 py-1 rounded">
+                                    <Text className="text-green-700 text-xs font-semibold">{sizes.length}</Text>
+                                </View>
                             </View>
                             <View className="flex-row flex-wrap">
                                 {sizes.length > 0 ? (
@@ -299,24 +307,23 @@ export default function Products() {
                                     </View>
                                 )}
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Suppliers Section */}
                     <View className="w-1/2 pr-2 mb-4">
-                        <View className="bg-gray-50 p-3 rounded-lg">
+                        <TouchableOpacity
+                            onPress={handleNavigateToSupplier}
+                            className="bg-gray-50 p-3 rounded-lg active:bg-gray-100"
+                        >
                             <View className="flex-row justify-between items-center mb-2">
                                 <View className="flex-row items-center">
                                     <Ionicons name="business-outline" size={16} color="#374151" />
                                     <Text className="text-base font-medium text-gray-700 ml-2">Supplier</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={handleAddSupplier}
-                                    className="bg-green-500 px-2 py-1 rounded flex-row items-center"
-                                >
-                                    <Ionicons name="add" size={12} color="white" />
-                                    <Text className="text-white text-xs ml-1">Tambah</Text>
-                                </TouchableOpacity>
+                                <View className="bg-green-100 px-2 py-1 rounded">
+                                    <Text className="text-green-700 text-xs font-semibold">{suppliers.length}</Text>
+                                </View>
                             </View>
                             <View className="flex-row flex-wrap">
                                 {suppliers.length > 0 ? (
@@ -334,7 +341,7 @@ export default function Products() {
                                     </View>
                                 )}
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Products Summary Section */}
@@ -345,13 +352,9 @@ export default function Products() {
                                     <Ionicons name="cube-outline" size={16} color="#374151" />
                                     <Text className="text-base font-medium text-gray-700 ml-2">Produk</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={handleAdd}
-                                    className="bg-blue-500 px-2 py-1 rounded flex-row items-center"
-                                >
-                                    <Ionicons name="add" size={12} color="white" />
-                                    <Text className="text-white text-xs ml-1">Tambah</Text>
-                                </TouchableOpacity>
+                                <View className="bg-green-100 px-2 py-1 rounded">
+                                    <Text className="text-green-700 text-xs font-semibold">{products.length}</Text>
+                                </View>
                             </View>
                             <View className="flex-row flex-wrap">
                                 <View className="bg-white px-2 py-1 rounded mr-1 mb-1">
@@ -369,7 +372,7 @@ export default function Products() {
             {/* Products List */}
             <FlatList
                 data={filteredProducts}
-                renderItem={renderProduct}
+                renderItem={renderProductList}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ padding: 16 }}
                 refreshControl={
@@ -383,8 +386,9 @@ export default function Products() {
                     />
                 }
                 ListEmptyComponent={
-                    <View className="flex-1 justify-center items-center py-20">
-                        <Text className="text-gray-500 text-center">
+                    <View className="py-20 items-center">
+                        <Ionicons name="cube-outline" size={64} color="#9CA3AF" />
+                        <Text className="text-gray-500 text-center mt-4 text-lg">
                             {searchTerm ? 'Produk tidak ditemukan' : 'Belum ada produk'}
                         </Text>
                         {!searchTerm && (
