@@ -26,7 +26,6 @@ interface ProductCategory {
   id: number;
   uid: string;
   name: string;
-  description?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -51,4 +50,21 @@ interface Supplier {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+interface ProductDetailsViewKaryawanProps {
+  product: Product;
+  categories: ProductCategory[];
+  sizes: ProductSize[];
+  suppliers: Supplier[];
+  onClose: () => void;
+}
+
+interface ProductDetailsViewProps {
+  product: Product;
+  categories: ProductCategory[];
+  sizes: ProductSize[];
+  suppliers: Supplier[];
+  onClose: () => void;
+  onEdit: (product: Product) => void;
 }
