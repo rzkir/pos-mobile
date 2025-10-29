@@ -7,7 +7,6 @@ interface BarcodeVisualProps {
     width?: number;
     height?: number;
     showText?: boolean;
-    productName?: string;
 }
 
 export const BarcodeVisual: React.FC<BarcodeVisualProps> = ({
@@ -15,27 +14,21 @@ export const BarcodeVisual: React.FC<BarcodeVisualProps> = ({
     width = 300,
     height = 80,
     showText = true,
-    productName = 'Product'
 }) => {
-    // Generate barcode pattern with proper spacing
     const generateBarcodePattern = (code: string): number[] => {
         const pattern: number[] = [];
 
-        // Start pattern (guard bars)
         pattern.push(1, 0, 1);
 
-        // Convert each character to pattern
         for (let i = 0; i < code.length; i++) {
             const char = code[i];
             const charCode = char.charCodeAt(0);
 
-            // Create pattern based on character with more variation
             for (let j = 0; j < 5; j++) {
                 pattern.push((charCode >> j) & 1);
             }
         }
 
-        // End pattern (guard bars)
         pattern.push(1, 0, 1);
 
         return pattern;

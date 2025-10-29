@@ -14,6 +14,10 @@ import { BarcodeScanner } from '@/components/BarcodeScanner';
 
 import Input from '@/components/ui/input';
 
+import Select from '@/components/ui/select';
+
+import { BarcodeVisual } from '@/components/ui/BarcodeVisual';
+
 import { useCategories } from '@/hooks/useCategories';
 
 import { useProducts } from '@/hooks/useProducts';
@@ -40,6 +44,7 @@ export default function EditProduct() {
     const { suppliers } = useSuppliers();
 
     const [showScanner, setShowScanner] = useState(false);
+    const [barcodeAction, setBarcodeAction] = useState<string>('generate');
     const [formData, setFormData] = useState({
         name: '',
         price: '',
@@ -56,7 +61,6 @@ export default function EditProduct() {
         image_url: ''
     });
 
-    // Refs for focus management
     const nameRef = useRef<TextInput>(null);
     const priceRef = useRef<TextInput>(null);
     const modalRef = useRef<TextInput>(null);
@@ -67,18 +71,32 @@ export default function EditProduct() {
     const discountRef = useRef<TextInput>(null);
 
 
+    // Helpers untuk format angka IDR (tanpa simbol), contoh: 10000 => 10.000
+    const formatIdrNumber = (raw: string) => {
+        if (!raw) return '';
+        const digitsOnly = raw.replace(/[^0-9]/g, '');
+        if (!digitsOnly) return '';
+        // Gunakan Intl agar sesuai lokal id-ID
+        return new Intl.NumberFormat('id-ID').format(Number(digitsOnly));
+    };
+
+    const unformatIdrNumber = (formatted: string) => {
+        if (!formatted) return '';
+        return formatted.replace(/\./g, '');
+    };
+
     useEffect(() => {
         if (isEdit && products.length > 0) {
             const product = products.find((p: any) => p.id === parseInt(id as string));
             if (product) {
-                const priceValue = product.price?.toString() || '';
-                const modalValue = product.modal?.toString() || '';
+                const priceValue = formatIdrNumber(product.price?.toString() || '');
+                const modalValue = formatIdrNumber(product.modal?.toString() || '');
 
                 setFormData({
                     name: product.name || '',
                     price: priceValue,
                     modal: modalValue,
-                    stock: product.stock?.toString() || '',
+                    stock: formatIdrNumber(product.stock?.toString() || ''),
                     unit: product.unit || '',
                     barcode: product.barcode || '',
                     category_id: product.category_id?.toString() || '',
@@ -104,14 +122,14 @@ export default function EditProduct() {
     const handlePriceChange = (value: string) => {
         setFormData(prev => ({
             ...prev,
-            price: value
+            price: formatIdrNumber(value)
         }));
     };
 
     const handleModalChange = (value: string) => {
         setFormData(prev => ({
             ...prev,
-            modal: value
+            modal: formatIdrNumber(value)
         }));
     };
 
@@ -122,6 +140,135 @@ export default function EditProduct() {
         }));
         setShowScanner(false);
     };
+
+    const isDecimalUnit = (unit: string) => ['kg', 'liter', 'meter'].includes(unit);
+
+    const sanitizeDecimalInput = (value: string, maxDecimals: number = 3) => {
+        // Izinkan angka dan satu titik desimal
+        let sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+        const parts = sanitized.split('.');
+        if (parts.length > 2) {
+            sanitized = parts[0] + '.' + parts.slice(1).join('');
+        }
+        const [intPart, decPart] = sanitized.split('.');
+        if (decPart !== undefined) {
+            return intPart + '.' + decPart.slice(0, maxDecimals);
+        }
+        return intPart;
+    };
+
+    const handleStockChange = (value: string) => {
+        if (isDecimalUnit(formData.unit)) {
+            const cleaned = sanitizeDecimalInput(value);
+            const newStockNumber = parseFloat(cleaned || '0');
+            const currentMinStockNumber = parseFloat((formData.min_stock || '0').replace(',', '.'));
+
+            if (!Number.isNaN(currentMinStockNumber) && currentMinStockNumber > newStockNumber) {
+                Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
+                setFormData(prev => ({
+                    ...prev,
+                    stock: cleaned,
+                    min_stock: String(newStockNumber)
+                }));
+                return;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                stock: cleaned
+            }));
+            return;
+        }
+
+        const formattedStock = formatIdrNumber(value);
+        const newStockNumber = parseInt(unformatIdrNumber(formattedStock) || '0', 10);
+        const currentMinStockNumber = parseInt(formData.min_stock || '0', 10);
+
+        if (!Number.isNaN(currentMinStockNumber) && currentMinStockNumber > newStockNumber) {
+            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
+            setFormData(prev => ({
+                ...prev,
+                stock: formattedStock,
+                min_stock: String(newStockNumber)
+            }));
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            stock: formattedStock
+        }));
+    };
+
+    const handleMinStockChange = (value: string) => {
+        if (isDecimalUnit(formData.unit)) {
+            const cleaned = sanitizeDecimalInput(value);
+            const inputMin = parseFloat(cleaned || '0');
+            const stockNumber = parseFloat((formData.stock ? (isDecimalUnit(formData.unit) ? formData.stock : unformatIdrNumber(formData.stock)) : '0').toString().replace(',', '.'));
+
+            if (inputMin > stockNumber) {
+                Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
+                setFormData(prev => ({
+                    ...prev,
+                    min_stock: String(stockNumber)
+                }));
+                return;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                min_stock: cleaned
+            }));
+            return;
+        }
+
+        const digitsOnly = value.replace(/[^0-9]/g, '');
+        const inputMin = parseInt(digitsOnly || '0', 10);
+        const stockNumber = parseInt(unformatIdrNumber(formData.stock) || '0', 10);
+
+        if (inputMin > stockNumber) {
+            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
+            setFormData(prev => ({
+                ...prev,
+                min_stock: String(stockNumber)
+            }));
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            min_stock: digitsOnly
+        }));
+    };
+
+    const generateEAN13 = () => {
+        let base = '';
+        for (let i = 0; i < 12; i++) {
+            base += Math.floor(Math.random() * 10).toString();
+        }
+
+        const digits = base.split('').map((d) => parseInt(d, 10));
+        let sum = 0;
+        for (let i = 0; i < digits.length; i++) {
+            const positionFromRight = digits.length - i;
+            const weight = positionFromRight % 2 === 0 ? 3 : 1;
+            sum += digits[i] * weight;
+        }
+        const checksum = (10 - (sum % 10)) % 10;
+        return base + checksum.toString();
+    };
+
+    const handleBarcodeGenerate = () => {
+        const code = generateEAN13();
+        setFormData((prev) => ({ ...prev, barcode: code }));
+    };
+
+    useEffect(() => {
+        if (barcodeAction === 'generate' && !isEdit && !formData.barcode) {
+            const code = generateEAN13();
+            setFormData((prev) => ({ ...prev, barcode: code }));
+        }
+    }, [barcodeAction, isEdit, formData.barcode]);
 
     const handlePickImage = async () => {
         try {
@@ -169,10 +316,55 @@ export default function EditProduct() {
     };
 
     const handleUnitSelect = (value: string) => {
+        // Saat ganti satuan, tetap pertahankan nilai, validasi akan jalan di handler lain
         setFormData(prev => ({
             ...prev,
             unit: value
         }));
+    };
+
+    const stepForUnit = (unit: string) => (isDecimalUnit(unit) ? 0.1 : 1);
+
+    const parseStockNumber = (raw: string, unit: string) => {
+        return isDecimalUnit(unit)
+            ? parseFloat((raw || '0').toString().replace(',', '.'))
+            : parseInt(unformatIdrNumber(raw) || '0', 10);
+    };
+
+    const formatStockString = (num: number, unit: string) => {
+        if (isDecimalUnit(unit)) {
+            const fixed = Number(num.toFixed(3));
+            return String(fixed);
+        }
+        return formatIdrNumber(String(Math.floor(num)));
+    };
+
+    const incrementStock = (target: 'stock' | 'min_stock') => {
+        const unit = formData.unit || 'pcs';
+        const step = stepForUnit(unit);
+        const current = target === 'stock' ? formData.stock : formData.min_stock;
+        const currentNum = parseStockNumber(current, unit);
+        const nextNum = currentNum + step;
+        const nextStr = formatStockString(nextNum, unit);
+        if (target === 'stock') {
+            handleStockChange(nextStr);
+        } else {
+            handleMinStockChange(nextStr);
+        }
+    };
+
+    const decrementStock = (target: 'stock' | 'min_stock') => {
+        const unit = formData.unit || 'pcs';
+        const step = stepForUnit(unit);
+        const current = target === 'stock' ? formData.stock : formData.min_stock;
+        const currentNum = parseStockNumber(current, unit);
+        const nextNum = Math.max(0, currentNum - step);
+        const nextStr = formatStockString(nextNum, unit);
+        if (target === 'stock') {
+            handleStockChange(nextStr);
+        } else {
+            handleMinStockChange(nextStr);
+        }
     };
 
     const validateForm = () => {
@@ -180,12 +372,27 @@ export default function EditProduct() {
             Toast.show({ type: 'error', text1: 'Nama produk harus diisi' });
             return false;
         }
-        if (!formData.price || parseFloat(formData.price) <= 0) {
+        if (!formData.price || parseFloat(unformatIdrNumber(formData.price)) <= 0) {
             Toast.show({ type: 'error', text1: 'Harga harus diisi dan lebih dari 0' });
             return false;
         }
-        if (!formData.stock || parseInt(formData.stock) < 0) {
+        const stockNumber = isDecimalUnit(formData.unit)
+            ? parseFloat((formData.stock || '0').toString().replace(',', '.'))
+            : parseInt(unformatIdrNumber(formData.stock) || '0', 10);
+        if (!formData.stock || Number.isNaN(stockNumber) || stockNumber < 0) {
             Toast.show({ type: 'error', text1: 'Stok harus diisi dan tidak boleh negatif' });
+            return false;
+        }
+        // Validasi stok minimum
+        const minStockNumber = isDecimalUnit(formData.unit)
+            ? parseFloat((formData.min_stock || '0').toString().replace(',', '.'))
+            : parseInt(formData.min_stock || '0', 10);
+        if (minStockNumber < 0) {
+            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh negatif' });
+            return false;
+        }
+        if (minStockNumber > stockNumber) {
+            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
             return false;
         }
         return true;
@@ -198,9 +405,11 @@ export default function EditProduct() {
             const productData = {
                 uid: `PROD${Date.now()}`,
                 name: formData.name,
-                price: parseFloat(formData.price),
-                modal: parseFloat(formData.modal) || 0,
-                stock: parseInt(formData.stock),
+                price: parseFloat(unformatIdrNumber(formData.price)),
+                modal: parseFloat(unformatIdrNumber(formData.modal)) || 0,
+                stock: isDecimalUnit(formData.unit)
+                    ? parseFloat((formData.stock || '0').toString().replace(',', '.'))
+                    : parseInt(unformatIdrNumber(formData.stock)),
                 sold: 0,
                 unit: formData.unit || 'pcs',
                 image_url: formData.image_url || '',
@@ -210,7 +419,9 @@ export default function EditProduct() {
                 size_id: formData.size_id && formData.size_id !== '' ? parseInt(formData.size_id) : undefined,
                 supplier_id: formData.supplier_id && formData.supplier_id !== '' ? parseInt(formData.supplier_id) : undefined,
                 description: formData.description,
-                min_stock: parseInt(formData.min_stock) || 0,
+                min_stock: isDecimalUnit(formData.unit)
+                    ? parseFloat((formData.min_stock || '0').toString().replace(',', '.')) || 0
+                    : parseInt(formData.min_stock) || 0,
                 discount: parseFloat(formData.discount) || 0,
                 expiration_date: '',
                 created_by: 'admins'
@@ -262,23 +473,23 @@ export default function EditProduct() {
     ];
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-gray-50">
             {/* Header */}
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Text className="text-blue-600 text-lg">Batal</Text>
+            <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-xs">
+                <TouchableOpacity onPress={() => router.back()} className="px-3 py-2">
+                    <Text className="text-blue-600 text-base">Batal</Text>
                 </TouchableOpacity>
-                <Text className="text-lg font-semibold text-gray-800">
+                <Text className="text-xl font-semibold text-gray-900">
                     {isEdit ? 'Edit Produk' : 'Tambah Produk'}
                 </Text>
-                <TouchableOpacity onPress={handleSave}>
-                    <Text className="text-blue-600 text-lg font-semibold">Simpan</Text>
+                <TouchableOpacity onPress={handleSave} className="bg-blue-600 px-4 py-2 rounded-full">
+                    <Text className="text-white text-base font-semibold">Simpan</Text>
                 </TouchableOpacity>
             </View>
 
             <KeyboardAwareScrollView
                 className="flex-1"
-                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
                 keyboardShouldPersistTaps="always"
                 enableOnAndroid={true}
                 enableAutomaticScroll={true}
@@ -288,201 +499,258 @@ export default function EditProduct() {
                 resetScrollToCoords={{ x: 0, y: 0 }}
                 scrollEnabled={true}
             >
-                {/* Image Picker */}
-                <View className="mb-4 bg-white rounded-xl p-4 border border-gray-200">
-                    <View className="items-center">
-                        {formData.image_url ? (
-                            <Image
-                                source={{ uri: formData.image_url }}
-                                style={{ width: 120, height: 120, borderRadius: 12, marginBottom: 12 }}
-                            />
-                        ) : (
-                            <View className="w-30 h-30 mb-3 items-center justify-center rounded-xl bg-gray-100" style={{ width: 120, height: 120 }}>
-                                <Text className="text-gray-400">Tidak ada gambar</Text>
-                            </View>
-                        )}
-                        <TouchableOpacity onPress={handlePickImage} className="bg-blue-600 px-4 py-2 rounded-lg">
-                            <Text className="text-white font-medium">Pilih Gambar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                {/* Barcode Scanner */}
-                <View className="mb-4">
-                    <Text className="text-gray-700 font-medium mb-2">Barcode</Text>
-                    <View className="flex-row items-center">
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                            <Input
-                                ref={barcodeRef}
-                                defaultValue={formData.barcode}
-                                onChangeText={(text: string) => handleInputChange('barcode', text)}
-                                placeholder="Masukkan barcode atau scan"
-                                keyboardType="default"
-                                returnKeyType="next"
-                                onSubmitEditing={() => nameRef.current?.focus()}
-                                containerStyle={{ marginBottom: 0 }}
-                            />
+                <View className="flex-col gap-6">
+                    {/* Image Picker */}
+                    <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                        <Text className="text-gray-900 font-semibold mb-3">Gambar Produk</Text>
+                        <View className="items-center">
+                            {formData.image_url ? (
+                                <Image
+                                    source={{ uri: formData.image_url }}
+                                    style={{ width: 160, height: 160, borderRadius: 16, marginBottom: 12 }}
+                                />
+                            ) : (
+                                <View className="mb-3 items-center justify-center rounded-2xl bg-gray-100" style={{ width: 160, height: 160 }}>
+                                    <Text className="text-gray-400">Tidak ada gambar</Text>
+                                </View>
+                            )}
+                            <TouchableOpacity onPress={handlePickImage} className="bg-blue-600 px-4 py-2 rounded-lg">
+                                <Text className="text-white font-medium">Pilih Gambar</Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            className="bg-blue-600 px-4 py-3 rounded-lg"
-                            onPress={() => setShowScanner(true)}
-                        >
-                            <Text className="text-white font-medium">Scan</Text>
-                        </TouchableOpacity>
                     </View>
-                </View>
 
-                {/* Basic Info */}
-                <Input
-                    ref={nameRef}
-                    label="Nama Produk *"
-                    defaultValue={formData.name}
-                    onChangeText={(text: string) => handleInputChange('name', text)}
-                    placeholder="Masukkan nama produk"
-                    returnKeyType="next"
-                    onSubmitEditing={() => priceRef.current?.focus()}
-                />
+                    {/* Barcode */}
+                    <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                        <Text className="text-gray-900 font-semibold mb-3">Barcode</Text>
+                        <View className="flex-row items-center">
+                            <View style={{ flex: 1, marginRight: 8 }}>
+                                <Input
+                                    ref={barcodeRef}
+                                    defaultValue={formData.barcode}
+                                    onChangeText={(text: string) => handleInputChange('barcode', text)}
+                                    placeholder="Masukkan barcode atau scan"
+                                    keyboardType="default"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => nameRef.current?.focus()}
+                                    containerStyle={{ marginBottom: 0 }}
+                                />
+                            </View>
+                            <View style={{ width: 180 }}>
+                                <Select
+                                    options={[
+                                        { label: 'Scan', value: 'scan' },
+                                        { label: 'Generate Otomatis', value: 'generate' },
+                                    ]}
+                                    value={barcodeAction}
+                                    onSelect={(val) => {
+                                        const v = String(val);
+                                        setBarcodeAction(v);
+                                        if (v === 'scan') {
+                                            setShowScanner(true);
+                                        } else if (v === 'generate') {
+                                            handleBarcodeGenerate();
+                                        }
+                                    }}
+                                    placeholder="Pilih tindakan"
+                                />
+                            </View>
+                        </View>
+                        {formData.barcode ? (
+                            <View className="mt-3 items-center rounded-xl border border-gray-100 bg-gray-50 py-3">
+                                <BarcodeVisual barcode={formData.barcode} width={280} height={60} />
+                            </View>
+                        ) : null}
+                    </View>
 
-                <View className="flex-row space-x-2">
-                    <View className="flex-1">
+                    {/* Informasi Dasar */}
+                    <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                        <Text className="text-gray-900 font-semibold mb-3">Informasi Dasar</Text>
                         <Input
-                            ref={priceRef}
-                            label="Harga Jual *"
-                            defaultValue={formData.price}
-                            onChangeText={handlePriceChange}
-                            placeholder="0"
-                            keyboardType="numeric"
+                            ref={nameRef}
+                            label="Nama Produk *"
+                            defaultValue={formData.name}
+                            onChangeText={(text: string) => handleInputChange('name', text)}
+                            placeholder="Masukkan nama produk"
                             returnKeyType="next"
-                            onSubmitEditing={() => modalRef.current?.focus()}
+                            onSubmitEditing={() => priceRef.current?.focus()}
                         />
+
+                        <View className="flex-row space-x-2 mt-2">
+                            <View className="flex-1">
+                                <Input
+                                    ref={priceRef}
+                                    label="Harga Jual *"
+                                    value={formData.price}
+                                    onChangeText={handlePriceChange}
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => modalRef.current?.focus()}
+                                />
+                            </View>
+                            <View className="flex-1">
+                                <Input
+                                    ref={modalRef}
+                                    label="Harga Modal"
+                                    value={formData.modal}
+                                    onChangeText={handleModalChange}
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => stockRef.current?.focus()}
+                                />
+                            </View>
+                        </View>
+
+                        <View className="mt-2">
+                            <Input
+                                ref={stockRef}
+                                label="Stok *"
+                                value={formData.stock}
+                                onChangeText={handleStockChange}
+                                placeholder={isDecimalUnit(formData.unit) ? 'contoh: 1.5' : 'contoh: 10'}
+                                keyboardType={isDecimalUnit(formData.unit) ? 'decimal-pad' : 'numeric'}
+                                returnKeyType="next"
+                                onSubmitEditing={() => descriptionRef.current?.focus()}
+                                rightIcon={(
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <TouchableOpacity onPress={() => decrementStock('stock')} style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 6 }}>
+                                            <Text style={{ fontSize: 16, color: '#374151' }}>-</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => incrementStock('stock')} style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 8 }}>
+                                            <Text style={{ fontSize: 16, color: '#374151' }}>+</Text>
+                                        </TouchableOpacity>
+                                        <Text style={{ fontSize: 14, color: '#6B7280' }}>{formData.unit || 'pcs'}</Text>
+                                    </View>
+                                )}
+                            />
+                            <Text className="text-gray-500 mt-1">Masukkan stok dalam {isDecimalUnit(formData.unit) ? 'angka desimal' : 'bilangan bulat'} sesuai satuan.</Text>
+                        </View>
                     </View>
-                    <View className="flex-1">
+
+                    {/* Klasifikasi */}
+                    <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                        <Text className="text-gray-900 font-semibold mb-3">Klasifikasi</Text>
+                        <View className="mb-3">
+                            <Text className="text-gray-700 font-medium mb-2">Unit</Text>
+                            <View className="border border-gray-300 rounded-lg bg-white">
+                                <Picker
+                                    selectedValue={formData.unit}
+                                    onValueChange={handleUnitSelect}
+                                    style={{ height: 50 }}
+                                >
+                                    <Picker.Item label="Pilih satuan" value="" />
+                                    {unitOptions.map((option) => (
+                                        <Picker.Item key={option.value} label={option.label} value={option.value} />
+                                    ))}
+                                </Picker>
+                            </View>
+                        </View>
+
+                        <View className="mb-3">
+                            <Text className="text-gray-700 font-medium mb-2">Kategori</Text>
+                            <View className="border border-gray-300 rounded-lg bg-white">
+                                <Picker
+                                    selectedValue={formData.category_id}
+                                    onValueChange={handleCategorySelect}
+                                    style={{ height: 50 }}
+                                >
+                                    <Picker.Item label="Pilih kategori" value="" />
+                                    {categoryOptions.map((option) => (
+                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
+                                    ))}
+                                </Picker>
+                            </View>
+                        </View>
+
+                        <View className="mb-3">
+                            <Text className="text-gray-700 font-medium mb-2">Ukuran</Text>
+                            <View className="border border-gray-300 rounded-lg bg-white">
+                                <Picker
+                                    selectedValue={formData.size_id}
+                                    onValueChange={handleSizeSelect}
+                                    style={{ height: 50 }}
+                                >
+                                    <Picker.Item label="Pilih ukuran" value="" />
+                                    {sizeOptions.map((option) => (
+                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
+                                    ))}
+                                </Picker>
+                            </View>
+                        </View>
+
+                        <View>
+                            <Text className="text-gray-700 font-medium mb-2">Supplier</Text>
+                            <View className="border border-gray-300 rounded-lg bg-white">
+                                <Picker
+                                    selectedValue={formData.supplier_id}
+                                    onValueChange={handleSupplierSelect}
+                                    style={{ height: 50 }}
+                                >
+                                    <Picker.Item label="Pilih supplier" value="" />
+                                    {supplierOptions.map((option) => (
+                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
+                                    ))}
+                                </Picker>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Informasi Tambahan */}
+                    <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                        <Text className="text-gray-900 font-semibold mb-3">Informasi Tambahan</Text>
                         <Input
-                            ref={modalRef}
-                            label="Harga Modal"
-                            value={formData.modal}
-                            onChangeText={handleModalChange}
-                            placeholder="0"
-                            keyboardType="numeric"
+                            ref={descriptionRef}
+                            label="Deskripsi"
+                            value={formData.description}
+                            onChangeText={(text) => handleInputChange('description', text)}
+                            placeholder="Masukkan deskripsi produk"
                             returnKeyType="next"
-                            onSubmitEditing={() => stockRef.current?.focus()}
+                            onSubmitEditing={() => minStockRef.current?.focus()}
                         />
+
+                        <View className="flex-col space-x-2 mt-2">
+                            <View className="flex-1 mb-5">
+                                <Input
+                                    ref={minStockRef}
+                                    label="Stok Minimum"
+                                    value={formData.min_stock}
+                                    onChangeText={handleMinStockChange}
+                                    placeholder={isDecimalUnit(formData.unit) ? 'contoh: 0.5' : 'contoh: 2'}
+                                    keyboardType={isDecimalUnit(formData.unit) ? 'decimal-pad' : 'numeric'}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => discountRef.current?.focus()}
+                                    rightIcon={(
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <TouchableOpacity onPress={() => decrementStock('min_stock')} style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 6 }}>
+                                                <Text style={{ fontSize: 16, color: '#374151' }}>-</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => incrementStock('min_stock')} style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 8 }}>
+                                                <Text style={{ fontSize: 16, color: '#374151' }}>+</Text>
+                                            </TouchableOpacity>
+                                            <Text style={{ fontSize: 14, color: '#6B7280' }}>{formData.unit || 'pcs'}</Text>
+                                        </View>
+                                    )}
+                                />
+                                <Text className="text-gray-500">Stok minimum akan memberi peringatan saat stok turun di bawah nilai ini.</Text>
+                            </View>
+
+                            <View className="flex-1">
+                                <Input
+                                    ref={discountRef}
+                                    label="Diskon (%)"
+                                    value={formData.discount}
+                                    onChangeText={(text) => handleInputChange('discount', text)}
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => { }}
+                                />
+                            </View>
+                        </View>
                     </View>
                 </View>
-
-                <Input
-                    ref={stockRef}
-                    label="Stok *"
-                    value={formData.stock}
-                    onChangeText={(text) => handleInputChange('stock', text)}
-                    placeholder="0"
-                    keyboardType="numeric"
-                    returnKeyType="next"
-                    onSubmitEditing={() => descriptionRef.current?.focus()}
-                />
-
-                <View className="mb-4">
-                    <Text className="text-gray-700 font-medium mb-2">Unit</Text>
-                    <View className="border border-gray-300 rounded-lg bg-white">
-                        <Picker
-                            selectedValue={formData.unit}
-                            onValueChange={handleUnitSelect}
-                            style={{ height: 50 }}
-                        >
-                            <Picker.Item label="Pilih satuan" value="" />
-                            {unitOptions.map((option) => (
-                                <Picker.Item key={option.value} label={option.label} value={option.value} />
-                            ))}
-                        </Picker>
-                    </View>
-                </View>
-
-                {/* Categories and Sizes */}
-                <View className="mb-4">
-                    <Text className="text-gray-700 font-medium mb-2">Kategori</Text>
-                    <View className="border border-gray-300 rounded-lg bg-white">
-                        <Picker
-                            selectedValue={formData.category_id}
-                            onValueChange={handleCategorySelect}
-                            style={{ height: 50 }}
-                        >
-                            <Picker.Item label="Pilih kategori" value="" />
-                            {categoryOptions.map((option) => (
-                                <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                            ))}
-                        </Picker>
-                    </View>
-                </View>
-
-                <View className="mb-4">
-                    <Text className="text-gray-700 font-medium mb-2">Ukuran</Text>
-                    <View className="border border-gray-300 rounded-lg bg-white">
-                        <Picker
-                            selectedValue={formData.size_id}
-                            onValueChange={handleSizeSelect}
-                            style={{ height: 50 }}
-                        >
-                            <Picker.Item label="Pilih ukuran" value="" />
-                            {sizeOptions.map((option) => (
-                                <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                            ))}
-                        </Picker>
-                    </View>
-                </View>
-
-                <View className="mb-4">
-                    <Text className="text-gray-700 font-medium mb-2">Supplier</Text>
-                    <View className="border border-gray-300 rounded-lg bg-white">
-                        <Picker
-                            selectedValue={formData.supplier_id}
-                            onValueChange={handleSupplierSelect}
-                            style={{ height: 50 }}
-                        >
-                            <Picker.Item label="Pilih supplier" value="" />
-                            {supplierOptions.map((option) => (
-                                <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                            ))}
-                        </Picker>
-                    </View>
-                </View>
-
-                {/* Additional Info */}
-                <Input
-                    ref={descriptionRef}
-                    label="Deskripsi"
-                    value={formData.description}
-                    onChangeText={(text) => handleInputChange('description', text)}
-                    placeholder="Masukkan deskripsi produk"
-                    returnKeyType="next"
-                    onSubmitEditing={() => minStockRef.current?.focus()}
-                />
-
-                <View className="flex-row space-x-2">
-                    <View className="flex-1">
-                        <Input
-                            ref={minStockRef}
-                            label="Stok Minimum"
-                            value={formData.min_stock}
-                            onChangeText={(text) => handleInputChange('min_stock', text)}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            returnKeyType="next"
-                            onSubmitEditing={() => discountRef.current?.focus()}
-                        />
-                    </View>
-                    <View className="flex-1">
-                        <Input
-                            ref={discountRef}
-                            label="Diskon (%)"
-                            value={formData.discount}
-                            onChangeText={(text) => handleInputChange('discount', text)}
-                            placeholder="0"
-                            keyboardType="numeric"
-                            returnKeyType="next"
-                            onSubmitEditing={() => { }}
-                        />
-                    </View>
-                </View>
-
             </KeyboardAwareScrollView>
 
             {/* Barcode Scanner Modal */}

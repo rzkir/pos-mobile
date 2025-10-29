@@ -18,6 +18,8 @@ import { useSuppliers } from '@/hooks/useSuppliers';
 
 import ProductDetailsView from '@/components/ProductDetailsView';
 
+import ManagementSection from '@/components/ui/products/ManagementSection';
+
 export default function Products() {
     const router = useRouter();
     const {
@@ -80,17 +82,14 @@ export default function Products() {
         router.push('/admin/products/supplier');
     };
 
-
-
     const onRefresh = async () => {
         setRefreshing(true);
         try {
-            // Refresh all data in parallel
             await Promise.all([
-                refreshData(), // Products
-                refreshCategories(), // Categories
-                refreshSizes(), // Sizes
-                refreshSuppliers() // Suppliers
+                refreshData(),
+                refreshCategories(),
+                refreshSizes(),
+                refreshSuppliers()
             ]);
         } catch (error) {
             console.error('Error refreshing data:', error);
@@ -258,143 +257,77 @@ export default function Products() {
                 <RefreshControl
                     refreshing={refreshing}
                     onRefresh={onRefresh}
-                    colors={['#3B82F6']} // Android
-                    tintColor="#3B82F6" // iOS
-                    title="Memuat ulang..." // iOS
-                    titleColor="#6B7280" // iOS
+                    colors={['#3B82F6']}
+                    tintColor="#3B82F6"
+                    title="Memuat ulang..."
+                    titleColor="#6B7280"
                 />
             }
         >
             {/* Header */}
             <View className="pt-5 px-1">
-                <View className="flex-row justify-between items-center mb-6">
-                    <View>
-                        <Text className="text-2xl font-bold text-gray-800 mb-1">
-                            Daftar Produk
-                        </Text>
-                        <Text className="text-gray-500 text-sm">
-                            Kelola inventori produk Anda
-                        </Text>
-                    </View>
-
-                    <TouchableOpacity
-                        onPress={handleAdd}
-                        className="bg-green-500 px-5 py-3 rounded-xl"
-                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, backgroundColor: '#66BB6A' }}
-                    >
+                <View className="bg-white rounded-3xl p-5 mb-5" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 8 }}>
+                    <View className="flex-col items-start justify-between">
                         <View className="flex-row items-center">
-                            <Ionicons name="add" size={20} color="white" />
-                            <Text className="text-white font-semibold ml-2">Tambah</Text>
+                            <View className="w-12 h-12 bg-blue-500 rounded-2xl items-center justify-center mr-3">
+                                <Ionicons name="cube-outline" size={24} color="white" />
+                            </View>
+                            <View>
+                                <Text className="text-2xl font-extrabold text-gray-900 mb-0.5">Daftar Produk</Text>
+                                <Text className="text-gray-500 text-sm">Kelola inventori produk Anda</Text>
+                            </View>
                         </View>
-                    </TouchableOpacity>
-                </View>
 
-                {/* Search */}
-                <View className="relative mb-4">
-                    <View className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-                        <Ionicons name="search" size={20} color="#6B7280" />
+                        <View className="flex-row gap-2 mt-5">
+                            <TouchableOpacity
+                                onPress={onRefresh}
+                                className="bg-blue-500 px-4 py-3 rounded-xl"
+                                style={{ shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 }}
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons name="refresh" size={18} color="white" />
+                                    <Text className="text-white font-semibold ml-2">Refresh</Text>
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleAdd}
+                                className="bg-emerald-500 px-5 py-3 rounded-xl"
+                                style={{ shadowColor: '#10B981', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 }}
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons name="add" size={20} color="white" />
+                                    <Text className="text-white font-semibold ml-2">Tambah</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                    <TextInput
-                        className="bg-white/95 backdrop-blur-sm pl-12 pr-4 py-4 rounded-2xl border-0 text-gray-800 placeholder-gray-500"
-                        placeholder="Cari produk berdasarkan nama atau barcode..."
-                        value={searchTerm}
-                        onChangeText={setSearchTerm}
-                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}
-                    />
+
+                    {/* Search */}
+                    <View className="relative mt-4">
+                        <View className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
+                            <Ionicons name="search" size={20} color="#6B7280" />
+                        </View>
+                        <TextInput
+                            className="bg-gray-50 pl-12 pr-4 py-4 rounded-2xl border border-gray-200 text-gray-800 placeholder-gray-500"
+                            placeholder="Cari produk berdasarkan nama atau barcode..."
+                            value={searchTerm}
+                            onChangeText={setSearchTerm}
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 }}
+                        />
+                    </View>
                 </View>
             </View>
 
             {/* Management Sections */}
-            <View>
-                <Text className="text-xl font-bold text-gray-800 mb-4 px-1">Kelola Data Master</Text>
-
-                {/* Grid Layout - 2 Columns */}
-                <View className="flex-row flex-wrap">
-                    {/* Categories Section */}
-                    <View className="w-1/2 px-1 mb-2">
-                        <TouchableOpacity
-                            onPress={handleNavigateToCategory}
-                            className="bg-white p-5 rounded-2xl"
-                        >
-                            <View className="flex-col items-start justify-start relative gap-4">
-                                <View className="w-12 h-12 bg-emerald-500 rounded-2xl items-center justify-center">
-                                    <Ionicons name="grid-outline" size={24} color="white" />
-                                </View>
-
-                                <View className="flex-1">
-                                    <Text className="text-lg font-bold text-gray-800">Kategori</Text>
-                                    <Text className="text-sm text-gray-600">Kelola kategori produk</Text>
-                                </View>
-
-                                <View className="bg-emerald-100 px-3 py-2 rounded-xl absolute top-0 right-0">
-                                    <Text className="text-emerald-700 text-sm font-bold">{categories.length}</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Sizes Section */}
-                    <View className="w-1/2 px-1 mb-2">
-                        <TouchableOpacity
-                            onPress={handleNavigateToSize}
-                            className="bg-white p-5 rounded-2xl"
-                        >
-                            <View className="flex-col items-start justify-start relative gap-4">
-                                <View className="w-12 h-12 bg-purple-500 rounded-2xl items-center justify-center">
-                                    <Ionicons name="resize-outline" size={24} color="white" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-lg font-bold text-gray-800">Ukuran</Text>
-                                    <Text className="text-sm text-gray-600">Kelola ukuran produk</Text>
-                                </View>
-
-                                <View className="bg-purple-100 px-3 py-2 rounded-xl absolute top-0 right-0">
-                                    <Text className="text-purple-700 text-sm font-bold">{sizes.length}</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Suppliers Section */}
-                    <View className="w-1/2 px-1 mb-4">
-                        <TouchableOpacity
-                            onPress={handleNavigateToSupplier}
-                            className="bg-white p-5 rounded-2xl"
-                        >
-                            <View className="flex-col items-start justify-start relative gap-4">
-                                <View className="w-12 h-12 bg-orange-500 rounded-2xl items-center justify-center">
-                                    <Ionicons name="business-outline" size={24} color="white" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-lg font-bold text-gray-800">Supplier</Text>
-                                    <Text className="text-sm text-gray-600">Kelola data supplier</Text>
-                                </View>
-                                <View className="bg-orange-100 px-3 py-2 rounded-xl absolute top-0 right-0">
-                                    <Text className="text-orange-700 text-sm font-bold">{suppliers.length}</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Products Summary Section */}
-                    <View className="w-1/2 px-1 mb-4">
-                        <View className="bg-white p-5 rounded-2xl">
-                            <View className="flex-col items-start justify-start relative gap-4">
-                                <View className="w-12 h-12 bg-blue-500 rounded-2xl items-center justify-center">
-                                    <Ionicons name="cube-outline" size={24} color="white" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-lg font-bold text-gray-800">Produk</Text>
-                                    <Text className="text-sm text-gray-600">Ringkasan data produk</Text>
-                                </View>
-                                <View className="bg-blue-100 px-3 py-2 rounded-xl absolute top-0 right-0">
-                                    <Text className="text-blue-700 text-sm font-bold">{products.length}</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-            </View>
+            <ManagementSection
+                categoryCount={categories.length}
+                sizeCount={sizes.length}
+                supplierCount={suppliers.length}
+                productCount={products.length}
+                onNavigateToCategory={handleNavigateToCategory}
+                onNavigateToSize={handleNavigateToSize}
+                onNavigateToSupplier={handleNavigateToSupplier}
+            />
 
             {/* Products List */}
             {filteredProducts.length > 0 ? (
@@ -404,7 +337,7 @@ export default function Products() {
                     </View>
                 ))
             ) : (
-                <View className="py-20 items-center">
+                <View className="pt-5 pb-10 items-center">
                     <View className="bg-white p-8 rounded-3xl items-center">
                         <View className="w-20 h-20 bg-gray-100 rounded-3xl items-center justify-center mb-6">
                             <Ionicons name="cube-outline" size={40} color="#9CA3AF" />

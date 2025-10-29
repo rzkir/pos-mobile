@@ -68,3 +68,13 @@ interface ProductDetailsViewProps {
   onClose: () => void;
   onEdit: (product: Product) => void;
 }
+
+type ManagementSectionProps = {
+  categoryCount: number;
+  sizeCount: number;
+  supplierCount: number;
+  productCount: number;
+  onNavigateToCategory: () => void;
+  onNavigateToSize: () => void;
+  onNavigateToSupplier: () => void;
+};
