@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { View, Text, ScrollView, TouchableOpacity, Switch, StatusBar, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Switch, StatusBar, Alert, Platform, PermissionsAndroid, NativeEventEmitter, NativeModules } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -11,7 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient'
 import Toast from 'react-native-toast-message'
 
 export default function Settings() {
-    // Notification Settings State
     const [pushNotifications, setPushNotifications] = useState(true)
     const [emailNotifications, setEmailNotifications] = useState(true)
     const [soundEnabled, setSoundEnabled] = useState(true)
@@ -28,6 +27,169 @@ export default function Settings() {
     const [currency, setCurrency] = useState('IDR')
     const [dateFormat, setDateFormat] = useState('DD/MM/YYYY')
     const [decimalPlaces, setDecimalPlaces] = useState(2)
+
+    // Bluetooth State
+    const [bleInitialized, setBleInitialized] = useState(false)
+    const [isScanning, setIsScanning] = useState(false)
+    const [devices, setDevices] = useState<any[]>([])
+    const [connectedId, setConnectedId] = useState<string | null>(null)
+
+    // Common ESC/POS BLE service/characteristic used by banyak printer thermal
+    const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'
+    const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb'
+
+    useEffect(() => {
+        let bleEmitter: NativeEventEmitter | null = null
+        let BleManager: any = null
+        const subscriptions: { remove: () => void }[] = []
+
+        const init = async () => {
+            try {
+                const BleManagerModule = NativeModules.BleManager
+                if (!BleManagerModule) {
+                    console.warn('BleManager native module tidak tersedia. Rebuild dengan dev client: expo run:android/ios')
+                    return
+                }
+                bleEmitter = new NativeEventEmitter(BleManagerModule)
+
+                // dynamic import agar tidak crash saat modul native belum terpasang
+                BleManager = (await import('react-native-ble-manager')).default
+
+                await BleManager.start({ showAlert: false })
+
+                // Android permissions (Android 12+ but tetap aman untuk versi lama)
+                if (Platform.OS === 'android') {
+                    await requestBlePermissions()
+                }
+
+                // Listeners
+                if (bleEmitter) {
+                    subscriptions.push(
+                        bleEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscover) as any,
+                    )
+                    subscriptions.push(
+                        bleEmitter.addListener('BleManagerStopScan', () => setIsScanning(false)) as any,
+                    )
+                    subscriptions.push(
+                        bleEmitter.addListener('BleManagerConnectPeripheral', ({ peripheral }) => {
+                            setConnectedId(peripheral)
+                        }) as any,
+                    )
+                    subscriptions.push(
+                        bleEmitter.addListener('BleManagerDisconnectPeripheral', ({ peripheral }) => {
+                            setConnectedId(prev => (prev === peripheral ? null : prev))
+                        }) as any,
+                    )
+                }
+
+                setBleInitialized(true)
+            } catch (e: any) {
+                console.error(e)
+                Toast.show({ type: 'error', text1: 'Bluetooth gagal inisialisasi' })
+            }
+        }
+
+        init()
+        return () => {
+            // cleanup listeners
+            subscriptions.forEach(s => {
+                try { s.remove() } catch { }
+            })
+        }
+    }, [])
+
+    const requestBlePermissions = async () => {
+        if (Platform.OS !== 'android') return
+        try {
+            const perms: string[] = [
+                'android.permission.BLUETOOTH_SCAN',
+                'android.permission.BLUETOOTH_CONNECT',
+                'android.permission.ACCESS_FINE_LOCATION',
+            ]
+            for (const p of perms) {
+                // @ts-ignore - RN types
+                await PermissionsAndroid.request(p as any)
+            }
+        } catch (e) {
+            console.warn('BLE permission', e)
+        }
+    }
+
+    const handleDiscover = (peripheral: any) => {
+        setDevices(prev => {
+            const exists = prev.find(p => p.id === peripheral.id)
+            if (exists) return prev
+            return [...prev, peripheral]
+        })
+    }
+
+    const startScan = async () => {
+        if (!bleInitialized) return
+        try {
+            setDevices([])
+            setIsScanning(true)
+            // null service untuk scan semua, 5 detik
+            const BleManagerDynamic = (await import('react-native-ble-manager')).default
+            await BleManagerDynamic.scan([], 5, true)
+        } catch (e: any) {
+            console.error(e)
+            setIsScanning(false)
+            Toast.show({ type: 'error', text1: 'Gagal memulai scan' })
+        }
+    }
+
+    const connectTo = async (id: string) => {
+        try {
+            if (connectedId === id) {
+                const BleManagerDynamic = (await import('react-native-ble-manager')).default
+                await BleManagerDynamic.disconnect(id)
+                setConnectedId(null)
+                Toast.show({ type: 'success', text1: 'Terputus dari perangkat' })
+                return
+            }
+            const BleManagerDynamic = (await import('react-native-ble-manager')).default
+            await BleManagerDynamic.connect(id)
+            setConnectedId(id)
+            Toast.show({ type: 'success', text1: 'Terhubung ke perangkat' })
+        } catch (e: any) {
+            console.error(e)
+            Toast.show({ type: 'error', text1: 'Gagal menghubungkan' })
+        }
+    }
+
+    const testPrint = async () => {
+        if (!connectedId) {
+            Toast.show({ type: 'info', text1: 'Hubungkan perangkat dulu' })
+            return
+        }
+        try {
+            // Pastikan kita sudah discover services
+            const BleManagerDynamic = (await import('react-native-ble-manager')).default
+            await BleManagerDynamic.retrieveServices(connectedId)
+
+            // ESC/POS bytes sederhana: init printer, teks, newline, cut (jika didukung)
+            const bytes: number[] = [
+                27, 64, // init
+                // teks: "Tes Cetak POS\n"
+                ...Array.from(new TextEncoder().encode('Tes Cetak POS')),
+                10, // LF
+            ]
+
+            // Kirim dengan writeWithoutResponse agar cepat (fallback ke write jika gagal)
+            try {
+                // @ts-ignore - lib menerima number[]
+                await BleManagerDynamic.writeWithoutResponse(connectedId, SERVICE_UUID, CHARACTERISTIC_UUID, bytes)
+            } catch {
+                // @ts-ignore
+                await BleManagerDynamic.write(connectedId, SERVICE_UUID, CHARACTERISTIC_UUID, bytes)
+            }
+
+            Toast.show({ type: 'success', text1: 'Tes cetak dikirim' })
+        } catch (e: any) {
+            console.error(e)
+            Toast.show({ type: 'error', text1: 'Gagal kirim data cetak' })
+        }
+    }
 
     const handleSaveSettings = () => {
         // Here you would typically save to AsyncStorage or your backend
@@ -160,6 +322,108 @@ export default function Settings() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
             >
+                {/* Bluetooth Settings */}
+                <View className="px-6 mb-8">
+                    <Text className="text-2xl font-bold text-gray-900 mb-6">Pengaturan Bluetooth & Printer</Text>
+
+                    <View className="space-y-4">
+                        {/* Bluetooth Header */}
+                        <View className="bg-white rounded-2xl overflow-hidden"
+                            style={{
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 12,
+                                elevation: 4
+                            }}
+                        >
+                            <View className="flex-row items-center justify-between p-6">
+                                <View className="flex-row items-center flex-1">
+                                    <LinearGradient
+                                        colors={['#2563eb', '#1e40af']}
+                                        className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                                    >
+                                        <Ionicons name="bluetooth" size={24} color="white" />
+                                    </LinearGradient>
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-bold text-gray-900 mb-1">Bluetooth Printer</Text>
+                                        <Text className="text-gray-600">Scan perangkat dan lakukan tes cetak</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={startScan}
+                                    className={`px-4 py-2 rounded-xl ${isScanning ? 'bg-gray-300' : 'bg-blue-600'}`}
+                                    disabled={isScanning}
+                                >
+                                    <Text className="text-white font-semibold">{isScanning ? 'Scanning...' : 'Scan'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* Devices List */}
+                        <View className="bg-white rounded-2xl overflow-hidden"
+                            style={{
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 12,
+                                elevation: 4
+                            }}
+                        >
+                            <View className="p-4">
+                                {devices.length === 0 ? (
+                                    <Text className="text-gray-500 px-2 py-2">Tidak ada perangkat ditemukan. Tap Scan.</Text>
+                                ) : (
+                                    devices.map((d) => (
+                                        <View key={d.id} className="flex-row items-center justify-between px-2 py-3 border-b border-gray-100">
+                                            <View className="flex-1">
+                                                <Text className="text-gray-900 font-semibold">{d.name || 'Perangkat'}</Text>
+                                                <Text className="text-gray-500 text-xs">{d.id}</Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                onPress={() => connectTo(d.id)}
+                                                className={`px-3 py-2 rounded-xl ${connectedId === d.id ? 'bg-red-600' : 'bg-emerald-600'}`}
+                                            >
+                                                <Text className="text-white text-sm font-semibold">{connectedId === d.id ? 'Putuskan' : 'Hubungkan'}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))
+                                )}
+                            </View>
+                        </View>
+
+                        {/* Test Print */}
+                        <TouchableOpacity
+                            onPress={testPrint}
+                            className="rounded-2xl overflow-hidden"
+                            style={{
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 16,
+                                elevation: 8
+                            }}
+                        >
+                            <LinearGradient
+                                colors={['#10b981', '#059669', '#047857']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                className="p-5"
+                            >
+                                <View className="flex-row items-center justify-center">
+                                    <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-4">
+                                        <Ionicons name="print" size={22} color="white" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-white text-base font-bold mb-0.5">Tes Cetak</Text>
+                                        <Text className="text-green-100 text-xs">Kirim teks sederhana ke printer</Text>
+                                    </View>
+                                    <Ionicons name="arrow-forward" size={18} color="white" />
+                                </View>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+                </View>
                 {/* Notification Settings */}
                 <View className="px-6 mb-8">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Pengaturan Notifikasi</Text>
