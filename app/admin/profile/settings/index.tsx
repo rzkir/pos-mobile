@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { View, Text, ScrollView, TouchableOpacity, Switch, StatusBar, Alert, Platform, PermissionsAndroid, NativeEventEmitter, NativeModules } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Switch, StatusBar, Alert } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -28,166 +28,88 @@ export default function Settings() {
     const [dateFormat, setDateFormat] = useState('DD/MM/YYYY')
     const [decimalPlaces, setDecimalPlaces] = useState(2)
 
-    // Bluetooth State
-    const [bleInitialized, setBleInitialized] = useState(false)
-    const [isScanning, setIsScanning] = useState(false)
-    const [devices, setDevices] = useState<any[]>([])
-    const [connectedId, setConnectedId] = useState<string | null>(null)
+    // Bluetooth Classic via react-native-bluetooth-classic
+    const [classicDevices, setClassicDevices] = useState<{ name: string; address: string; connected?: boolean }[]>([])
+    const [classicConnected, setClassicConnected] = useState<string | null>(null)
+    const RN_BC = 'react-native-bluetooth-classic' as const
 
-    // Common ESC/POS BLE service/characteristic used by banyak printer thermal
-    const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'
-    const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb'
-
-    useEffect(() => {
-        let bleEmitter: NativeEventEmitter | null = null
-        let BleManager: any = null
-        const subscriptions: { remove: () => void }[] = []
-
-        const init = async () => {
-            try {
-                const BleManagerModule = NativeModules.BleManager
-                if (!BleManagerModule) {
-                    console.warn('BleManager native module tidak tersedia. Rebuild dengan dev client: expo run:android/ios')
-                    return
-                }
-                bleEmitter = new NativeEventEmitter(BleManagerModule)
-
-                // dynamic import agar tidak crash saat modul native belum terpasang
-                BleManager = (await import('react-native-ble-manager')).default
-
-                await BleManager.start({ showAlert: false })
-
-                // Android permissions (Android 12+ but tetap aman untuk versi lama)
-                if (Platform.OS === 'android') {
-                    await requestBlePermissions()
-                }
-
-                // Listeners
-                if (bleEmitter) {
-                    subscriptions.push(
-                        bleEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscover) as any,
-                    )
-                    subscriptions.push(
-                        bleEmitter.addListener('BleManagerStopScan', () => setIsScanning(false)) as any,
-                    )
-                    subscriptions.push(
-                        bleEmitter.addListener('BleManagerConnectPeripheral', ({ peripheral }) => {
-                            setConnectedId(peripheral)
-                        }) as any,
-                    )
-                    subscriptions.push(
-                        bleEmitter.addListener('BleManagerDisconnectPeripheral', ({ peripheral }) => {
-                            setConnectedId(prev => (prev === peripheral ? null : prev))
-                        }) as any,
-                    )
-                }
-
-                setBleInitialized(true)
-            } catch (e: any) {
-                console.error(e)
-                Toast.show({ type: 'error', text1: 'Bluetooth gagal inisialisasi' })
-            }
-        }
-
-        init()
-        return () => {
-            // cleanup listeners
-            subscriptions.forEach(s => {
-                try { s.remove() } catch { }
-            })
-        }
-    }, [])
-
-    const requestBlePermissions = async () => {
-        if (Platform.OS !== 'android') return
+    // Classic (ESC/POS) helpers
+    const enableClassicAndList = async () => {
         try {
-            const perms: string[] = [
-                'android.permission.BLUETOOTH_SCAN',
-                'android.permission.BLUETOOTH_CONNECT',
-                'android.permission.ACCESS_FINE_LOCATION',
-            ]
-            for (const p of perms) {
-                // @ts-ignore - RN types
-                await PermissionsAndroid.request(p as any)
+            const Mod: any = await import(RN_BC)
+            const RNB = Mod.default || Mod
+            if (!RNB) throw new Error('react-native-bluetooth-classic tidak tersedia')
+
+            // Pastikan Bluetooth aktif
+            const enabled = await RNB.isBluetoothEnabled?.()
+            if (!enabled && RNB.requestBluetoothEnabled) {
+                await RNB.requestBluetoothEnabled()
             }
-        } catch (e) {
-            console.warn('BLE permission', e)
-        }
-    }
 
-    const handleDiscover = (peripheral: any) => {
-        setDevices(prev => {
-            const exists = prev.find(p => p.id === peripheral.id)
-            if (exists) return prev
-            return [...prev, peripheral]
-        })
-    }
-
-    const startScan = async () => {
-        if (!bleInitialized) return
-        try {
-            setDevices([])
-            setIsScanning(true)
-            // null service untuk scan semua, 5 detik
-            const BleManagerDynamic = (await import('react-native-ble-manager')).default
-            await BleManagerDynamic.scan([], 5, true)
+            const bonded = (await RNB.getBondedDevices?.()) || []
+            const found = (await RNB.discoverDevices?.()) || []
+            const list = [...bonded, ...found]
+            const normalized = list.map((d: any) => ({ name: d.name, address: d.address || d.id }))
+            setClassicDevices(normalized)
+            Toast.show({ type: 'success', text1: 'Perangkat paired dimuat' })
         } catch (e: any) {
             console.error(e)
-            setIsScanning(false)
-            Toast.show({ type: 'error', text1: 'Gagal memulai scan' })
+            Toast.show({ type: 'error', text1: 'Gagal memuat perangkat Classic' })
         }
     }
 
-    const connectTo = async (id: string) => {
+    const connectClassic = async (address: string) => {
         try {
-            if (connectedId === id) {
-                const BleManagerDynamic = (await import('react-native-ble-manager')).default
-                await BleManagerDynamic.disconnect(id)
-                setConnectedId(null)
-                Toast.show({ type: 'success', text1: 'Terputus dari perangkat' })
+            const Mod: any = await import(RN_BC)
+            const RNB = Mod.default || Mod
+            if (!RNB) throw new Error('react-native-bluetooth-classic tidak tersedia')
+            if (classicConnected === address) {
+                await RNB.disconnectFromDevice?.(address)
+                setClassicConnected(null)
+                Toast.show({ type: 'success', text1: 'Terputus dari printer' })
                 return
             }
-            const BleManagerDynamic = (await import('react-native-ble-manager')).default
-            await BleManagerDynamic.connect(id)
-            setConnectedId(id)
-            Toast.show({ type: 'success', text1: 'Terhubung ke perangkat' })
+            await RNB.connectToDevice?.(address)
+            setClassicConnected(address)
+            Toast.show({ type: 'success', text1: 'Terhubung ke printer' })
         } catch (e: any) {
             console.error(e)
-            Toast.show({ type: 'error', text1: 'Gagal menghubungkan' })
+            Toast.show({ type: 'error', text1: 'Gagal menghubungkan printer' })
         }
     }
 
-    const testPrint = async () => {
-        if (!connectedId) {
-            Toast.show({ type: 'info', text1: 'Hubungkan perangkat dulu' })
+    const testPrintClassic = async () => {
+        if (!classicConnected) {
+            Toast.show({ type: 'info', text1: 'Hubungkan printer Classic dulu' })
             return
         }
         try {
-            // Pastikan kita sudah discover services
-            const BleManagerDynamic = (await import('react-native-ble-manager')).default
-            await BleManagerDynamic.retrieveServices(connectedId)
+            const Mod: any = await import(RN_BC)
+            const RNB = Mod.default || Mod
+            if (!RNB) throw new Error('react-native-bluetooth-classic tidak tersedia')
 
-            // ESC/POS bytes sederhana: init printer, teks, newline, cut (jika didukung)
-            const bytes: number[] = [
-                27, 64, // init
-                // teks: "Tes Cetak POS\n"
-                ...Array.from(new TextEncoder().encode('Tes Cetak POS')),
-                10, // LF
-            ]
+            // Kirim ESC/POS dasar via string (banyak printer menerima ASCII langsung)
+            const data = "\x1B@" + // init
+                "TOKO KASIR\n" +
+                "Jl. Contoh No. 123\n" +
+                "-------------------------------\n" +
+                "Item           Qty   Subtotal\n" +
+                "Contoh A       1     10.000\n" +
+                "Contoh B       2     20.000\n" +
+                "-------------------------------\n" +
+                "TOTAL                30.000\n\n" +
+                "Terima kasih!\n\n"
 
-            // Kirim dengan writeWithoutResponse agar cepat (fallback ke write jika gagal)
-            try {
-                // @ts-ignore - lib menerima number[]
-                await BleManagerDynamic.writeWithoutResponse(connectedId, SERVICE_UUID, CHARACTERISTIC_UUID, bytes)
-            } catch {
-                // @ts-ignore
-                await BleManagerDynamic.write(connectedId, SERVICE_UUID, CHARACTERISTIC_UUID, bytes)
+            if (RNB.writeToDevice) {
+                await RNB.writeToDevice(classicConnected, data)
+            } else if (RNB.write) {
+                // beberapa versi expose write(string) pada device global
+                await RNB.write(data)
             }
-
-            Toast.show({ type: 'success', text1: 'Tes cetak dikirim' })
+            Toast.show({ type: 'success', text1: 'Tes cetak Classic terkirim' })
         } catch (e: any) {
             console.error(e)
-            Toast.show({ type: 'error', text1: 'Gagal kirim data cetak' })
+            Toast.show({ type: 'error', text1: 'Gagal cetak (Classic)' })
         }
     }
 
@@ -322,12 +244,12 @@ export default function Settings() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
             >
-                {/* Bluetooth Settings */}
+                {/* Printer ESC/POS (Bluetooth Classic) */}
                 <View className="px-6 mb-8">
-                    <Text className="text-2xl font-bold text-gray-900 mb-6">Pengaturan Bluetooth & Printer</Text>
+                    <Text className="text-2xl font-bold text-gray-900 mb-6">Printer ESC/POS (Bluetooth Classic)</Text>
 
                     <View className="space-y-4">
-                        {/* Bluetooth Header */}
+                        {/* Classic Header */}
                         <View className="bg-white rounded-2xl overflow-hidden"
                             style={{
                                 shadowColor: '#000',
@@ -343,24 +265,23 @@ export default function Settings() {
                                         colors={['#2563eb', '#1e40af']}
                                         className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
                                     >
-                                        <Ionicons name="bluetooth" size={24} color="white" />
+                                        <Ionicons name="print" size={24} color="white" />
                                     </LinearGradient>
                                     <View className="flex-1">
-                                        <Text className="text-lg font-bold text-gray-900 mb-1">Bluetooth Printer</Text>
-                                        <Text className="text-gray-600">Scan perangkat dan lakukan tes cetak</Text>
+                                        <Text className="text-lg font-bold text-gray-900 mb-1">Printer Classic</Text>
+                                        <Text className="text-gray-600">Muat daftar perangkat paired dan tes cetak</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity
-                                    onPress={startScan}
-                                    className={`px-4 py-2 rounded-xl ${isScanning ? 'bg-gray-300' : 'bg-blue-600'}`}
-                                    disabled={isScanning}
+                                    onPress={enableClassicAndList}
+                                    className={`px-4 py-2 rounded-xl bg-blue-600`}
                                 >
-                                    <Text className="text-white font-semibold">{isScanning ? 'Scanning...' : 'Scan'}</Text>
+                                    <Text className="text-white font-semibold">Muat Perangkat</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
-                        {/* Devices List */}
+                        {/* Classic Devices List */}
                         <View className="bg-white rounded-2xl overflow-hidden"
                             style={{
                                 shadowColor: '#000',
@@ -371,20 +292,20 @@ export default function Settings() {
                             }}
                         >
                             <View className="p-4">
-                                {devices.length === 0 ? (
-                                    <Text className="text-gray-500 px-2 py-2">Tidak ada perangkat ditemukan. Tap Scan.</Text>
+                                {classicDevices.length === 0 ? (
+                                    <Text className="text-gray-500 px-2 py-2">Belum ada daftar. Tap Muat Perangkat.</Text>
                                 ) : (
-                                    devices.map((d) => (
-                                        <View key={d.id} className="flex-row items-center justify-between px-2 py-3 border-b border-gray-100">
+                                    classicDevices.map((d: any) => (
+                                        <View key={d.address} className="flex-row items-center justify-between px-2 py-3 border-b border-gray-100">
                                             <View className="flex-1">
-                                                <Text className="text-gray-900 font-semibold">{d.name || 'Perangkat'}</Text>
-                                                <Text className="text-gray-500 text-xs">{d.id}</Text>
+                                                <Text className="text-gray-900 font-semibold">{d.name || 'Printer'}</Text>
+                                                <Text className="text-gray-500 text-xs">{d.address}</Text>
                                             </View>
                                             <TouchableOpacity
-                                                onPress={() => connectTo(d.id)}
-                                                className={`px-3 py-2 rounded-xl ${connectedId === d.id ? 'bg-red-600' : 'bg-emerald-600'}`}
+                                                onPress={() => connectClassic(d.address)}
+                                                className={`px-3 py-2 rounded-xl ${classicConnected === d.address ? 'bg-red-600' : 'bg-emerald-600'}`}
                                             >
-                                                <Text className="text-white text-sm font-semibold">{connectedId === d.id ? 'Putuskan' : 'Hubungkan'}</Text>
+                                                <Text className="text-white text-sm font-semibold">{classicConnected === d.address ? 'Putuskan' : 'Hubungkan'}</Text>
                                             </TouchableOpacity>
                                         </View>
                                     ))
@@ -392,9 +313,9 @@ export default function Settings() {
                             </View>
                         </View>
 
-                        {/* Test Print */}
+                        {/* Test Print Classic */}
                         <TouchableOpacity
-                            onPress={testPrint}
+                            onPress={testPrintClassic}
                             className="rounded-2xl overflow-hidden"
                             style={{
                                 shadowColor: '#000',
@@ -412,10 +333,10 @@ export default function Settings() {
                             >
                                 <View className="flex-row items-center justify-center">
                                     <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-4">
-                                        <Ionicons name="print" size={22} color="white" />
+                                        <Ionicons name="checkmark-circle" size={22} color="white" />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-white text-base font-bold mb-0.5">Tes Cetak</Text>
+                                        <Text className="text-white text-base font-bold mb-0.5">Tes Cetak (Classic)</Text>
                                         <Text className="text-green-100 text-xs">Kirim teks sederhana ke printer</Text>
                                     </View>
                                     <Ionicons name="arrow-forward" size={18} color="white" />
@@ -424,6 +345,8 @@ export default function Settings() {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Bagian BLE dihapus: fokus pada Classic saja */}
                 {/* Notification Settings */}
                 <View className="px-6 mb-8">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Pengaturan Notifikasi</Text>
