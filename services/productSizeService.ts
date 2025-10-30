@@ -1,7 +1,8 @@
 import { LocalStorageService } from "@/services/localStorageService";
 
 export class ProductSizeService {
-  private static readonly STORAGE_KEY = "product_sizes";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_PRODUCTS_PRODUCTS_SIZES as string;
 
   // Get all sizes
   static async getAll(): Promise<ProductSize[]> {

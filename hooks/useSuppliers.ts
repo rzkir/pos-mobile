@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { SupplierService } from "../services/supplierService";
+
+import { SupplierService } from "@/services/supplierService";
 
 export const useSuppliers = () => {
   const [suppliers, setSuppliers] = useState<any[]>([]);

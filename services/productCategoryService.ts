@@ -1,7 +1,8 @@
 import { LocalStorageService } from "@/services/localStorageService";
 
 export class ProductCategoryService {
-  private static readonly STORAGE_KEY = "product_categories";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_PRODUCTS_CATEGORIES as string;
 
   // Get all categories
   static async getAll(): Promise<ProductCategory[]> {

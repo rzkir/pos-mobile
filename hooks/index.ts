@@ -1,6 +1,11 @@
-export { useCameraPermission } from "./useCameraPermission";
-export { useCategories } from "./useCategories";
-export { useProducts } from "./useProducts";
-export { useSizes } from "./useSizes";
-export { useSuppliers } from "./useSuppliers";
-export { useCompanyProfile } from "./useCompanyProfile";
+export { useCameraPermission } from "@/hooks/useCameraPermission";
+
+export { useCategories } from "@/hooks/useCategories";
+
+export { useProducts } from "@/hooks/useProducts";
+
+export { useSizes } from "@/hooks/useSizes";
+
+export { useSuppliers } from "@/hooks/useSuppliers";
+
+export { useCompanyProfile } from "@/hooks/useCompanyProfile";

@@ -17,10 +17,15 @@ interface Product {
   size_id?: number;
   supplier_id?: number;
   expiration_date?: string;
-  created_by: string;
   created_at: string;
   updated_at: string;
 }
+
+type ProductWithRelations = Product & {
+  product_categories?: ProductCategory | null;
+  product_sizes?: ProductSize | null;
+  suppliers?: Supplier | null;
+};
 
 interface ProductCategory {
   id: number;

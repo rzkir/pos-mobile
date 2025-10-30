@@ -1,10 +1,6 @@
-// import Notfound from '@/assets/images/notfound.json';
-
 import { Stack, useRouter } from 'expo-router';
 
 import { Linking, Text, TouchableOpacity, View } from 'react-native';
-
-// import { useTheme } from '@/context/ThemeProvider';
 
 export default function NotFoundScreen() {
     const router = useRouter();

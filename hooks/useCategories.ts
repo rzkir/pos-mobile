@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { ProductCategoryService } from "../services/productCategoryService";
+import { ProductCategoryService } from "@/services/productCategoryService";
 
 export const useCategories = () => {
   const [categories, setCategories] = useState<any[]>([]);

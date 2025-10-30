@@ -1,7 +1,8 @@
 import { LocalStorageService } from "@/services/localStorageService";
 
 export class SupplierService {
-  private static readonly STORAGE_KEY = "suppliers";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_PRODUCTS_SUPPLIERS as string;
 
   // Get all suppliers
   static async getAll(): Promise<Supplier[]> {

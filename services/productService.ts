@@ -7,7 +7,8 @@ import { ProductSizeService } from "@/services/productSizeService";
 import { SupplierService } from "@/services/supplierService";
 
 export class ProductService {
-  private static readonly STORAGE_KEY = "products";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_PRODUCTS as string;
 
   // Get all products
   static async getAll(): Promise<Product[]> {

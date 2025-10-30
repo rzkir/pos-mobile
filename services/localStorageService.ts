@@ -96,10 +96,10 @@ export class LocalStorageService {
   static async clearAll(): Promise<void> {
     try {
       const keys = [
-        "products",
-        "product_categories",
-        "product_sizes",
-        "suppliers",
+        process.env.EXPO_PUBLIC_PRODUCTS as string,
+        process.env.EXPO_PUBLIC_PRODUCTS_CATEGORIES as string,
+        process.env.EXPO_PUBLIC_PRODUCTS_PRODUCTS_SIZES as string,
+        process.env.EXPO_PUBLIC_PRODUCTS_SUPPLIERS as string,
       ];
       await AsyncStorage.multiRemove(keys);
     } catch (error) {

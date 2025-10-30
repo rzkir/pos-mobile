@@ -1,47 +1,51 @@
 import React, { ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
+
 import { ProductCategoryService } from '../services/productCategoryService';
+
 import { ProductService } from '../services/productService';
+
 import { ProductSizeService } from '../services/productSizeService';
+
 import { SupplierService } from '../services/supplierService';
 
 interface ProductContextType {
     // Products
-    products: Products[];
+    products: Product[];
     productsWithRelations: ProductWithRelations[];
     loading: boolean;
     error: string | null;
 
     // Categories
-    categories: ProductCategories[];
+    categories: ProductCategory[];
 
     // Sizes
-    sizes: ProductSizes[];
+    sizes: ProductSize[];
 
     // Suppliers
     suppliers: Supplier[];
 
     // Product Actions
-    createProduct: (productData: Omit<Products, 'id' | 'created_at' | 'updated_at'>) => Promise<Products>;
-    updateProduct: (id: number, productData: Partial<Products>) => Promise<Products | null>;
+    createProduct: (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<Product>;
+    updateProduct: (id: number, productData: Partial<Product>) => Promise<Product | null>;
     deleteProduct: (id: number) => Promise<boolean>;
-    getProductById: (id: number) => Promise<Products | null>;
-    searchProducts: (name: string) => Promise<Products[]>;
-    getProductsByCategory: (categoryId: number) => Promise<Products[]>;
-    getLowStockProducts: () => Promise<Products[]>;
-    updateProductStock: (id: number, newStock: number) => Promise<Products | null>;
-    updateProductSold: (id: number, soldQuantity: number) => Promise<Products | null>;
+    getProductById: (id: number) => Promise<Product | null>;
+    searchProducts: (name: string) => Promise<Product[]>;
+    getProductsByCategory: (categoryId: number) => Promise<Product[]>;
+    getLowStockProducts: () => Promise<Product[]>;
+    updateProductStock: (id: number, newStock: number) => Promise<Product | null>;
+    updateProductSold: (id: number, soldQuantity: number) => Promise<Product | null>;
 
     // Category Actions
-    createCategory: (categoryData: Omit<ProductCategories, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductCategories>;
-    updateCategory: (id: number, categoryData: Partial<ProductCategories>) => Promise<ProductCategories | null>;
+    createCategory: (categoryData: Omit<ProductCategory, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductCategory>;
+    updateCategory: (id: number, categoryData: Partial<ProductCategory>) => Promise<ProductCategory | null>;
     deleteCategory: (id: number) => Promise<boolean>;
-    searchCategories: (name: string) => Promise<ProductCategories[]>;
+    searchCategories: (name: string) => Promise<ProductCategory[]>;
 
     // Size Actions
-    createSize: (sizeData: Omit<ProductSizes, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductSizes>;
-    updateSize: (id: number, sizeData: Partial<ProductSizes>) => Promise<ProductSizes | null>;
+    createSize: (sizeData: Omit<ProductSize, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductSize>;
+    updateSize: (id: number, sizeData: Partial<ProductSize>) => Promise<ProductSize | null>;
     deleteSize: (id: number) => Promise<boolean>;
-    searchSizes: (name: string) => Promise<ProductSizes[]>;
+    searchSizes: (name: string) => Promise<ProductSize[]>;
 
     // Supplier Actions
     createSupplier: (supplierData: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>) => Promise<Supplier>;
@@ -70,10 +74,10 @@ interface ProductProviderProps {
 }
 
 export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
-    const [products, setProducts] = useState<Products[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [productsWithRelations, setProductsWithRelations] = useState<ProductWithRelations[]>([]);
-    const [categories, setCategories] = useState<ProductCategories[]>([]);
-    const [sizes, setSizes] = useState<ProductSizes[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const [sizes, setSizes] = useState<ProductSize[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -116,7 +120,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     const clearError = () => setError(null);
 
     // Product Actions
-    const createProduct = async (productData: Omit<Products, 'id' | 'created_at' | 'updated_at'>) => {
+    const createProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
         try {
             const newProduct = await ProductService.create(productData);
             await refreshData();
@@ -127,7 +131,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         }
     };
 
-    const updateProduct = async (id: number, productData: Partial<Products>) => {
+    const updateProduct = async (id: number, productData: Partial<Product>) => {
         try {
             const updatedProduct = await ProductService.update(id, productData);
             if (updatedProduct) {
@@ -216,7 +220,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     };
 
     // Category Actions
-    const createCategory = async (categoryData: Omit<ProductCategories, 'id' | 'created_at' | 'updated_at'>) => {
+    const createCategory = async (categoryData: Omit<ProductCategory, 'id' | 'created_at' | 'updated_at'>) => {
         try {
             const newCategory = await ProductCategoryService.create(categoryData);
             await refreshData();
@@ -227,7 +231,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         }
     };
 
-    const updateCategory = async (id: number, categoryData: Partial<ProductCategories>) => {
+    const updateCategory = async (id: number, categoryData: Partial<ProductCategory>) => {
         try {
             const updatedCategory = await ProductCategoryService.update(id, categoryData);
             if (updatedCategory) {
@@ -263,7 +267,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     };
 
     // Size Actions
-    const createSize = async (sizeData: Omit<ProductSizes, 'id' | 'created_at' | 'updated_at'>) => {
+    const createSize = async (sizeData: Omit<ProductSize, 'id' | 'created_at' | 'updated_at'>) => {
         try {
             const newSize = await ProductSizeService.create(sizeData);
             await refreshData();
@@ -274,7 +278,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         }
     };
 
-    const updateSize = async (id: number, sizeData: Partial<ProductSizes>) => {
+    const updateSize = async (id: number, sizeData: Partial<ProductSize>) => {
         try {
             const updatedSize = await ProductSizeService.update(id, sizeData);
             if (updatedSize) {

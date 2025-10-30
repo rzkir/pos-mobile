@@ -68,7 +68,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
                     <View style={styles.overlay}>
                         <View style={styles.scanArea}>
-                            <View style={styles.corner} />
+                            <View style={[styles.corner, styles.topLeft]} />
                             <View style={[styles.corner, styles.topRight]} />
                             <View style={[styles.corner, styles.bottomLeft]} />
                             <View style={[styles.corner, styles.bottomRight]} />
@@ -122,6 +122,14 @@ const styles = StyleSheet.create({
         borderWidth: 3,
         borderTopWidth: 0,
         borderRightWidth: 0,
+    },
+    topLeft: {
+        top: 0,
+        left: 0,
+        borderTopWidth: 3,
+        borderLeftWidth: 3,
+        borderRightWidth: 0,
+        borderBottomWidth: 0,
     },
     topRight: {
         top: 0,

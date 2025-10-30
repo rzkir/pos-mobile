@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { router } from 'expo-router';
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Text, TouchableOpacity, View } from 'react-native';
 
@@ -30,6 +30,15 @@ const onboardingData = [
 ];
 
 export default function OnboardingScreen() {
+    useEffect(() => {
+        (async () => {
+            const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                router.replace('/(tabs)/beranda');
+            }
+        })();
+    }, []);
+
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const handleNext = () => {
@@ -48,12 +57,12 @@ export default function OnboardingScreen() {
 
     const handleSkip = async () => {
         await AsyncStorage.setItem('onboarding_completed', 'true');
-        router.replace('/auth/signin');
+        router.replace('/(tabs)/beranda');
     };
 
     const handleGetStarted = async () => {
         await AsyncStorage.setItem('onboarding_completed', 'true');
-        router.replace('/auth/signin');
+        router.replace('/(tabs)/beranda');
     };
 
     const currentData = onboardingData[currentIndex];

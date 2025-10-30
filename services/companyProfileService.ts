@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export class CompanyProfileService {
-  private static readonly STORAGE_KEY = "company_profile";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_COMPANY_PROFILE as string;
 
   // Get company profile
   static async get(): Promise<CompanyProfile | null> {

@@ -98,7 +98,6 @@ export default function ProductDetailsView({
                             width={280}
                             height={60}
                             showText={true}
-                            productName={product.name}
                         />
                     </View>
 

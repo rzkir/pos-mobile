@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { ProductSizeService } from "../services/productSizeService";
+
+import { ProductSizeService } from "@/services/productSizeService";
 
 export const useSizes = () => {
   const [sizes, setSizes] = useState<any[]>([]);
