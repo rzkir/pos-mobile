@@ -8,57 +8,6 @@ import { ProductSizeService } from '../services/productSizeService';
 
 import { SupplierService } from '../services/supplierService';
 
-interface ProductContextType {
-    // Products
-    products: Product[];
-    productsWithRelations: ProductWithRelations[];
-    loading: boolean;
-    error: string | null;
-
-    // Categories
-    categories: ProductCategory[];
-
-    // Sizes
-    sizes: ProductSize[];
-
-    // Suppliers
-    suppliers: Supplier[];
-
-    // Product Actions
-    createProduct: (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<Product>;
-    updateProduct: (id: number, productData: Partial<Product>) => Promise<Product | null>;
-    deleteProduct: (id: number) => Promise<boolean>;
-    getProductById: (id: number) => Promise<Product | null>;
-    searchProducts: (name: string) => Promise<Product[]>;
-    getProductsByCategory: (categoryId: number) => Promise<Product[]>;
-    getLowStockProducts: () => Promise<Product[]>;
-    updateProductStock: (id: number, newStock: number) => Promise<Product | null>;
-    updateProductSold: (id: number, soldQuantity: number) => Promise<Product | null>;
-
-    // Category Actions
-    createCategory: (categoryData: Omit<ProductCategory, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductCategory>;
-    updateCategory: (id: number, categoryData: Partial<ProductCategory>) => Promise<ProductCategory | null>;
-    deleteCategory: (id: number) => Promise<boolean>;
-    searchCategories: (name: string) => Promise<ProductCategory[]>;
-
-    // Size Actions
-    createSize: (sizeData: Omit<ProductSize, 'id' | 'created_at' | 'updated_at'>) => Promise<ProductSize>;
-    updateSize: (id: number, sizeData: Partial<ProductSize>) => Promise<ProductSize | null>;
-    deleteSize: (id: number) => Promise<boolean>;
-    searchSizes: (name: string) => Promise<ProductSize[]>;
-
-    // Supplier Actions
-    createSupplier: (supplierData: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>) => Promise<Supplier>;
-    updateSupplier: (id: number, supplierData: Partial<Supplier>) => Promise<Supplier | null>;
-    deleteSupplier: (id: number) => Promise<boolean>;
-    searchSuppliers: (name: string) => Promise<Supplier[]>;
-
-
-    // Utility
-    refreshData: () => Promise<void>;
-    clearError: () => void;
-}
-
 export const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const useProductContext = () => {

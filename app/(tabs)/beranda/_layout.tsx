@@ -1,7 +1,5 @@
 import { Stack } from 'expo-router';
 
-import React from 'react';
-
 export default function BerandaLayout() {
     return (
         <Stack screenOptions={{ headerShown: false }}>

@@ -414,21 +414,6 @@ export default function ProductDetailsView({
                                     </Text>
                                 </View>
                             </View>
-
-                            {/* Created By */}
-                            <View className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4">
-                                <View className="flex-row items-center justify-between">
-                                    <View className="flex-row items-center">
-                                        <View className="bg-purple-100 p-2 rounded-lg mr-3">
-                                            <Ionicons name="person-outline" size={18} color="#8b5cf6" />
-                                        </View>
-                                        <Text className="text-sm text-gray-600 font-medium">Dibuat oleh</Text>
-                                    </View>
-                                    <Text className="text-sm font-bold text-gray-800">
-                                        {product.created_by}
-                                    </Text>
-                                </View>
-                            </View>
                         </View>
                     </View>
                 </View>

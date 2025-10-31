@@ -2,8 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { useCameraPermissions } from 'expo-camera';
 
-import * as MediaLibrary from 'expo-media-library';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface PermissionContextType {
@@ -27,12 +25,10 @@ export const usePermissions = () => {
 
 export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-    const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
+    // Media library permission is managed on-demand where needed (e.g., ImagePicker)
     const [loading, setLoading] = useState(true);
 
-    const allPermissionsGranted =
-        cameraPermission?.granted === true &&
-        (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all');
+    const allPermissionsGranted = cameraPermission?.granted === true;
 
 
     const checkPermissions = async () => {
@@ -57,12 +53,7 @@ export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 await requestCameraPermission();
             }
 
-            // Request media library permission (read/save photos)
-            if (
-                !(mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all')
-            ) {
-                await requestMediaPermission();
-            }
+            // Media library permission will be requested lazily by the feature that needs it
 
             // Save permission status to storage
             await AsyncStorage.setItem('permissions_checked', 'true');
@@ -80,17 +71,14 @@ export const PermissionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Add effect to handle permission state changes
     useEffect(() => {
-        if (
-            cameraPermission?.granted === true &&
-            (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all')
-        ) {
-            // All permissions granted, no need to keep checking
+        if (cameraPermission?.granted === true) {
+            // All required permissions granted
         }
-    }, [cameraPermission?.granted, mediaPermission?.granted, mediaPermission?.accessPrivileges]);
+    }, [cameraPermission?.granted]);
 
     const value: PermissionContextType = {
         cameraPermission: cameraPermission?.granted || null,
-        storagePermission: (mediaPermission?.granted === true || mediaPermission?.accessPrivileges === 'all') ? true : (mediaPermission ? false : null),
+        storagePermission: null,
         allPermissionsGranted,
         requestPermissions,
         checkPermissions,

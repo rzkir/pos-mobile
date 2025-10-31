@@ -1,57 +1,110 @@
-import { AntDesign, Ionicons } from '@expo/vector-icons'
+import { Tabs } from 'expo-router';
 
-import { Tabs } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons';
 
-import { View } from 'react-native'
+import { View, Text, useWindowDimensions } from 'react-native'
 
-import { adminTabs, adminTabConfigs } from '@/helper/tabs/tabs';
-
-export default function AdminTabsLayout({ tabs, tabConfigs }: DynamicTabsProps) {
-    const safeTabs = tabs || adminTabs;
-    const safeTabConfigs = tabConfigs || adminTabConfigs;
-
-    const renderIcon = (tabName: string, color: string, size: number) => {
-        const config = safeTabConfigs[tabName]
-        if (!config) return null
-
-        const iconProps = { color, size }
-
-        if (config.iconType === 'ionicons') {
-            return <Ionicons name={config.icon as any} {...iconProps} />
-        } else if (config.iconType === 'antdesign') {
-            return <AntDesign name={config.icon as any} {...iconProps} />
-        }
-
-        return null
-    }
+export default function TabLayout() {
+    const isDark = false
+    const { width } = useWindowDimensions()
+    const isTablet = width >= 768
 
     return (
         <View className='flex-1'>
             <Tabs
                 screenOptions={{
-                    headerShown: false,
-                    tabBarActiveTintColor: '#f97316',
-                    tabBarInactiveTintColor: '#6B7280',
+                    tabBarShowLabel: false,
+                    tabBarActiveTintColor: '#3b82f6',
+                    tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#6b7280',
                     tabBarStyle: {
-                        backgroundColor: '#ffffff',
-                        borderTopColor: '#e5e7eb',
+                        backgroundColor: isDark ? '#18181b' : '#ffffff',
+                        borderTopColor: isDark ? '#27272a' : '#e5e7eb',
+                        borderTopWidth: 1,
+                        height: isTablet ? 68 : 56,
+                        paddingHorizontal: isTablet ? 24 : 12,
                     },
-                    tabBarLabelStyle: {
-                        fontWeight: '600',
+                    tabBarItemStyle: {
+                        paddingVertical: isTablet ? 10 : 8,
                     },
-                }}
-            >
-                {safeTabs.map((tabName) => (
-                    <Tabs.Screen
-                        key={tabName}
-                        options={{
-                            tabBarIcon: ({ color, size }) => renderIcon(tabName, color, size),
-                            title: safeTabConfigs[tabName]?.name || tabName,
-                        }}
-                        name={tabName}
-                    />
-                ))}
+                    headerShown: false,
+                }}>
+                <Tabs.Screen
+                    name="beranda"
+                    options={{
+                        title: 'Beranda',
+                        tabBarIcon: ({ focused }: { focused: boolean }) => (
+                            <View
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                            >
+                                <View>
+                                    <Ionicons size={isTablet ? 24 : 20} name="home" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                </View>
+                                <View>
+                                    <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Beranda</Text>
+                                </View>
+                            </View>
+                        ),
+                    }}
+                />
+                <Tabs.Screen
+                    name="transaction"
+                    options={{
+                        title: 'Transaction',
+                        tabBarIcon: ({ focused }: { focused: boolean }) => (
+                            <View
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                            >
+                                <View>
+                                    <Ionicons size={isTablet ? 24 : 20} name="card" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                </View>
+                                <View>
+                                    <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Transaksi</Text>
+                                </View>
+                            </View>
+                        ),
+                    }}
+                />
+
+                <Tabs.Screen
+                    name="products"
+                    options={{
+                        title: 'Products',
+                        tabBarIcon: ({ focused }: { focused: boolean }) => (
+                            <View
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                            >
+                                <View>
+                                    <Ionicons size={isTablet ? 24 : 20} name="cube" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                </View>
+                                <View>
+                                    <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Produk</Text>
+                                </View>
+                            </View>
+                        ),
+                    }}
+                />
+
+                <Tabs.Screen
+                    name="profile"
+                    options={{
+                        title: 'Profile',
+                        tabBarIcon: ({ focused }: { focused: boolean }) => (
+                            <View
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                            >
+                                <View
+                                >
+                                    <Ionicons size={isTablet ? 24 : 20} name="person" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                </View>
+                                <View
+                                >
+                                    <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Profile</Text>
+                                </View>
+                            </View>
+                        ),
+                    }}
+                />
             </Tabs>
         </View>
-    )
+    );
 }

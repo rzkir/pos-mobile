@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useEffect, useRef, useState } from 'react';
 
-import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Text, TextInput, TouchableOpacity, View, Switch } from 'react-native';
 
 import { Picker } from '@react-native-picker/picker';
 
@@ -30,7 +30,9 @@ import * as ImagePicker from 'expo-image-picker';
 
 export default function EditProduct() {
     const { id } = useLocalSearchParams();
+
     const router = useRouter();
+
     const isEdit = id !== 'new';
 
     const {
@@ -58,7 +60,8 @@ export default function EditProduct() {
         description: '',
         min_stock: '',
         discount: '',
-        image_url: ''
+        image_url: '',
+        best_seller: false
     });
 
     const nameRef = useRef<TextInput>(null);
@@ -102,7 +105,8 @@ export default function EditProduct() {
                     description: product.description || '',
                     min_stock: product.min_stock?.toString() || '',
                     discount: product.discount?.toString() || '',
-                    image_url: product.image_url || ''
+                    image_url: product.image_url || '',
+                    best_seller: Boolean(product.best_seller)
                 });
 
             }
@@ -266,21 +270,19 @@ export default function EditProduct() {
         }
     }, [barcodeAction, isEdit, formData.barcode]);
 
-    const handlePickImage = async () => {
+    const pickFromGallery = async () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
                 Toast.show({ type: 'error', text1: 'Izin galeri diperlukan untuk memilih gambar' });
                 return;
             }
-
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [1, 1],
-                quality: 0.8
+                quality: 0.8,
             });
-
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const uri = result.assets[0].uri;
                 setFormData(prev => ({ ...prev, image_url: uri }));
@@ -288,6 +290,39 @@ export default function EditProduct() {
         } catch {
             Toast.show({ type: 'error', text1: 'Gagal memilih gambar' });
         }
+    };
+
+    const captureWithCamera = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Toast.show({ type: 'error', text1: 'Izin kamera diperlukan untuk mengambil foto' });
+                return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const uri = result.assets[0].uri;
+                setFormData(prev => ({ ...prev, image_url: uri }));
+            }
+        } catch {
+            Toast.show({ type: 'error', text1: 'Gagal mengambil foto' });
+        }
+    };
+
+    const handlePickImage = () => {
+        Alert.alert(
+            'Pilih Sumber Gambar',
+            'Silakan pilih dari galeri atau gunakan kamera',
+            [
+                { text: 'Batal', style: 'cancel' },
+                { text: 'Galeri', onPress: pickFromGallery },
+                { text: 'Kamera', onPress: captureWithCamera },
+            ]
+        );
     };
 
     const handleCategorySelect = (value: string) => {
@@ -418,6 +453,7 @@ export default function EditProduct() {
                     ? parseFloat((formData.min_stock || '0').toString().replace(',', '.')) || 0
                     : parseInt(formData.min_stock) || 0,
                 discount: parseFloat(formData.discount) || 0,
+                best_seller: formData.best_seller,
                 expiration_date: '',
                 created_by: 'admins'
             };
@@ -496,7 +532,7 @@ export default function EditProduct() {
                 <View className="flex-col gap-6">
                     {/* Image Picker */}
                     <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <Text className="text-gray-900 font-semibold mb-3">Gambar Produk</Text>
+                        <Text className="text-gray-900 font-semibold mb-3 text-center">Gambar Produk</Text>
                         <View className="items-center">
                             {formData.image_url ? (
                                 <Image
@@ -626,6 +662,16 @@ export default function EditProduct() {
                     {/* Klasifikasi */}
                     <View className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
                         <Text className="text-gray-900 font-semibold mb-3">Klasifikasi</Text>
+                        <View className='mb-3'>
+                            <View className="flex-row items-center justify-between">
+                                <Text className="text-gray-700 font-medium">Best Seller</Text>
+                                <Switch
+                                    value={formData.best_seller}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, best_seller: val }))}
+                                />
+                            </View>
+                        </View>
+
                         <View className="mb-3">
                             <Text className="text-gray-700 font-medium mb-2">Unit</Text>
                             <View className="border border-gray-300 rounded-lg bg-white">

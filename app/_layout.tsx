@@ -1,5 +1,3 @@
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
-
 import { Stack } from 'expo-router';
 
 import { StatusBar } from 'expo-status-bar';
@@ -22,35 +20,26 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar hidden={false} translucent />
         <PermissionProvider>
           <ProductProvider>
-            <ThemeProvider value={DefaultTheme}>
-              <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    animation: 'slide_from_right',
-                    animationDuration: 300,
-                    contentStyle: { backgroundColor: '#ffffff' },
-                  }}
-                >
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="onboarding" />
-                  <Stack.Screen name="permissions" />
-                  <Stack.Screen name="(tabs)/beranda" />
-                  <Stack.Screen name="(tabs)/profil" />
-                  <Stack.Screen name="(tabs)/products" />
-                  <Stack.Screen name="(tabs)/settings" />
-                  <Stack.Screen name="(tabs)/transactions" />
-                  <Stack.Screen name="auth" />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-                <Toast />
-              </SafeAreaView>
-            </ThemeProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+              <Stack
+                initialRouteName="index"
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  animationDuration: 300,
+                  contentStyle: { backgroundColor: '#ffffff' },
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+              <Toast />
+            </SafeAreaView>
           </ProductProvider>
         </PermissionProvider>
       </SafeAreaProvider>

@@ -27,7 +27,7 @@ const PermissionScreen = () => {
                 const hasVisitedPermissions = await AsyncStorage.getItem('has_visited_permissions');
                 if (hasVisitedPermissions === 'true' && !hasRedirected.current) {
                     hasRedirected.current = true;
-                    router.replace('/auth');
+                    router.replace('/welcome');
                 }
             } catch {
             }
@@ -41,7 +41,7 @@ const PermissionScreen = () => {
         if (allPermissionsGranted && !hasRedirected.current) {
             hasRedirected.current = true;
             AsyncStorage.setItem('has_visited_permissions', 'true');
-            router.replace('/auth');
+            router.replace('/welcome');
         }
     }, [allPermissionsGranted]);
 
@@ -60,26 +60,21 @@ const PermissionScreen = () => {
 
             console.log('🔵 Requesting permissions...');
             await Promise.race([requestPermissions(), timeoutPromise]);
-            console.log('✅ Permissions granted');
 
             await AsyncStorage.setItem('has_visited_permissions', 'true');
-            console.log('🔵 Navigating to auth...');
-            router.replace('/auth');
-        } catch (error) {
-            console.error('❌ Error requesting permissions:', error);
-            // Still navigate to auth even if permission request fails
+            router.replace('/welcome');
+        } catch {
+            // Still navigate to welcome even if permission request fails
             await AsyncStorage.setItem('has_visited_permissions', 'true');
-            console.log('🔵 Navigating to auth despite error...');
-            router.replace('/auth');
+            router.replace('/welcome');
         } finally {
             setIsProcessing(false);
-            console.log('🔵 Permission request completed');
         }
     };
 
     const handleSkip = () => {
         AsyncStorage.setItem('has_visited_permissions', 'true');
-        router.replace('/auth');
+        router.replace('/welcome');
     };
 
     return (
@@ -164,7 +159,7 @@ const PermissionScreen = () => {
                             onPress={() => {
                                 console.log('🚨 Emergency skip triggered');
                                 AsyncStorage.setItem('has_visited_permissions', 'true');
-                                router.replace('/auth');
+                                router.replace('/welcome');
                             }}
                         >
                             <Text className="text-white text-sm font-medium">Langsung Masuk (Skip)</Text>

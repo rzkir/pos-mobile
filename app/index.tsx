@@ -21,7 +21,7 @@ export default function Index() {
         router.replace('/(tabs)/beranda');
       } else {
         hasRedirected.current = true;
-        router.replace('/auth');
+        router.replace('/welcome');
       }
     };
     rafId = requestAnimationFrame(() => {
