@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, Alert, TextInput, Image } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput, Image } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -111,8 +111,6 @@ export default function EditCompanyInfo() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-
             {/* Header */}
             <LinearGradient
                 colors={['#1e40af', '#3b82f6', '#8b5cf6']}

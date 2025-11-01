@@ -22,7 +22,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar hidden={false} translucent />
+        <StatusBar hidden={false} translucent backgroundColor="#FF9228" />
         <PermissionProvider>
           <ProductProvider>
             <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>

@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 
-import { ScrollView, Text, TouchableOpacity, View, StatusBar, Image } from 'react-native'
+import { ScrollView, Text, TouchableOpacity, View, Image } from 'react-native'
 
 import { Ionicons } from '@expo/vector-icons'
 
@@ -31,9 +31,16 @@ export default function Profil() {
         router.push('/profile/payment-card')
     }
 
+    const handleExportData = () => {
+        router.push('/profile/export')
+    }
+
+    const handleImportData = () => {
+        router.push('/profile/import')
+    }
+
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
                 <LinearGradient
                     colors={['#1e40af', '#3b82f6', '#8b5cf6']}
@@ -187,6 +194,46 @@ export default function Profil() {
                                     <View className="flex-1">
                                         <Text className="text-lg font-bold text-gray-900 mb-1">Pengaturan Kartu Pembayaran</Text>
                                         <Text className="text-gray-600">Konfigurasi kartu pembayaran untuk pembayaran</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                                </View>
+                            </TouchableOpacity>
+                            {/* Export Data */}
+                            <TouchableOpacity
+                                onPress={handleExportData}
+                                className="bg-white rounded-2xl overflow-hidden"
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 }}
+                            >
+                                <View className="flex-row items-center p-6">
+                                    <LinearGradient
+                                        colors={['#3b82f6', '#1d4ed8']}
+                                        className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                                    >
+                                        <Ionicons name="download" size={28} color="white" />
+                                    </LinearGradient>
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-bold text-gray-900 mb-1">Export Data</Text>
+                                        <Text className="text-gray-600">Ekspor semua data ke file JSON</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                                </View>
+                            </TouchableOpacity>
+                            {/* Import Data */}
+                            <TouchableOpacity
+                                onPress={handleImportData}
+                                className="bg-white rounded-2xl overflow-hidden"
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 }}
+                            >
+                                <View className="flex-row items-center p-6">
+                                    <LinearGradient
+                                        colors={['#10b981', '#059669']}
+                                        className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                                    >
+                                        <Ionicons name="cloud-upload" size={28} color="white" />
+                                    </LinearGradient>
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-bold text-gray-900 mb-1">Import Data</Text>
+                                        <Text className="text-gray-600">Impor data dari file JSON</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                                 </View>

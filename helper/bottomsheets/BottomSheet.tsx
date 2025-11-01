@@ -37,13 +37,13 @@ export default function BottomSheet({
                 {/* Backdrop */}
                 <Pressable className="flex-1" onPress={onClose} />
 
-                <View className="bg-secondary-800 rounded-t-3xl pt-4" style={{ maxHeight: `${Math.round(maxHeightPercent * 100)}%` }}>
+                <View className="bg-secondary-800 pt-4 overflow-hidden" style={{ maxHeight: `${Math.round(maxHeightPercent * 100)}%`, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
                     <View className="items-center mb-3">
                         <View className="w-12 h-1.5 rounded-full" style={{ backgroundColor: 'text-secondary-500' }} />
                     </View>
 
                     {title && showCloseButton && (
-                        <View className="flex-row items-center justify-between px-5">
+                        <View className="flex-row items-center justify-between px-5 mb-4">
                             <View className="w-6" />
                             <Text className="text-center text-lg font-semibold flex-1" style={{ color: '#fff' }}>{title || ''}</Text>
                             <TouchableOpacity onPress={onClose} className="w-6 h-6 items-center justify-center" activeOpacity={0.8}>
@@ -74,7 +74,7 @@ export default function BottomSheet({
                     </ScrollView>
 
                     {footer && (
-                        <View className="px-5 pb-6">
+                        <View className="px-5 pb-8">
                             {footer}
                         </View>
                     )}

@@ -34,14 +34,6 @@ export default function Settings() {
         )
     }
 
-    const handleExportData = () => {
-        Toast.show({ type: 'info', text1: 'Fitur export data akan segera tersedia' })
-    }
-
-    const handleImportData = () => {
-        Toast.show({ type: 'info', text1: 'Fitur import data akan segera tersedia' })
-    }
-
     const handleResetSettings = () => {
         Alert.alert(
             'Reset Pengaturan',
@@ -159,7 +151,7 @@ export default function Settings() {
                     </View>
                 </View>
 
-                {/* Data Management */}
+                {/* Other Data Management */}
                 <View className="bg-white mt-4 mx-4 rounded-lg shadow-sm">
                     <Text className="text-lg font-semibold text-gray-900 px-4 py-3 border-b border-gray-100">
                         Manajemen Data
@@ -168,33 +160,11 @@ export default function Settings() {
                     <View className="px-4">
                         <TouchableOpacity
                             onPress={handleClearCache}
-                            className="flex-row items-center justify-between py-4 border-b border-gray-100"
+                            className="flex-row items-center justify-between py-4"
                         >
                             <View className="flex-row items-center">
                                 <Ionicons name="trash-outline" size={20} color="#EF4444" />
                                 <Text className="text-base font-medium text-gray-900 ml-3">Hapus Cache</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={handleExportData}
-                            className="flex-row items-center justify-between py-4 border-b border-gray-100"
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="download-outline" size={20} color="#3B82F6" />
-                                <Text className="text-base font-medium text-gray-900 ml-3">Export Data</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={handleImportData}
-                            className="flex-row items-center justify-between py-4"
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="cloud-upload-outline" size={20} color="#10B981" />
-                                <Text className="text-base font-medium text-gray-900 ml-3">Import Data</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
                         </TouchableOpacity>

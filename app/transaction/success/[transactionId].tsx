@@ -1,12 +1,24 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+
 import { useEffect, useState, useCallback } from 'react';
+
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
+
 import { LinearGradient } from 'expo-linear-gradient';
+
 import { TransactionService } from '@/services/transactionService';
+
 import { formatIDR } from '@/helper/lib/FormatIdr';
+
 import { useProducts } from '@/hooks/useProducts';
+
+import { usePrinter } from '@/hooks';
+
 import Toast from 'react-native-toast-message';
+
+import { generateReceiptText, generateReceiptHTML } from '@/app/profile/printer/template';
 
 export default function TransactionSuccess() {
     const { transactionId } = useLocalSearchParams();
@@ -14,12 +26,12 @@ export default function TransactionSuccess() {
     const id = parseInt(transactionId as string, 10);
 
     const { products } = useProducts();
+    const { connectedAddress, printText } = usePrinter();
     const [transaction, setTransaction] = useState<Transaction | null>(null);
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [printing, setPrinting] = useState(false);
     const [downloading, setDownloading] = useState(false);
-    const RN_BC = 'react-native-bluetooth-classic' as const;
 
     const loadTransaction = useCallback(async () => {
         try {
@@ -54,119 +66,37 @@ export default function TransactionSuccess() {
         router.replace('/(tabs)/beranda');
     };
 
-    // Generate receipt text for print
-    const generateReceiptText = () => {
-        if (!transaction) return '';
-
-        let receipt = "\x1B@" + // ESC/POS init
-            "\x1B\x61\x01" + // Center align
-            "TOKO KASIR\n" +
-            "-------------------------------\n" +
-            "\x1B\x61\x00" + // Left align
-            `No. Transaksi: ${transaction.transaction_number}\n`;
-
-        if (transaction.customer_name) {
-            receipt += `Pelanggan: ${transaction.customer_name}\n`;
-        }
-
-        receipt += `Tanggal: ${new Date().toLocaleString('id-ID')}\n` +
-            "-------------------------------\n" +
-            "Item           Qty   Subtotal\n" +
-            "-------------------------------\n";
-
-        items.forEach(item => {
-            const name = (item.product?.name || 'Produk').substring(0, 14);
-            const qty = item.quantity.toString().padStart(3);
-            const subtotal = formatIDR(item.subtotal);
-            receipt += `${name.padEnd(14)} ${qty}   ${subtotal}\n`;
-        });
-
-        receipt += "-------------------------------\n" +
-            `Subtotal: ${formatIDR(transaction.subtotal)}\n` +
-            `Diskon: ${formatIDR(transaction.discount)}\n` +
-            `Pajak: ${formatIDR(transaction.tax)}\n` +
-            "-------------------------------\n" +
-            `TOTAL: ${formatIDR(transaction.total)}\n` +
-            "-------------------------------\n" +
-            `Metode: ${transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method === 'card' ? 'Kartu' : 'Transfer'}\n` +
-            "Status: LUNAS\n" +
-            "-------------------------------\n" +
-            "\x1B\x61\x01" + // Center align
-            "Terima kasih!\n" +
-            "\n\n\n";
-
-        return receipt;
-    };
-
     // Print receipt using Bluetooth printer
     const handlePrint = async () => {
         if (!transaction) return;
 
+        // Check if printer is connected (from localStorage)
+        if (!connectedAddress) {
+            Alert.alert(
+                'Printer Belum Terhubung',
+                'Printer belum terhubung. Silakan hubungkan printer terlebih dahulu di Pengaturan Printer.',
+                [
+                    { text: 'OK' },
+                    {
+                        text: 'Buka Pengaturan',
+                        onPress: () => router.push('/profile/printer')
+                    }
+                ]
+            );
+            return;
+        }
+
         try {
             setPrinting(true);
-            const Mod: any = await import(RN_BC);
-            const RNB = Mod.default || Mod;
-            if (!RNB) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'react-native-bluetooth-classic tidak tersedia',
-                    visibilityTime: 3000
-                });
-                return;
-            }
 
-            // Check if Bluetooth is enabled
-            const enabled = await RNB.isBluetoothEnabled?.();
-            if (!enabled) {
-                Toast.show({
-                    type: 'info',
-                    text1: 'Bluetooth Tidak Aktif',
-                    text2: 'Aktifkan Bluetooth terlebih dahulu',
-                    visibilityTime: 3000
-                });
-                return;
-            }
+            // Generate receipt menggunakan template custom
+            const receiptText = await generateReceiptText({
+                transaction,
+                items
+            });
 
-            // Get bonded devices (already paired printers)
-            const bonded = (await RNB.getBondedDevices?.()) || [];
-            if (bonded.length === 0) {
-                Alert.alert(
-                    'Printer Tidak Ditemukan',
-                    'Tidak ada printer yang sudah dipasangkan. Silakan pasangkan printer terlebih dahulu di Pengaturan Printer.',
-                    [{ text: 'OK' }]
-                );
-                return;
-            }
-
-            // Try to connect to first bonded printer (or use stored printer address)
-            // For simplicity, using first printer. You can enhance this to remember last used printer
-            const printer = bonded[0];
-            if (!printer) {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Tidak ada printer yang tersedia',
-                    visibilityTime: 3000
-                });
-                return;
-            }
-
-            try {
-                await RNB.connectToDevice?.(printer.address || printer.id);
-            } catch (connectError) {
-                // Printer might already be connected, continue
-                console.log('Connection attempt:', connectError);
-            }
-
-            const receiptText = generateReceiptText();
-
-            // Send to printer
-            if (RNB.writeToDevice) {
-                await RNB.writeToDevice(printer.address || printer.id, receiptText);
-            } else if (RNB.write) {
-                await RNB.write(receiptText);
-            }
+            // Print menggunakan hook (akan otomatis menggunakan connected printer)
+            await printText(receiptText);
 
             Toast.show({
                 type: 'success',
@@ -210,156 +140,12 @@ export default function TransactionSuccess() {
                 return;
             }
 
-            // Generate HTML for PDF
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            padding: 20px;
-                            max-width: 400px;
-                            margin: 0 auto;
-                        }
-                        .header {
-                            text-align: center;
-                            margin-bottom: 20px;
-                        }
-                        .header h1 {
-                            margin: 0;
-                            font-size: 24px;
-                            color: #059669;
-                        }
-                        .divider {
-                            border-top: 2px solid #e5e7eb;
-                            margin: 15px 0;
-                        }
-                        .info-row {
-                            display: flex;
-                            justify-content: space-between;
-                            margin-bottom: 8px;
-                        }
-                        .label {
-                            color: #6b7280;
-                        }
-                        .value {
-                            font-weight: bold;
-                            color: #111827;
-                        }
-                        .items-table {
-                            width: 100%;
-                            margin: 20px 0;
-                            border-collapse: collapse;
-                        }
-                        .items-table th {
-                            text-align: left;
-                            padding: 8px 0;
-                            border-bottom: 1px solid #e5e7eb;
-                            color: #6b7280;
-                            font-size: 12px;
-                        }
-                        .items-table td {
-                            padding: 8px 0;
-                            border-bottom: 1px solid #f3f4f6;
-                        }
-                        .total-row {
-                            font-size: 18px;
-                            font-weight: bold;
-                            color: #059669;
-                        }
-                        .footer {
-                            text-align: center;
-                            margin-top: 30px;
-                            color: #6b7280;
-                            font-size: 14px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>TOKO KASIR</h1>
-                        <div class="divider"></div>
-                    </div>
-                    
-                    <div class="info-row">
-                        <span class="label">No. Transaksi:</span>
-                        <span class="value">${transaction.transaction_number}</span>
-                    </div>
-                    ${transaction.customer_name ? `
-                    <div class="info-row">
-                        <span class="label">Pelanggan:</span>
-                        <span class="value">${transaction.customer_name}</span>
-                    </div>
-                    ` : ''}
-                    <div class="info-row">
-                        <span class="label">Tanggal:</span>
-                        <span class="value">${new Date().toLocaleString('id-ID')}</span>
-                    </div>
-                    
-                    <div class="divider"></div>
-                    
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th style="text-align: center;">Qty</th>
-                                <th style="text-align: right;">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td>${item.product?.name || 'Produk'}</td>
-                                    <td style="text-align: center;">${item.quantity}</td>
-                                    <td style="text-align: right;">${formatIDR(item.subtotal)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                    
-                    <div class="divider"></div>
-                    
-                    <div class="info-row">
-                        <span class="label">Subtotal:</span>
-                        <span class="value">${formatIDR(transaction.subtotal)}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Diskon:</span>
-                        <span class="value">${formatIDR(transaction.discount)}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Pajak:</span>
-                        <span class="value">${formatIDR(transaction.tax)}</span>
-                    </div>
-                    
-                    <div class="divider"></div>
-                    
-                    <div class="info-row total-row">
-                        <span>TOTAL:</span>
-                        <span>${formatIDR(transaction.total)}</span>
-                    </div>
-                    
-                    <div class="divider"></div>
-                    
-                    <div class="info-row">
-                        <span class="label">Metode Pembayaran:</span>
-                        <span class="value">${transaction.payment_method === 'cash' ? 'Tunai' : transaction.payment_method === 'card' ? 'Kartu' : 'Transfer'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Status:</span>
-                        <span class="value" style="color: #059669;">LUNAS</span>
-                    </div>
-                    
-                    <div class="divider"></div>
-                    
-                    <div class="footer">
-                        <p>Terima kasih atas kunjungan Anda!</p>
-                    </div>
-                </body>
-                </html>
-            `;
+            // Generate HTML menggunakan template custom
+            // Template akan otomatis memuat custom settings (logo, nama toko, footer, dll)
+            const htmlContent = await generateReceiptHTML({
+                transaction,
+                items
+            });
 
             // Generate PDF
             const { uri } = await Print.printToFileAsync({

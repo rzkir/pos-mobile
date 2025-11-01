@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { View, Text, ScrollView, TouchableOpacity, Switch, StatusBar, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -64,8 +64,6 @@ export default function Settings() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-
             {/* Header */}
             <LinearGradient
                 colors={['#1e40af', '#3b82f6', '#8b5cf6']}
@@ -92,23 +90,11 @@ export default function Settings() {
             </LinearGradient>
 
             <ScrollView
-                className="flex-1 -mt-4"
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
             >
-                {/* CTA Printer */}
-                <View className="px-6 mt-6 mb-5">
-                    <TouchableOpacity
-                        className="flex-row items-center bg-blue-600 rounded-2xl p-4 shadow-lg"
-                        onPress={() => router.push('/profile/printer')}
-                    >
-                        <Ionicons name="print" size={24} color="white" style={{ marginRight: 16 }} />
-                        <Text className="text-white text-lg font-bold flex-1">Pengaturan Printer</Text>
-                        <Ionicons name="chevron-forward" size={20} color="white" />
-                    </TouchableOpacity>
-                </View>
-                {/* Notification Settings */}
-                <View className="px-6 mb-8">
+                <View className="px-6 mb-8 mt-6">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Pengaturan Notifikasi</Text>
 
                     <View className="space-y-4">

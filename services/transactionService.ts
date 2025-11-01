@@ -3,8 +3,10 @@ import { LocalStorageService } from "@/services/localStorageService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export class TransactionService {
-  private static readonly STORAGE_KEY = "transactions";
-  private static readonly ACTIVE_TRANSACTION_KEY = "active_transaction_id";
+  private static readonly STORAGE_KEY = process.env
+    .EXPO_PUBLIC_TRANSACTION as string;
+  private static readonly ACTIVE_TRANSACTION_KEY = process.env
+    .EXPO_PUBLIC_ACTIVE_TRANSACTION_ID as string;
 
   // Get all transactions
   static async getAll(): Promise<Transaction[]> {
@@ -120,7 +122,8 @@ export class TransactionService {
   }
 
   // Transaction Items methods
-  private static readonly ITEMS_STORAGE_KEY = "transaction_items";
+  private static readonly ITEMS_STORAGE_KEY = process.env
+    .EXPO_PUBLIC_TRANSACTION_ITEM as string;
 
   // Get all transaction items
   static async getItemsByTransactionId(

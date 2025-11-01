@@ -9,3 +9,5 @@ export { useSizes } from "@/hooks/useSizes";
 export { useSuppliers } from "@/hooks/useSuppliers";
 
 export { useCompanyProfile } from "@/hooks/useCompanyProfile";
+
+export { usePrinter } from "@/hooks/usePrinter";

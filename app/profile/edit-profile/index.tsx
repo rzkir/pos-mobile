@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StatusBar } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -13,8 +13,6 @@ export default function EditProfile() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-
             {/* Header */}
             <LinearGradient
                 colors={['#1e40af', '#3b82f6', '#8b5cf6']}

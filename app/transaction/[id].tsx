@@ -176,6 +176,12 @@ export default function TransactionDetail() {
             try {
                 const selectedData = await AsyncStorage.getItem('selected_products');
                 if (selectedData) {
+                    // Hapus semua item transaction yang ada sebelumnya (dari session sebelumnya)
+                    const existingItems = await TransactionService.getItemsByTransactionId(transactionId);
+                    for (const item of existingItems) {
+                        await TransactionService.deleteItem(item.id);
+                    }
+
                     const selected = JSON.parse(selectedData);
                     await addProductsToTransaction(selected);
                     await AsyncStorage.removeItem('selected_products');
@@ -188,7 +194,7 @@ export default function TransactionDetail() {
         if (transaction && transaction.status === 'draft') {
             loadSelectedProducts();
         }
-    }, [transaction, addProductsToTransaction]);
+    }, [transaction, addProductsToTransaction, transactionId]);
 
 
     const updateItemQty = async (itemId: number, newQty: number) => {
@@ -743,7 +749,7 @@ export default function TransactionDetail() {
                 footer={
                     <TouchableOpacity
                         onPress={savePaymentInfo}
-                        className="bg-orange-500 rounded-xl py-3 items-center"
+                        className="bg-orange-500 rounded-xl py-4 items-center"
                     >
                         <Text className="text-white font-semibold text-base">Konfirmasi Pembayaran</Text>
                     </TouchableOpacity>
@@ -758,7 +764,7 @@ export default function TransactionDetail() {
 
                     {/* Payment Method */}
                     <View className="mb-4">
-                        <Text className="text-sm text-gray-600 mb-2 font-semibold">Metode Pembayaran</Text>
+                        <Text className="text-sm text-secondary-50 mb-2 font-semibold">Metode Pembayaran</Text>
 
                         {/* Cash Option */}
                         <TouchableOpacity
@@ -858,7 +864,6 @@ export default function TransactionDetail() {
                             </View>
                         )}
                     </View>
-
 
                     {/* Amount Paid (for cash payments) */}
                     {(paymentMethod === 'cash' && selectedPaymentCardId === null) && (
