@@ -14,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { TransactionService } from '@/services/transactionService';
+
 export default function Beranda() {
     useEffect(() => {
         AsyncStorage.setItem('isLoggedIn', 'true');
@@ -32,8 +34,24 @@ export default function Beranda() {
     const [activeCategoryId, setActiveCategoryId] = useState<number | 'all'>('all')
     const [productIdToQty, setProductIdToQty] = useState<Record<number, number>>({})
 
+    // Top Seller Products
+    const topSellerProducts = useMemo(() => {
+        let list = products.filter((p: any) => p.best_seller === true)
+        if (activeCategoryId !== 'all') {
+            list = list.filter((p: any) => p.category_id === activeCategoryId)
+        }
+        if (search) {
+            const q = search.toLowerCase()
+            list = list.filter((p: any) =>
+                p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q)
+            )
+        }
+        return list
+    }, [products, search, activeCategoryId])
+
+    // Regular Products (excluding top seller)
     const filtered = useMemo(() => {
-        let list = products
+        let list = products.filter((p: any) => p.best_seller !== true)
         if (activeCategoryId !== 'all') {
             list = list.filter((p: any) => p.category_id === activeCategoryId)
         }
@@ -65,10 +83,70 @@ export default function Beranda() {
         return products.reduce((sum: number, p: any) => sum + (productIdToQty[p.id] ? productIdToQty[p.id] * (p.price || 0) : 0), 0)
     }, [products, productIdToQty])
 
+    const handleCartPress = async () => {
+        try {
+            // Save selected products to AsyncStorage before navigation
+            await AsyncStorage.setItem('selected_products', JSON.stringify(productIdToQty));
+
+            const transaction = await TransactionService.getOrCreateDraft();
+            router.push({
+                pathname: '/transaction/[id]',
+                params: { id: transaction.id.toString() }
+            });
+        } catch (error) {
+            console.error('Error creating transaction:', error);
+        }
+    }
+
     const renderCard = ({ item }: { item: any }) => {
         const qty = productIdToQty[item.id] || 0
         return (
             <View className="px-1 mb-4 w-1/2">
+                <View className="bg-white rounded-2xl flex-col gap-1.5 p-3 border border-border">
+                    <View className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 items-center justify-center">
+                        {item.image_url ? (
+                            <Image source={{ uri: item.image_url }} className="w-full h-full" resizeMode="cover" />
+                        ) : (
+                            <Ionicons name="image-outline" size={28} className="text-gray-400" />
+                        )}
+                    </View>
+
+                    <View className="mt-1 flex-row items-center">
+                        <View className="w-1.5 h-1.5 rounded-full bg-accent-primary mr-1" />
+                        <Text className="text-[11px] text-accent-primary font-semibold">{item.stock ?? 0} Stock</Text>
+                    </View>
+
+                    <Text numberOfLines={1} className="text-lg font-semibold text-text-secondary">{item.name}</Text>
+
+                    <View className="flex-row items-center justify-between">
+                        <Text className="text-base font-bold text-text-primary">{formatIDR(item.price || 0)}</Text>
+                        {qty === 0 ? (
+                            <TouchableOpacity onPress={() => addQty(item.id)} className="w-10 h-10 rounded-full bg-emerald-500 items-center justify-center">
+                                <Ionicons name="add" size={18} color={"white"} />
+                            </TouchableOpacity>
+                        ) : (
+                            <View className="flex-row items-center">
+                                <TouchableOpacity onPress={() => subQty(item.id)} className="w-10 h-10 rounded-full bg-emerald-500 items-center justify-center">
+                                    <Ionicons name="remove" size={18} color={"white"} />
+                                </TouchableOpacity>
+
+                                <Text className="mx-2 text-sm font-semibold text-gray-900">{qty}</Text>
+
+                                <TouchableOpacity onPress={() => addQty(item.id)} className="w-10 h-10 rounded-full bg-emerald-500 items-center justify-center">
+                                    <Ionicons name="add" size={18} color={"white"} />
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </View>
+        )
+    }
+
+    const renderTopSellerCard = ({ item }: { item: any }) => {
+        const qty = productIdToQty[item.id] || 0
+        return (
+            <View className="px-1 mr-3" style={{ width: 200 }}>
                 <View className="bg-white rounded-2xl flex-col gap-1.5 p-3 border border-border">
                     <View className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 items-center justify-center">
                         {item.image_url ? (
@@ -180,6 +258,36 @@ export default function Beranda() {
                 />
             </View>
 
+            {/* Top Seller Section */}
+            {topSellerProducts.length > 0 && (
+                <View className="mt-6">
+                    <View className="px-4 mb-3 flex-row items-center justify-between">
+                        <View className="flex-row items-center">
+                            <View className="bg-yellow-100 p-2 rounded-xl mr-2">
+                                <Ionicons name="star" size={20} color="#D97706" />
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-gray-800">
+                                    Top Seller
+                                </Text>
+                                <Text className="text-xs text-gray-500">
+                                    Produk terlaris
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <FlatList
+                        className="px-2"
+                        data={topSellerProducts}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        keyExtractor={(item: any) => item.id.toString()}
+                        renderItem={renderTopSellerCard}
+                    />
+                </View>
+            )}
+
             {/* Section title */}
             <View className="px-4 mt-4 mb-2 flex-row items-center justify-between">
                 <Text className="text-base font-extrabold text-gray-900">Today&apos;s Special Menu</Text>
@@ -187,7 +295,7 @@ export default function Beranda() {
 
             {/* Grid */}
             <FlatList
-                className="px-3"
+                className="px-2"
                 data={filtered}
                 numColumns={2}
                 keyExtractor={(item: any) => item.id.toString()}
@@ -210,7 +318,10 @@ export default function Beranda() {
                         </View>
                         <View className="flex-row items-center">
                             <Text className="text-white font-bold mr-3">{formatIDR(selectedTotal)}</Text>
-                            <TouchableOpacity className="w-10 h-10 rounded-full bg-orange-500 items-center justify-center">
+                            <TouchableOpacity
+                                onPress={handleCartPress}
+                                className="w-10 h-10 rounded-full bg-orange-500 items-center justify-center"
+                            >
                                 <Ionicons name="cart" size={18} className="text-white" />
                             </TouchableOpacity>
                         </View>
