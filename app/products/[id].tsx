@@ -397,6 +397,24 @@ export default function EditProduct() {
         }
     };
 
+    const incrementDiscount = () => {
+        const current = parseFloat(formData.discount) || 0;
+        const next = Math.min(100, current + 1); // Max 100%
+        setFormData(prev => ({
+            ...prev,
+            discount: next.toString()
+        }));
+    };
+
+    const decrementDiscount = () => {
+        const current = parseFloat(formData.discount) || 0;
+        const next = Math.max(0, current - 1); // Min 0%
+        setFormData(prev => ({
+            ...prev,
+            discount: next.toString()
+        }));
+    };
+
     const validateForm = () => {
         if (!formData.name.trim()) {
             Toast.show({ type: 'error', text1: 'Nama produk harus diisi' });
@@ -781,11 +799,43 @@ export default function EditProduct() {
                                     ref={discountRef}
                                     label="Diskon (%)"
                                     value={formData.discount}
-                                    onChangeText={(text) => handleInputChange('discount', text)}
+                                    onChangeText={(text) => {
+                                        // Allow only numbers and one decimal point
+                                        const cleaned = text.replace(/[^0-9.]/g, '');
+                                        // Prevent multiple decimal points
+                                        const parts = cleaned.split('.');
+                                        const sanitized = parts.length > 2
+                                            ? parts[0] + '.' + parts.slice(1).join('')
+                                            : cleaned;
+                                        // Limit to 100
+                                        const numValue = parseFloat(sanitized) || 0;
+                                        if (numValue > 100) {
+                                            setFormData(prev => ({ ...prev, discount: '100' }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, discount: sanitized }));
+                                        }
+                                    }}
                                     placeholder="0"
-                                    keyboardType="numeric"
+                                    keyboardType="decimal-pad"
                                     returnKeyType="next"
                                     onSubmitEditing={() => { }}
+                                    rightIcon={
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <TouchableOpacity
+                                                onPress={decrementDiscount}
+                                                style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 6 }}
+                                            >
+                                                <Text style={{ fontSize: 16, color: '#374151' }}>-</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                onPress={incrementDiscount}
+                                                style={{ paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, marginRight: 8 }}
+                                            >
+                                                <Text style={{ fontSize: 16, color: '#374151' }}>+</Text>
+                                            </TouchableOpacity>
+                                            <Text style={{ fontSize: 14, color: '#6B7280' }}>%</Text>
+                                        </View>
+                                    }
                                 />
                             </View>
                         </View>

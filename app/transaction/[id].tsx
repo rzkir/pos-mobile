@@ -2,11 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useEffect, useState, useCallback } from 'react';
 
-import { View, Text, TouchableOpacity, FlatList, Image, TextInput, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, TextInput, Alert, ScrollView, BackHandler } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { TransactionService } from '@/services/transactionService';
 
@@ -55,10 +53,14 @@ export default function TransactionDetail() {
                 // Load product details for each item
                 const itemsWithProducts = transactionItems.map(item => {
                     const product = products.find((p: any) => p.id === item.product_id);
-                    return {
+                    // Ensure discount is properly set - use product discount if available, otherwise use item discount
+                    const itemWithProduct = {
                         ...item,
-                        product
+                        product,
+                        // Ensure discount field is properly set from product or item
+                        discount: Number(product?.discount ?? item.discount ?? 0) || 0
                     };
+                    return itemWithProduct;
                 });
                 setProductsWithDetails(itemsWithProducts);
             }
@@ -66,7 +68,7 @@ export default function TransactionDetail() {
             console.error('Error loading transaction:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal memuat data transaksi',
                 visibilityTime: 3000
             });
@@ -75,10 +77,35 @@ export default function TransactionDetail() {
         }
     }, [transactionId, products]);
 
+    // Cleanup function to clear localStorage traces
+    const cleanupLocalStorage = useCallback(async () => {
+        try {
+            await AsyncStorage.removeItem('selected_products');
+        } catch (error) {
+            console.error('Error cleaning up localStorage:', error);
+        }
+    }, []);
+
     useEffect(() => {
         loadTransaction();
         loadPaymentCards();
-    }, [loadTransaction]);
+
+        // Cleanup function: clear localStorage when component unmounts
+        return () => {
+            cleanupLocalStorage();
+        };
+    }, [loadTransaction, cleanupLocalStorage]);
+
+    // Handle Android hardware back button
+    useEffect(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            cleanupLocalStorage();
+            router.back();
+            return true; // Prevent default behavior
+        });
+
+        return () => backHandler.remove();
+    }, [cleanupLocalStorage, router]);
 
     const loadPaymentCards = async () => {
         try {
@@ -101,24 +128,31 @@ export default function TransactionDetail() {
                     const currentItems = await TransactionService.getItemsByTransactionId(transactionId);
                     const existingItem = currentItems.find(item => item.product_id === productId);
 
+                    // Calculate discount from product
+                    const basePrice = product.price ?? 0;
+                    const productDiscount = Number(product.discount ?? 0) || 0;
+                    // Discount is percentage, so calculate discounted price
+                    const discountAmount = (basePrice * productDiscount) / 100;
+                    const discountedPrice = basePrice - discountAmount;
+
                     if (existingItem) {
                         // Update quantity
                         const newQty = existingItem.quantity + (qty as number);
-                        const subtotal = newQty * (product.price || 0);
+                        const subtotal = newQty * discountedPrice;
                         await TransactionService.updateItem(existingItem.id, {
                             quantity: newQty,
+                            discount: productDiscount,
                             subtotal
                         });
                     } else {
                         // Add new item
-                        const price = product.price || 0;
-                        const subtotal = (qty as number) * price;
+                        const subtotal = (qty as number) * discountedPrice;
                         await TransactionService.addItem({
                             transaction_id: transactionId,
                             product_id: productId,
                             quantity: qty as number,
-                            price,
-                            discount: 0,
+                            price: basePrice,
+                            discount: productDiscount,
                             subtotal
                         });
                     }
@@ -129,7 +163,7 @@ export default function TransactionDetail() {
             console.error('Error adding products:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal menambahkan produk',
                 visibilityTime: 3000
             });
@@ -166,9 +200,17 @@ export default function TransactionDetail() {
         try {
             const item = items.find(i => i.id === itemId);
             if (item) {
-                const newSubtotal = newQty * item.price;
+                const product = products.find((p: any) => p.id === item.product_id);
+                const basePrice = item.price;
+                // Use discount from product if available, otherwise use item discount
+                const productDiscount = Number(product?.discount ?? item.discount ?? 0) || 0;
+                const discountAmount = (basePrice * productDiscount) / 100;
+                const discountedPrice = basePrice - discountAmount;
+                const newSubtotal = newQty * discountedPrice;
+
                 await TransactionService.updateItem(itemId, {
                     quantity: newQty,
+                    discount: productDiscount,
                     subtotal: newSubtotal
                 });
                 loadTransaction();
@@ -177,7 +219,7 @@ export default function TransactionDetail() {
             console.error('Error updating item:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal memperbarui item',
                 visibilityTime: 3000
             });
@@ -192,7 +234,7 @@ export default function TransactionDetail() {
             console.error('Error deleting item:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal menghapus item',
                 visibilityTime: 3000
             });
@@ -217,7 +259,7 @@ export default function TransactionDetail() {
             console.error('Error saving customer info:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal menyimpan data pelanggan',
                 visibilityTime: 3000
             });
@@ -294,12 +336,22 @@ export default function TransactionDetail() {
                 mappedMethod = paymentMethod;
             }
 
-            // Set status to 'paid' automatically when confirming payment
             await TransactionService.update(transactionId, {
                 payment_method: mappedMethod,
                 payment_status: 'paid',
                 status: 'completed'
             });
+
+            const transactionItems = await TransactionService.getItemsByTransactionId(transactionId);
+            for (const item of transactionItems) {
+                try {
+                    const { ProductService } = await import('@/services/productService');
+                    await ProductService.updateSold(item.product_id, item.quantity);
+                } catch (error) {
+                    console.error(`Error updating product ${item.product_id}:`, error);
+                }
+            }
+
             await TransactionService.clearActiveTransaction();
 
             // Navigate to success page
@@ -311,7 +363,7 @@ export default function TransactionDetail() {
             console.error('Error saving payment info:', error);
             Toast.show({
                 type: 'error',
-                text1: 'Error',
+                text1: 'Kesalahan',
                 text2: 'Gagal menyimpan data pembayaran',
                 visibilityTime: 3000
             });
@@ -374,7 +426,7 @@ export default function TransactionDetail() {
                             console.error('Error deleting transaction:', error);
                             Toast.show({
                                 type: 'error',
-                                text1: 'Error',
+                                text1: 'Kesalahan',
                                 text2: 'Gagal menghapus transaksi',
                                 visibilityTime: 3000
                             });
@@ -385,61 +437,97 @@ export default function TransactionDetail() {
         );
     };
 
+    const handleSettings = () => {
+        // Settings menu - could include cancel transaction option
+        Alert.alert(
+            'Pengaturan',
+            'Pilih aksi',
+            [
+                {
+                    text: 'Batal Transaksi',
+                    style: 'destructive',
+                    onPress: handleBatal
+                },
+                {
+                    text: 'Tutup',
+                    style: 'cancel'
+                }
+            ]
+        );
+    };
+
+    // Handle back navigation with cleanup
+    const handleBack = async () => {
+        await cleanupLocalStorage();
+        router.back();
+    };
+
 
     const renderItem = ({ item }: { item: any }) => {
         const product = item.product;
+        // Calculate price with discount
+        const basePrice = item.price;
+        // Use nullish coalescing to properly handle 0 as a valid discount value
+        const discount = (product?.discount ?? item.discount ?? 0);
+        // Ensure discount is a number
+        const discountValue = Number(discount) || 0;
+        const discountAmount = (basePrice * discountValue) / 100;
+        const discountedPrice = basePrice - discountAmount;
+        const hasDiscount = discountValue > 0;
 
         return (
             <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-200">
-                <View className="flex-row items-center justify-between mb-3">
-                    <View className="flex-1 flex-row items-center">
+                <View className="flex-row items-center">
+                    {/* Circular Image */}
+                    <View className="mr-3">
                         {product?.image_url ? (
                             <Image
                                 source={{ uri: product.image_url }}
-                                className="w-16 h-16 rounded-xl mr-3"
+                                className="w-16 h-16 rounded-full"
                                 resizeMode="cover"
                             />
                         ) : (
-                            <View className="w-16 h-16 rounded-xl bg-gray-100 items-center justify-center mr-3">
+                            <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center">
                                 <Ionicons name="image-outline" size={24} color="#9CA3AF" />
                             </View>
                         )}
-                        <View className="flex-1">
-                            <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
-                                {product?.name || 'Produk tidak ditemukan'}
-                            </Text>
-                            <Text className="text-sm text-gray-500">{formatIDR(item.price)}</Text>
-                        </View>
                     </View>
-                </View>
 
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
+                    {/* Item Info */}
+                    <View className="flex-1">
+                        <Text className="text-base font-semibold text-gray-900 mb-1" numberOfLines={1}>
+                            {product?.name || 'Produk tidak ditemukan'}
+                        </Text>
+                        {hasDiscount ? (
+                            <View className="mb-1">
+                                <View className="flex-row items-center gap-2">
+                                    <Text className="text-xs line-through text-gray-400">{formatIDR(basePrice)}</Text>
+                                    <Text className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                                        -{discountValue}%
+                                    </Text>
+                                </View>
+                                <Text className="text-sm font-bold text-blue-600">{formatIDR(discountedPrice)}</Text>
+                            </View>
+                        ) : (
+                            <Text className="text-sm font-bold text-blue-600 mb-1">{formatIDR(basePrice)}</Text>
+                        )}
+                        <Text className="text-xs text-gray-400">Catatan</Text>
+                    </View>
+
+                    {/* Quantity Selector */}
+                    <View className="flex-row items-center gap-3">
                         <TouchableOpacity
                             onPress={() => updateItemQty(item.id, item.quantity - 1)}
-                            className="w-8 h-8 rounded-full bg-red-100 items-center justify-center"
+                            className="w-8 h-8 rounded-lg border border-gray-300 bg-gray-50 items-center justify-center"
                         >
-                            <Ionicons name="remove" size={16} color="#DC2626" />
+                            <View className="w-3 h-0.5 bg-gray-700 rounded" />
                         </TouchableOpacity>
-                        <Text className="mx-3 text-base font-semibold text-gray-900">
-                            {item.quantity}
-                        </Text>
+                        <Text className="text-base font-semibold text-gray-900 min-w-[24px] text-center">{item.quantity}</Text>
                         <TouchableOpacity
                             onPress={() => updateItemQty(item.id, item.quantity + 1)}
-                            className="w-8 h-8 rounded-full bg-emerald-100 items-center justify-center"
+                            className="w-8 h-8 rounded-lg border border-gray-300 bg-gray-50 items-center justify-center"
                         >
-                            <Ionicons name="add" size={16} color="#059669" />
-                        </TouchableOpacity>
-                    </View>
-                    <View className="flex-row items-center">
-                        <Text className="text-base font-bold text-gray-900 mr-3">
-                            {formatIDR(item.subtotal)}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => deleteItem(item.id)}
-                            className="w-8 h-8 rounded-full bg-red-100 items-center justify-center"
-                        >
-                            <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                            <Ionicons name="add" size={16} color="#374151" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -449,7 +537,7 @@ export default function TransactionDetail() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-background items-center justify-center">
+            <View className="flex-1 bg-white items-center justify-center">
                 <Text className="text-gray-500">Memuat data...</Text>
             </View>
         );
@@ -457,11 +545,11 @@ export default function TransactionDetail() {
 
     if (!transaction) {
         return (
-            <View className="flex-1 bg-background items-center justify-center p-4">
+            <View className="flex-1 bg-white items-center justify-center p-4">
                 <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF" />
                 <Text className="text-lg font-semibold text-gray-900 mt-4">Transaksi tidak ditemukan</Text>
                 <TouchableOpacity
-                    onPress={() => router.back()}
+                    onPress={handleBack}
                     className="mt-4 px-6 py-3 bg-orange-500 rounded-xl"
                 >
                     <Text className="text-white font-semibold">Kembali</Text>
@@ -471,35 +559,23 @@ export default function TransactionDetail() {
     }
 
     return (
-        <View className="flex-1 bg-background">
+        <View className="flex-1 bg-white">
             {/* Header */}
-            <LinearGradient
-                colors={["#f97316", "#fb923c"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ paddingHorizontal: 16, paddingTop: 48, paddingBottom: 20 }}
-            >
-                <View className="flex-row items-center justify-between">
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="w-10 h-10 rounded-full bg-white/30 items-center justify-center"
-                    >
-                        <Ionicons name="arrow-back" size={20} color="white" />
+            <View className="flex-row items-center justify-between px-4 pt-12 pb-4 bg-white">
+                <TouchableOpacity
+                    onPress={handleBack}
+                    className="w-10 h-10 items-center justify-center"
+                >
+                    <Ionicons name="arrow-back" size={20} color="#000" />
+                </TouchableOpacity>
+                <Text className="flex-1 text-lg font-bold text-black ml-2">Detail Transaksi</Text>
+                <View className="flex-row items-center gap-2">
+                    <TouchableOpacity className="w-10 h-10 items-center justify-center" onPress={handleSettings}>
+                        <Ionicons name="settings-outline" size={20} color="#000" />
                     </TouchableOpacity>
-                    <View className="flex-1 ml-4">
-                        <Text className="text-white font-bold text-lg">Detail Transaksi</Text>
-                        <Text className="text-white/80 text-xs">{transaction.transaction_number}</Text>
-                    </View>
-                    <View className={`px-3 py-1 rounded-full ${transaction.status === 'draft' ? 'bg-yellow-500' :
-                        transaction.status === 'completed' ? 'bg-green-500' : 'bg-red-500'
-                        }`}>
-                        <Text className="text-white text-xs font-semibold">
-                            {transaction.status === 'draft' ? 'Draft' :
-                                transaction.status === 'completed' ? 'Selesai' : 'Dibatalkan'}
-                        </Text>
-                    </View>
+                    <Text className="text-sm font-semibold text-blue-600">{transaction.transaction_number}</Text>
                 </View>
-            </LinearGradient>
+            </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Customer Info */}
@@ -511,13 +587,14 @@ export default function TransactionDetail() {
                             <TextInput
                                 className="bg-gray-50 rounded-xl px-4 py-3 text-gray-900 border border-gray-200"
                                 placeholder="Masukkan nama pelanggan"
+                                placeholderTextColor="#9CA3AF"
                                 value={customerName}
                                 onChangeText={setCustomerName}
                             />
                         </View>
                         <TouchableOpacity
                             onPress={saveCustomerInfo}
-                            className="bg-orange-500 rounded-xl py-3 items-center"
+                            className="bg-blue-600 rounded-xl py-3 items-center"
                         >
                             <Text className="text-white font-semibold">Simpan Data Pelanggan</Text>
                         </TouchableOpacity>
@@ -526,14 +603,13 @@ export default function TransactionDetail() {
 
                 {/* Items List */}
                 <View className="mx-4 mt-4">
-                    <Text className="text-base font-bold text-gray-900 mb-3">Daftar Produk</Text>
                     {productsWithDetails.length === 0 ? (
                         <View className="bg-white rounded-2xl p-8 items-center border border-gray-200">
                             <Ionicons name="cart-outline" size={48} color="#9CA3AF" />
                             <Text className="text-gray-500 mt-3">Belum ada produk dalam transaksi</Text>
                             <TouchableOpacity
-                                onPress={() => router.back()}
-                                className="mt-4 px-6 py-2 bg-orange-500 rounded-xl"
+                                onPress={handleBack}
+                                className="mt-4 px-6 py-2 bg-blue-600 rounded-xl"
                             >
                                 <Text className="text-white font-semibold">Tambah Produk</Text>
                             </TouchableOpacity>
@@ -548,38 +624,73 @@ export default function TransactionDetail() {
                     )}
                 </View>
 
+                {/* Promotion Section */}
+                {transaction.discount > 0 && (
+                    <View className="bg-white mx-4 mt-2 rounded-2xl p-4 border border-gray-200 flex-row items-center justify-between">
+                        <View className="flex-row items-center gap-2">
+                            <Ionicons name="pricetag-outline" size={20} color="#2563EB" />
+                            <Text className="text-sm font-semibold text-gray-900">Promosi</Text>
+                        </View>
+                        <Text className="text-sm font-semibold text-blue-600">CN30K</Text>
+                    </View>
+                )}
+
                 {/* Summary */}
                 <View className="bg-white mx-4 mt-4 mb-4 rounded-2xl p-4 border border-gray-200">
-                    <Text className="text-base font-bold text-gray-900 mb-3">Ringkasan</Text>
-                    <View className="flex-row justify-between mb-2">
-                        <Text className="text-gray-600">Subtotal</Text>
-                        <Text className="text-gray-900 font-semibold">{formatIDR(transaction.subtotal)}</Text>
-                    </View>
-                    <View className="flex-row justify-between mb-2">
-                        <Text className="text-gray-600">Diskon</Text>
-                        <Text className="text-gray-900 font-semibold">{formatIDR(transaction.discount)}</Text>
-                    </View>
-                    <View className="flex-row justify-between mb-2">
-                        <Text className="text-gray-600">Pajak</Text>
-                        <Text className="text-gray-900 font-semibold">{formatIDR(transaction.tax)}</Text>
-                    </View>
-                    <View className="h-px bg-gray-200 my-3" />
-                    <View className="flex-row justify-between mb-2">
-                        <Text className="text-lg font-bold text-gray-900">Total</Text>
-                        <Text className="text-lg font-bold text-orange-500">{formatIDR(transaction.total)}</Text>
-                    </View>
+                    {/* Calculate total discount from all items */}
+                    {(() => {
+                        // Calculate total base price (before discount)
+                        const totalBasePrice = productsWithDetails.reduce((sum, item) => {
+                            return sum + (item.price * item.quantity);
+                        }, 0);
+
+                        // Calculate total discount amount from all items
+                        const totalItemsDiscount = productsWithDetails.reduce((sum, item) => {
+                            const product = item.product;
+                            const basePrice = item.price;
+                            const discount = (product?.discount ?? item.discount ?? 0);
+                            const discountValue = Number(discount) || 0;
+                            const discountAmount = (basePrice * discountValue) / 100;
+                            return sum + (discountAmount * item.quantity);
+                        }, 0);
+
+                        return (
+                            <>
+                                <View className="flex-row justify-between items-center mb-3">
+                                    <Text className="text-sm text-gray-900">Subtotal</Text>
+                                    <Text className="text-sm font-semibold text-gray-900">{formatIDR(transaction.subtotal || totalBasePrice)}</Text>
+                                </View>
+                                {totalItemsDiscount > 0 && (
+                                    <View className="flex-row justify-between items-center mb-3">
+                                        <Text className="text-sm text-gray-900">Diskon Produk</Text>
+                                        <Text className="text-sm font-semibold text-gray-900">-{formatIDR(totalItemsDiscount)}</Text>
+                                    </View>
+                                )}
+                                {transaction.discount > 0 && (
+                                    <View className="flex-row justify-between items-center mb-3">
+                                        <Text className="text-sm text-gray-900">Promosi</Text>
+                                        <Text className="text-sm font-semibold text-gray-900">-{formatIDR(transaction.discount)}</Text>
+                                    </View>
+                                )}
+                                <View className="flex-row justify-between items-center">
+                                    <Text className="text-base font-bold text-gray-900">Total</Text>
+                                    <Text className="text-base font-bold text-gray-900">{formatIDR(transaction.total)}</Text>
+                                </View>
+                            </>
+                        );
+                    })()}
                     {transaction.status !== 'draft' && (
                         <>
-                            <View className="h-px bg-gray-200 my-2" />
-                            <View className="flex-row justify-between mb-1">
-                                <Text className="text-sm text-gray-600">Metode</Text>
-                                <Text className="text-sm text-gray-900 font-semibold">
+                            <View className="h-px bg-gray-200 my-3" />
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-xs text-gray-500">Metode</Text>
+                                <Text className="text-xs font-semibold text-gray-900">
                                     {transaction.payment_method === 'cash' ? 'Tunai' :
                                         transaction.payment_method === 'card' ? 'Kartu' : 'Transfer'}
                                 </Text>
                             </View>
-                            <View className="flex-row justify-between">
-                                <Text className="text-sm text-gray-600">Status</Text>
+                            <View className="flex-row justify-between items-center">
+                                <Text className="text-xs text-gray-500">Status</Text>
                                 <View className={`px-2 py-1 rounded ${transaction.payment_status === 'paid' ? 'bg-green-100' :
                                     transaction.payment_status === 'cancelled' ? 'bg-red-100' :
                                         'bg-yellow-100'
@@ -588,7 +699,7 @@ export default function TransactionDetail() {
                                         transaction.payment_status === 'cancelled' ? 'text-red-700' :
                                             'text-yellow-700'
                                         }`}>
-                                        {transaction.payment_status === 'pending' ? 'Pending' :
+                                        {transaction.payment_status === 'pending' ? 'Menunggu' :
                                             transaction.payment_status === 'paid' ? 'Lunas' : 'Dibatalkan'}
                                     </Text>
                                 </View>
@@ -600,21 +711,27 @@ export default function TransactionDetail() {
 
             {/* Action Buttons */}
             {transaction.status === 'draft' && (
-                <View className="px-4 pb-4 pt-2 bg-white border-t border-gray-200">
-                    <View className="flex-row gap-3">
-                        <TouchableOpacity
-                            onPress={handleBatal}
-                            className="flex-1 bg-red-500 rounded-xl py-3 items-center"
-                        >
-                            <Text className="text-white font-semibold">Batal</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleBayar}
-                            className="flex-1 bg-orange-500 rounded-xl py-3 items-center"
-                        >
-                            <Text className="text-white font-semibold">Bayar</Text>
-                        </TouchableOpacity>
-                    </View>
+                <View className="flex-row px-4 pb-4 pt-2 bg-white gap-3">
+                    <TouchableOpacity
+                        onPress={() => {
+                            // Handle print temporary bill
+                            Toast.show({
+                                type: 'info',
+                                text1: 'Cetak',
+                                text2: 'Fitur cetak sementara',
+                                visibilityTime: 2000
+                            });
+                        }}
+                        className="flex-1 bg-white border border-blue-300 rounded-xl py-3.5 items-center"
+                    >
+                        <Text className="text-sm font-semibold text-blue-600">Cetak Sementara</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleBayar}
+                        className="flex-[1.2] bg-blue-600 rounded-xl py-3.5 items-center"
+                    >
+                        <Text className="text-sm font-semibold text-white">Bayar</Text>
+                    </TouchableOpacity>
                 </View>
             )}
 
