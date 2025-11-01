@@ -1,12 +1,14 @@
 import React, { ReactNode, createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-import { ProductCategoryService } from '../services/productCategoryService';
+import { ProductCategoryService } from '@/services/productCategoryService';
 
-import { ProductService } from '../services/productService';
+import { ProductService } from '@/services/productService';
 
-import { ProductSizeService } from '../services/productSizeService';
+import { ProductSizeService } from '@/services/productSizeService';
 
-import { SupplierService } from '../services/supplierService';
+import { SupplierService } from '@/services/supplierService';
+
+import { LowStockNotificationService } from '@/services/lowStockNotificationService';
 
 export const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
@@ -54,6 +56,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
             setCategories(categoriesData);
             setSizes(sizesData);
             setSuppliers(suppliersData);
+
+            // Check for low stock products after refreshing data
+            await LowStockNotificationService.checkAndNotifyAllProducts(productsData);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
@@ -73,6 +78,10 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         try {
             const newProduct = await ProductService.create(productData);
             await refreshData();
+            // Check for low stock after creating product
+            if (newProduct.min_stock && newProduct.stock <= newProduct.min_stock) {
+                await LowStockNotificationService.checkAndNotifyProduct(newProduct);
+            }
             return newProduct;
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create product');
@@ -82,9 +91,24 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
 
     const updateProduct = async (id: number, productData: Partial<Product>) => {
         try {
+            // Get product before update to check if min_stock changed
+            const oldProduct = await ProductService.getById(id);
             const updatedProduct = await ProductService.update(id, productData);
+
             if (updatedProduct) {
                 await refreshData();
+
+                // Check for low stock if stock or min_stock was updated
+                if (productData.stock !== undefined || productData.min_stock !== undefined) {
+                    // If min_stock changed, reset notified status to allow re-notification
+                    if (oldProduct && productData.min_stock !== undefined &&
+                        oldProduct.min_stock !== productData.min_stock) {
+                        // Reset notified status when min_stock changes
+                        await LowStockNotificationService.resetNotifiedStatus(updatedProduct.id);
+                    }
+
+                    await LowStockNotificationService.checkAndNotifyProduct(updatedProduct);
+                }
             }
             return updatedProduct;
         } catch (err) {
@@ -147,6 +171,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
             const updatedProduct = await ProductService.updateStock(id, newStock);
             if (updatedProduct) {
                 await refreshData();
+                // Check for low stock after update
+                await LowStockNotificationService.checkAndNotifyProduct(updatedProduct);
             }
             return updatedProduct;
         } catch (err) {
@@ -160,6 +186,8 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
             const updatedProduct = await ProductService.updateSold(id, soldQuantity);
             if (updatedProduct) {
                 await refreshData();
+                // Check for low stock after update (stock decreases when sold)
+                await LowStockNotificationService.checkAndNotifyProduct(updatedProduct);
             }
             return updatedProduct;
         } catch (err) {

@@ -14,11 +14,11 @@ export default function TabLayout() {
             <Tabs
                 screenOptions={{
                     tabBarShowLabel: false,
-                    tabBarActiveTintColor: '#3b82f6',
-                    tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#6b7280',
+                    tabBarActiveTintColor: '#FF9228',
+                    tabBarInactiveTintColor: isDark ? '#A1A5B7' : '#6B7280',
                     tabBarStyle: {
-                        backgroundColor: isDark ? '#18181b' : '#ffffff',
-                        borderTopColor: isDark ? '#27272a' : '#e5e7eb',
+                        backgroundColor: isDark ? '#181A20' : '#FFFFFF',
+                        borderTopColor: isDark ? '#212529' : '#E5E7EB',
                         borderTopWidth: 1,
                         height: isTablet ? 68 : 56,
                         paddingHorizontal: isTablet ? 24 : 12,
@@ -34,10 +34,10 @@ export default function TabLayout() {
                         title: 'Beranda',
                         tabBarIcon: ({ focused }: { focused: boolean }) => (
                             <View
-                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-accent-primary' : ''}`}
                             >
                                 <View>
-                                    <Ionicons size={isTablet ? 24 : 20} name="home" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                    <Ionicons size={isTablet ? 24 : 20} name="home" color={focused ? '#FFFFFF' : (isDark ? '#A1A5B7' : '#6B7280')} />
                                 </View>
                                 <View>
                                     <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Beranda</Text>
@@ -52,10 +52,10 @@ export default function TabLayout() {
                         title: 'Transaction',
                         tabBarIcon: ({ focused }: { focused: boolean }) => (
                             <View
-                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-accent-primary' : ''}`}
                             >
                                 <View>
-                                    <Ionicons size={isTablet ? 24 : 20} name="card" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                    <Ionicons size={isTablet ? 24 : 20} name="card" color={focused ? '#FFFFFF' : (isDark ? '#A1A5B7' : '#6B7280')} />
                                 </View>
                                 <View>
                                     <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Transaksi</Text>
@@ -71,10 +71,10 @@ export default function TabLayout() {
                         title: 'Products',
                         tabBarIcon: ({ focused }: { focused: boolean }) => (
                             <View
-                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-accent-primary' : ''}`}
                             >
                                 <View>
-                                    <Ionicons size={isTablet ? 24 : 20} name="cube" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                    <Ionicons size={isTablet ? 24 : 20} name="cube" color={focused ? '#FFFFFF' : (isDark ? '#A1A5B7' : '#6B7280')} />
                                 </View>
                                 <View>
                                     <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Produk</Text>
@@ -90,11 +90,11 @@ export default function TabLayout() {
                         title: 'Profile',
                         tabBarIcon: ({ focused }: { focused: boolean }) => (
                             <View
-                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                                className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-accent-primary' : ''}`}
                             >
                                 <View
                                 >
-                                    <Ionicons size={isTablet ? 24 : 20} name="person" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                                    <Ionicons size={isTablet ? 24 : 20} name="person" color={focused ? '#FFFFFF' : (isDark ? '#A1A5B7' : '#6B7280')} />
                                 </View>
                                 <View
                                 >

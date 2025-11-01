@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { TransactionService } from '@/services/transactionService';
 
+import { ProductService } from '@/services/productService';
+
 import { useProducts } from '@/hooks/useProducts';
 
 import { formatIDR } from '@/helper/lib/FormatIdr';
@@ -19,6 +21,8 @@ import { PaymentCardService } from '@/services/paymentCard';
 import BottomSheet from '@/helper/bottomsheets/BottomSheet';
 
 import Toast from 'react-native-toast-message';
+
+import { TransactionNotificationService } from '@/services/transactionNotificationService';
 
 export default function TransactionDetail() {
     const { id } = useLocalSearchParams();
@@ -342,21 +346,33 @@ export default function TransactionDetail() {
                 mappedMethod = paymentMethod;
             }
 
-            await TransactionService.update(transactionId, {
+            const updatedTransaction = await TransactionService.update(transactionId, {
                 payment_method: mappedMethod,
                 payment_status: 'paid',
                 status: 'completed'
             });
 
+            if (!updatedTransaction) {
+                throw new Error('Failed to update transaction');
+            }
+
             const transactionItems = await TransactionService.getItemsByTransactionId(transactionId);
             for (const item of transactionItems) {
                 try {
-                    const { ProductService } = await import('@/services/productService');
                     await ProductService.updateSold(item.product_id, item.quantity);
                 } catch (error) {
                     console.error(`Error updating product ${item.product_id}:`, error);
                 }
             }
+
+            // Send transaction success notification
+            await TransactionNotificationService.sendTransactionSuccessNotification({
+                id: updatedTransaction.id,
+                transaction_number: updatedTransaction.transaction_number,
+                total: updatedTransaction.total,
+                payment_method: updatedTransaction.payment_method,
+                customer_name: updatedTransaction.customer_name,
+            });
 
             await TransactionService.clearActiveTransaction();
 

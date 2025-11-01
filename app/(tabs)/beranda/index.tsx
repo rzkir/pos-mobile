@@ -10,9 +10,9 @@ import { FlatList, Image, Text, TextInput, TouchableOpacity, View } from 'react-
 
 import { Ionicons } from '@expo/vector-icons'
 
-import { LinearGradient } from 'expo-linear-gradient'
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import HeaderGradient from '@/components/ui/HeaderGradient';
 
 import { TransactionService } from '@/services/transactionService';
 
@@ -37,15 +37,12 @@ export default function Beranda() {
     const [activeCategoryId, setActiveCategoryId] = useState<number | 'all'>('all')
     const [productIdToQty, setProductIdToQty] = useState<Record<number, number>>({})
 
-    // Reset productIdToQty ketika kembali ke halaman beranda
     useFocusEffect(
         useCallback(() => {
-            // Reset state ketika halaman di-focus
             setProductIdToQty({})
         }, [])
     )
 
-    // Top Seller Products
     const topSellerProducts = useMemo(() => {
         let list = products.filter((p: any) => p.best_seller === true)
         if (activeCategoryId !== 'all') {
@@ -99,7 +96,6 @@ export default function Beranda() {
 
             const transaction = await TransactionService.getOrCreateDraft();
 
-            // Hapus cart setelah data disimpan dan sebelum navigasi
             setProductIdToQty({});
 
             router.push({
@@ -159,22 +155,11 @@ export default function Beranda() {
     return (
         <View className="flex-1 bg-background">
             {/* Header (Linear Gradient) */}
-            <LinearGradient
-                colors={["#f97316", "#fb923c"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={{ paddingHorizontal: 16, paddingTop: 28, paddingBottom: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-            >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3">
-                        <Text className="text-white font-bold">P</Text>
-                    </View>
-                    <View>
-                        <Text className="text-white font-bold">Pelanggan</Text>
-                        <Text className="text-white/80 text-xs">Kasir</Text>
-                    </View>
-                </View>
-            </LinearGradient>
+            <HeaderGradient
+                icon="P"
+                title="Pelanggan"
+                subtitle="Kasir"
+            />
 
             {/* Search + Add (overlap card) */}
             <View className="px-4" style={{ marginTop: -24, position: 'relative' }}>
