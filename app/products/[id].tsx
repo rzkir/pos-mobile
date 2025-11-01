@@ -519,7 +519,7 @@ export default function EditProduct() {
 
             <KeyboardAwareScrollView
                 className="flex-1"
-                contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
                 keyboardShouldPersistTaps="always"
                 enableOnAndroid={true}
                 enableAutomaticScroll={true}

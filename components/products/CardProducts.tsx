@@ -5,30 +5,30 @@ import { Ionicons } from '@expo/vector-icons';
 export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: CardProductsProps) {
     return (
         <View
-            className="bg-white mx-1 mb-4 rounded-2xl p-5 border border-gray-100"
+            className="bg-white mb-4 rounded-2xl p-3 border border-gray-100"
             style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 6 }}
         >
-            <View className="flex-row items-start mb-4">
+            <View className="flex-row items-start mb-3">
                 {/* Product Image */}
-                <View className="mr-4">
+                <View className="mr-2">
                     {item.image_url ? (
                         <Image
                             source={{ uri: item.image_url }}
-                            style={{ width: 72, height: 72, borderRadius: 16 }}
+                            style={{ width: 60, height: 60, borderRadius: 12 }}
                             resizeMode="cover"
                         />
                     ) : (
                         <View
-                            className="rounded-2xl items-center justify-center"
-                            style={{ width: 72, height: 72, backgroundColor: '#F3F4F6' }}
+                            className="rounded-xl items-center justify-center"
+                            style={{ width: 60, height: 60, backgroundColor: '#F3F4F6' }}
                         >
-                            <Ionicons name="image-outline" size={28} color="#9CA3AF" />
+                            <Ionicons name="image-outline" size={24} color="#9CA3AF" />
                         </View>
                     )}
                 </View>
 
                 <View className="flex-1">
-                    <Text className="text-base font-bold text-gray-900 mb-1" numberOfLines={2}>
+                    <Text className="text-sm font-bold text-gray-900 mb-1" numberOfLines={2}>
                         {item.name}
                     </Text>
 
@@ -54,11 +54,11 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
                 </View>
 
                 {item.best_seller ? (
-                    <View className="ml-2">
-                        <View className="bg-yellow-50 px-2 py-1 rounded-full border border-yellow-100">
+                    <View className="ml-1">
+                        <View className="bg-yellow-50 px-1.5 py-0.5 rounded-full border border-yellow-100">
                             <View className="flex-row items-center">
-                                <Ionicons name="star" size={12} color="#D97706" />
-                                <Text className="text-yellow-700 text-[10px] font-semibold ml-1">Best Seller</Text>
+                                <Ionicons name="star" size={10} color="#D97706" />
+                                <Text className="text-yellow-700 text-[9px] font-semibold ml-0.5">Best</Text>
                             </View>
                         </View>
                     </View>
@@ -84,7 +84,7 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
                 </View>
             </View>
 
-            <View className="flex-row gap-2">
+            <View className="flex-row items-center gap-2">
                 <TouchableOpacity
                     onPress={() => onViewDetails(item)}
                     className="flex-1 bg-green-500 px-4 py-3 rounded-xl"
@@ -92,7 +92,6 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
                 >
                     <View className="flex-row items-center justify-center">
                         <Ionicons name="eye-outline" size={16} color="white" />
-                        <Text className="text-white font-semibold ml-2 text-sm">Detail</Text>
                     </View>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -102,7 +101,6 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
                 >
                     <View className="flex-row items-center justify-center">
                         <Ionicons name="create-outline" size={16} color="white" />
-                        <Text className="text-white font-semibold ml-2 text-sm">Edit</Text>
                     </View>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -112,7 +110,6 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
                 >
                     <View className="flex-row items-center justify-center">
                         <Ionicons name="trash-outline" size={16} color="white" />
-                        <Text className="text-white font-semibold ml-2 text-sm">Hapus</Text>
                     </View>
                 </TouchableOpacity>
             </View>

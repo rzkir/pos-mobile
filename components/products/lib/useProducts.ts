@@ -27,6 +27,11 @@ export function useProducts() {
   const [showDetailsView, setShowDetailsView] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null);
 
   useEffect(() => {
     refreshData();
@@ -45,18 +50,112 @@ export function useProducts() {
       return Math.max(updated, created);
     };
 
-    const baseList = !searchTerm
-      ? products
-      : products.filter(
-          (product: any) =>
-            product?.name?.toLowerCase?.().includes(searchTerm.toLowerCase()) ||
-            product?.barcode?.toLowerCase?.().includes(searchTerm.toLowerCase())
-        );
+    let baseList = products;
+
+    // Filter by search term
+    if (searchTerm) {
+      baseList = baseList.filter(
+        (product: any) =>
+          product?.name?.toLowerCase?.().includes(searchTerm.toLowerCase()) ||
+          product?.barcode?.toLowerCase?.().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.category_id === selectedCategoryId
+      );
+    }
+
+    // Filter by size
+    if (selectedSizeId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.size_id === selectedSizeId
+      );
+    }
 
     return [...baseList]
       .sort((a: any, b: any) => getTime(b) - getTime(a))
       .slice(0, 10);
-  }, [products, searchTerm]);
+  }, [products, searchTerm, selectedCategoryId, selectedSizeId]);
+
+  const bestSellerProducts = useMemo(() => {
+    const getTime = (p: any) => {
+      const updated = p?.updated_at ? new Date(p.updated_at).getTime() : 0;
+      const created = p?.created_at ? new Date(p.created_at).getTime() : 0;
+      return Math.max(updated, created);
+    };
+
+    let baseList = products;
+
+    // Filter by search term
+    if (searchTerm) {
+      baseList = baseList.filter(
+        (product: any) =>
+          product?.name?.toLowerCase?.().includes(searchTerm.toLowerCase()) ||
+          product?.barcode?.toLowerCase?.().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.category_id === selectedCategoryId
+      );
+    }
+
+    // Filter by size
+    if (selectedSizeId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.size_id === selectedSizeId
+      );
+    }
+
+    // Filter best seller products
+    return [...baseList]
+      .filter((product: any) => product?.best_seller === true)
+      .sort((a: any, b: any) => getTime(b) - getTime(a));
+  }, [products, searchTerm, selectedCategoryId, selectedSizeId]);
+
+  const regularProducts = useMemo(() => {
+    const getTime = (p: any) => {
+      const updated = p?.updated_at ? new Date(p.updated_at).getTime() : 0;
+      const created = p?.created_at ? new Date(p.created_at).getTime() : 0;
+      return Math.max(updated, created);
+    };
+
+    let baseList = products;
+
+    // Filter by search term
+    if (searchTerm) {
+      baseList = baseList.filter(
+        (product: any) =>
+          product?.name?.toLowerCase?.().includes(searchTerm.toLowerCase()) ||
+          product?.barcode?.toLowerCase?.().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.category_id === selectedCategoryId
+      );
+    }
+
+    // Filter by size
+    if (selectedSizeId !== null) {
+      baseList = baseList.filter(
+        (product: any) => product?.size_id === selectedSizeId
+      );
+    }
+
+    // Filter regular (non-best seller) products
+    return [...baseList]
+      .filter((product: any) => product?.best_seller !== true)
+      .sort((a: any, b: any) => getTime(b) - getTime(a))
+      .slice(0, 10);
+  }, [products, searchTerm, selectedCategoryId, selectedSizeId]);
 
   // handlers
   const handleViewDetails = (product: Product) => {
@@ -129,6 +228,27 @@ export function useProducts() {
     }
   };
 
+  const handleOpenFilter = () => {
+    setShowFilterSheet(true);
+  };
+
+  const handleCloseFilter = () => {
+    setShowFilterSheet(false);
+  };
+
+  const handleApplyFilter = (
+    categoryId: number | null,
+    sizeId: number | null
+  ) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedSizeId(sizeId);
+  };
+
+  const handleResetFilter = () => {
+    setSelectedCategoryId(null);
+    setSelectedSizeId(null);
+  };
+
   return {
     // data
     products,
@@ -156,10 +276,21 @@ export function useProducts() {
     searchTerm,
     setSearchTerm,
     filteredProducts,
+    bestSellerProducts,
+    regularProducts,
     showDetailsView,
     selectedProduct,
     refreshing,
     handleViewDetails,
     closeDetailsView,
+
+    // filter state
+    showFilterSheet,
+    selectedCategoryId,
+    selectedSizeId,
+    handleOpenFilter,
+    handleCloseFilter,
+    handleApplyFilter,
+    handleResetFilter,
   };
 }
