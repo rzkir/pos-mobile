@@ -53,3 +53,27 @@ interface PaymentModalProps {
   onAmountPaidChange: (text: string) => void;
   onSavePaymentInfo: () => void;
 }
+
+interface ProductsBottomSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  products: any[];
+  filteredProducts: any[];
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedProducts: Record<number, number>;
+  setSelectedProducts: (products: Record<number, number>) => void;
+  formatIDR: (amount: number) => string;
+  addProductQty: (productId: number) => void;
+  subProductQty: (productId: number) => void;
+  handleAddProducts: () => void;
+  categories: any[];
+  sizes: any[];
+  selectedCategoryId: number | null;
+  selectedSizeId: number | null;
+  handleApplyFilters: (
+    categoryId: number | null,
+    sizeId: number | null
+  ) => void;
+  handleResetFilters: () => void;
+}

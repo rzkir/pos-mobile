@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { TransactionService } from "@/services/transactionService";
 import { ProductService } from "@/services/productService";
 import { PaymentCardService } from "@/services/paymentCard";
@@ -35,6 +35,16 @@ export function useStateCreateTransaction({
   >(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentInfoFilled, setPaymentInfoFilled] = useState(false);
+  const [showProductsSheet, setShowProductsSheet] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<
+    Record<number, number>
+  >({});
+  const [showScanner, setShowScanner] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null);
 
   // Helper functions for amount formatting
   const formatIdrNumber = (raw: string) => {
@@ -259,6 +269,148 @@ export function useStateCreateTransaction({
       }
     },
     [transactionId, products, loadTransaction]
+  );
+
+  // Filter products based on search, category, and size
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Filter by search
+    if (searchTerm) {
+      const query = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (product: any) =>
+          product.name?.toLowerCase().includes(query) ||
+          product.barcode?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      filtered = filtered.filter(
+        (product: any) => product?.category_id === selectedCategoryId
+      );
+    }
+
+    // Filter by size
+    if (selectedSizeId !== null) {
+      filtered = filtered.filter(
+        (product: any) => product?.size_id === selectedSizeId
+      );
+    }
+
+    return filtered;
+  }, [products, searchTerm, selectedCategoryId, selectedSizeId]);
+
+  // Add product quantity
+  const addProductQty = useCallback((productId: number) => {
+    setSelectedProducts((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1,
+    }));
+  }, []);
+
+  // Subtract product quantity
+  const subProductQty = useCallback((productId: number) => {
+    setSelectedProducts((prev) => {
+      const current = prev[productId] || 0;
+      if (current <= 1) {
+        const { [productId]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [productId]: current - 1 };
+    });
+  }, []);
+
+  // Handle barcode scan
+  const handleBarcodeScan = useCallback(
+    async (barcode: string) => {
+      // Find product by barcode
+      const product = products.find((p: any) => p.barcode === barcode);
+
+      if (product) {
+        try {
+          // Create a single product selection with quantity 1
+          const productToAdd = { [product.id]: 1 };
+
+          // Directly add product to transaction
+          await addProductsToTransaction(productToAdd);
+
+          Toast.show({
+            type: "success",
+            text1: "Berhasil",
+            text2: `${product.name} ditambahkan ke transaksi`,
+            visibilityTime: 2000,
+          });
+        } catch (error) {
+          console.error("Error adding product:", error);
+          Toast.show({
+            type: "error",
+            text1: "Kesalahan",
+            text2: "Gagal menambahkan produk ke transaksi",
+            visibilityTime: 3000,
+          });
+        }
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Produk Tidak Ditemukan",
+          text2: `Barcode ${barcode} tidak ditemukan`,
+          visibilityTime: 3000,
+        });
+      }
+    },
+    [products, addProductsToTransaction]
+  );
+
+  // Add selected products to transaction
+  const handleAddProducts = useCallback(async () => {
+    const selectedCount = Object.keys(selectedProducts).length;
+    if (selectedCount === 0) {
+      Toast.show({
+        type: "info",
+        text1: "Pilih Produk",
+        text2: "Silakan pilih produk terlebih dahulu",
+        visibilityTime: 2000,
+      });
+      return;
+    }
+
+    try {
+      await addProductsToTransaction(selectedProducts);
+      setSelectedProducts({});
+      setShowProductsSheet(false);
+      setSearchTerm("");
+      setSelectedCategoryId(null);
+      setSelectedSizeId(null);
+      Toast.show({
+        type: "success",
+        text1: "Berhasil",
+        text2: "Produk berhasil ditambahkan",
+        visibilityTime: 2000,
+      });
+    } catch (error) {
+      console.error("Error adding products:", error);
+      Toast.show({
+        type: "error",
+        text1: "Kesalahan",
+        text2: "Gagal menambahkan produk",
+        visibilityTime: 3000,
+      });
+    }
+  }, [selectedProducts, addProductsToTransaction]);
+
+  const handleResetFilters = useCallback(() => {
+    setSelectedCategoryId(null);
+    setSelectedSizeId(null);
+  }, []);
+
+  const handleApplyFilters = useCallback(
+    (categoryId: number | null, sizeId: number | null) => {
+      setSelectedCategoryId(categoryId);
+      setSelectedSizeId(sizeId);
+    },
+    []
   );
 
   const deleteItem = useCallback(
@@ -635,6 +787,18 @@ export function useStateCreateTransaction({
     setShowPaymentModal,
     paymentInfoFilled,
     setPaymentInfoFilled,
+    showProductsSheet,
+    setShowProductsSheet,
+    searchTerm,
+    setSearchTerm,
+    selectedProducts,
+    setSelectedProducts,
+    showScanner,
+    setShowScanner,
+    selectedCategoryId,
+    setSelectedCategoryId,
+    selectedSizeId,
+    setSelectedSizeId,
     // Helper functions
     formatIdrNumber,
     getAmountPaidValue,
@@ -642,6 +806,7 @@ export function useStateCreateTransaction({
     getSuggestedAmounts,
     isAmountInsufficient,
     getPaymentMethodLabel,
+    filteredProducts,
     // Business logic functions
     loadTransaction,
     cleanupLocalStorage,
@@ -657,5 +822,11 @@ export function useStateCreateTransaction({
     handleBatal,
     handleSettings,
     handleBack,
+    addProductQty,
+    subProductQty,
+    handleBarcodeScan,
+    handleAddProducts,
+    handleResetFilters,
+    handleApplyFilters,
   };
 }
