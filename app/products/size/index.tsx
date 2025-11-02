@@ -14,6 +14,8 @@ import { Alert, FlatList, RefreshControl, ScrollView, Text, TouchableOpacity, Vi
 
 import Toast from 'react-native-toast-message'
 
+import HeaderGradient from '@/components/ui/HeaderGradient'
+
 export default function SizeList() {
     const router = useRouter()
     const { sizes, loading, refreshSizes } = useSizes()
@@ -119,7 +121,7 @@ export default function SizeList() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-gray-50">
+            <View className="flex-1 bg-background">
                 <View className="flex-1 justify-center items-center">
                     <Text className="text-gray-600">Memuat ukuran...</Text>
                 </View>
@@ -128,25 +130,30 @@ export default function SizeList() {
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             {/* Header */}
-            <View className="bg-white p-4 border-b border-gray-200">
-                <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center">
-                        <Ionicons name="resize-outline" size={24} color="#374151" />
-                        <Text className="text-lg font-bold text-gray-800 ml-2">
-                            Daftar Ukuran
-                        </Text>
+            <HeaderGradient
+                title="Daftar Ukuran"
+            >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3">
+                            <Ionicons name="resize-outline" size={20} color="white" />
+                        </View>
+                        <View>
+                            <Text className="text-white font-bold">Daftar Ukuran</Text>
+                        </View>
                     </View>
                     <TouchableOpacity
                         onPress={handleAdd}
-                        className="bg-green-500 px-4 py-2 rounded-lg flex-row items-center"
+                        className="bg-white/20 px-4 py-2 rounded-lg flex-row items-center"
+                        style={{ borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.3)' }}
                     >
                         <Ionicons name="add" size={16} color="white" />
                         <Text className="text-white font-semibold ml-1">Tambah</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </HeaderGradient>
 
             {/* Table */}
             {sizes.length > 0 ? (
@@ -160,8 +167,8 @@ export default function SizeList() {
                             <RefreshControl
                                 refreshing={refreshing}
                                 onRefresh={onRefresh}
-                                colors={['#3B82F6']}
-                                tintColor="#3B82F6"
+                                colors={['#FF9228']}
+                                tintColor="#FF9228"
                                 title="Memuat ulang..."
                                 titleColor="#6B7280"
                             />
@@ -183,7 +190,7 @@ export default function SizeList() {
                         />
                     }
                 >
-                    <View className="py-20 items-center mx-4">
+                    <View className="items-center justify-center min-h-[500px] mx-4">
                         <Ionicons name="resize-outline" size={64} color="#9CA3AF" />
                         <Text className="text-gray-500 text-center mt-4 text-lg">
                             Belum ada ukuran
@@ -193,7 +200,7 @@ export default function SizeList() {
                         </Text>
                         <TouchableOpacity
                             onPress={handleAdd}
-                            className="bg-green-500 px-6 py-3 rounded-lg mt-4"
+                            className="bg-accent-primary px-6 py-3 rounded-lg mt-4"
                         >
                             <Text className="text-white font-semibold">
                                 Tambah Ukuran Pertama

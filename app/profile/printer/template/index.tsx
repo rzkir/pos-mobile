@@ -1,6 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import * as ImageManipulator from 'expo-image-manipulator';
+
+import { formatIDR as formatIDRHelper } from '@/helper/lib/FormatIdr';
+
+import { formatDate as formatDateHelper } from '@/helper/lib/FormatDate';
+
+import { PaymentCardService } from '@/services/paymentCard';
+
 const STORAGE_KEY = process.env.EXPO_PUBLIC_PRINTER_CUSTUM as string;
+
+const APP_SETTINGS_STORAGE_KEY = process.env.EXPO_PUBLIC_APP_SETTINGS as string;
+
+/**
+ * Load app settings from storage
+ */
+export const loadAppSettings = async (): Promise<{ dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"; decimalPlaces: number }> => {
+  try {
+    const stored = await AsyncStorage.getItem(APP_SETTINGS_STORAGE_KEY);
+    if (stored) {
+      const parsedSettings = JSON.parse(stored);
+      return {
+        dateFormat: parsedSettings.dateFormat || "DD/MM/YYYY",
+        decimalPlaces: parsedSettings.decimalPlaces ?? 2,
+      };
+    }
+    return { dateFormat: "DD/MM/YYYY", decimalPlaces: 2 };
+  } catch (error) {
+    console.error('Error loading app settings:', error);
+    return { dateFormat: "DD/MM/YYYY", decimalPlaces: 2 };
+  }
+};
 
 /**
  * Default template settings
@@ -31,67 +61,196 @@ export const loadTemplateSettings = async (): Promise<TemplateSettings | null> =
 };
 
 /**
+ * Convert base64 image to 1-bit bitmap array
+ * @param imageUri URI atau base64 image
+ * @param targetWidth Target width dalam dots (default 384 untuk 80mm printer)
+ * @returns Object dengan width, height, dan bitmap data array
+ */
+const convertImageToBitmap = async (
+  imageUri: string,
+  targetWidth: number = 384
+): Promise<{ width: number; height: number; bitmap: number[] } | null> => {
+  try {
+    let processedUri = imageUri;
+
+    // Jika base64, simpan ke temporary file dulu
+    if (imageUri.startsWith('data:') || imageUri.startsWith('base64:')) {
+      // Extract base64 data
+      const base64Data = imageUri.includes(',') ? imageUri.split(',')[1] : imageUri.replace(/^base64:/, '');
+
+      // Simpan ke temporary file
+      const FileSystem = await import('expo-file-system' as any);
+      const FS = FileSystem.default || FileSystem;
+      const baseDir = FS.documentDirectory || FS.cacheDirectory;
+      if (!baseDir) {
+        throw new Error('FileSystem directory tidak tersedia');
+      }
+      const tempFileName = `${baseDir}temp_logo_${Date.now()}.jpg`;
+      await FS.writeAsStringAsync(tempFileName, base64Data, {
+        encoding: 'base64',
+      });
+      processedUri = tempFileName;
+    }
+
+    // Resize dan convert ke grayscale menggunakan ImageManipulator
+    // Target width: 384 dots untuk 80mm printer
+    const manipulatedImage = await ImageManipulator.manipulateAsync(
+      processedUri,
+      [
+        {
+          resize: {
+            width: targetWidth,
+            // Height akan dihitung secara proporsional
+          },
+        },
+      ],
+      {
+        compress: 1,
+        format: ImageManipulator.SaveFormat.JPEG,
+        base64: true,
+      }
+    );
+
+    // Cleanup temporary file jika dibuat
+    try {
+      const FileSystem = await import('expo-file-system' as any);
+      const FS = FileSystem.default || FileSystem;
+      const baseDir = FS.documentDirectory || FS.cacheDirectory;
+      if (baseDir && processedUri.startsWith(baseDir)) {
+        try {
+          await FS.deleteAsync(processedUri, { idempotent: true });
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+    } catch {
+      // Ignore jika FileSystem tidak tersedia
+    }
+
+    if (!manipulatedImage.base64 || !manipulatedImage.width || !manipulatedImage.height) {
+      console.warn('Failed to process image');
+      return null;
+    }
+
+    try {
+      const base64Data = manipulatedImage.base64;
+      const FileSystem = await import('expo-file-system' as any);
+      const FS = FileSystem.default || FileSystem;
+      const baseDir = FS.documentDirectory || FS.cacheDirectory;
+      if (!baseDir) {
+        throw new Error('FileSystem directory tidak tersedia');
+      }
+      const tempBitmapFile = `${baseDir}bitmap_${Date.now()}.jpg`;
+      await FS.writeAsStringAsync(tempBitmapFile, base64Data, {
+        encoding: 'base64',
+      });
+
+      console.warn('Decode pixel data untuk logo belum diimplementasikan, skip logo printing. Logo tetap muncul di HTML/PDF version.');
+
+      // Cleanup temporary file
+      try {
+        const FileSystem = await import('expo-file-system' as any);
+        const FS = FileSystem.default || FileSystem;
+        await FS.deleteAsync(tempBitmapFile, { idempotent: true });
+      } catch {
+        // Ignore cleanup errors
+      }
+
+      return null;
+
+    } catch (decodeError) {
+      console.warn('Failed to decode pixel data:', decodeError);
+      return null;
+    }
+
+  } catch {
+    console.warn('Failed to convert image to bitmap');
+    return null;
+  }
+};
+
+/**
+ * Convert bitmap data ke ESC/POS format
+ * @param width Width dalam dots
+ * @param height Height dalam dots
+ * @param bitmap Bitmap data array (1-bit per pixel)
+ * @returns ESC/POS command string
+ */
+const bitmapToESCPOS = (width: number, height: number, bitmap: number[]): string => {
+  const GS = '\x1D';
+
+  // ESC/POS format: GS v 0 m xL xH yL yH d1...dk
+  // m = 0 (normal mode)
+  // xL, xH = low and high bytes of width
+  // yL, yH = low and high bytes of height
+  // d1...dk = bitmap data
+
+  const xL = width & 0xFF;
+  const xH = (width >> 8) & 0xFF;
+  const yL = height & 0xFF;
+  const yH = (height >> 8) & 0xFF;
+  const mode = 0; // Normal mode
+
+  // Convert bitmap array ke byte string
+  const bitmapBytes = bitmap.map((byte) => String.fromCharCode(byte)).join('');
+
+  // Generate ESC/POS command
+  return GS + 'v' + String.fromCharCode(0) + String.fromCharCode(mode) +
+    String.fromCharCode(xL) + String.fromCharCode(xH) +
+    String.fromCharCode(yL) + String.fromCharCode(yH) +
+    bitmapBytes;
+};
+
+/**
  * Convert base64 image to ESC/POS bitmap (untuk printer RPP02N)
- * Catatan: Implementasi ini adalah placeholder. Untuk mencetak logo,
- * diperlukan library image processing untuk konversi ke format ESC/POS bitmap.
  * 
- * Format ESC/POS untuk bitmap:
- * - ESC * m nL nH d1...dk (Raster bitmap)
- * - GS v 0 m xL xH yL yH d1...dk (Print raster bitmap)
- * 
- * Untuk implementasi penuh, diperlukan:
+ * Proses:
  * 1. Decode base64 image (data:image/png;base64,...)
  * 2. Load image dan resize ke lebar printer (384 dots untuk 80mm)
  * 3. Convert ke grayscale lalu 1-bit bitmap (black/white)
  * 4. Convert bitmap pixels ke byte array
  * 5. Generate ESC/POS commands dengan format yang benar
  * 
- * Rekomendasi library: jimp, sharp, atau canvas untuk image processing
+ * Format ESC/POS untuk bitmap:
+ * - ESC * m nL nH d1...dk (Raster bitmap)
+ * - GS v 0 m xL xH yL yH d1...dk (Print raster bitmap)
  */
-const convertImageToESCPOS = (base64Image: string, logoWidth?: number, logoHeight?: number): string => {
+const convertImageToESCPOS = async (
+  base64Image: string,
+  logoWidth?: number,
+  logoHeight?: number
+): Promise<string> => {
   try {
     // Extract base64 data (remove data:image/...;base64, prefix)
-    // Note: base64Data akan digunakan saat implementasi penuh
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const base64Data = base64Image.includes(',')
       ? base64Image.split(',')[1]
       : base64Image;
 
-    // Logo dimensions akan digunakan saat implementasi bitmap
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _width = logoWidth || 200;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _height = logoHeight || 80;
+    // Printer width untuk 80mm printer = 384 dots
+    const printerWidth = 384;
+    const targetWidth = Math.min(logoWidth || printerWidth, printerWidth);
 
-    // Untuk sekarang, kita skip image printing karena memerlukan
-    // image processing library yang kompleks
-    // Logo akan tetap muncul di HTML/PDF version
+    // Convert image ke bitmap
+    const bitmapResult = await convertImageToBitmap(
+      `base64:${base64Data}`,
+      targetWidth
+    );
 
-    // Placeholder: return blank line atau text indicator
-    // Jika ingin implementasi penuh, uncomment dan lengkapi bagian berikut:
+    if (!bitmapResult || !bitmapResult.bitmap) {
+      // Jika konversi gagal atau tidak tersedia, skip logo printing
+      // Logo tetap akan muncul di HTML/PDF version
+      console.warn('Bitmap conversion tidak tersedia, skip logo printing');
+      return '\n'; // Return blank line jika tidak bisa convert
+    }
 
-    /*
-    // TODO: Implementasi penuh memerlukan:
-    // 1. Import library image processing (jimp/sharp/canvas)
-    // 2. Decode base64Data ke Image buffer
-    // 3. Resize menggunakan _width dan _height ke 384x(auto) untuk 80mm printer
-    // 4. Convert ke 1-bit bitmap
-    // 5. Generate ESC/POS bitmap commands:
-    
-    const ESC = '\x1B';
-    const GS = '\x1D';
-    // ESC * m nL nH d1...dk
-    // m = mode (0=normal, 32=double-width, 33=double-height+width)
-    // nL, nH = low and high bytes of bitmap width in dots
-    // d1...dk = bitmap data
-    
-    const printerWidth = 384; // 80mm printer = 384 dots
-    // const bitmapData = ... (hasil konversi image dari base64Data)
-    // return ESC + '*' + mode + nL + nH + bitmapData;
-    */
+    // Convert bitmap ke ESC/POS format
+    const escPosCommand = bitmapToESCPOS(
+      bitmapResult.width,
+      bitmapResult.height,
+      bitmapResult.bitmap
+    );
 
-    // Placeholder: return blank lines untuk spacing
-    return '\n\n'; // Spacing untuk logo (akan diganti dengan bitmap command jika diimplementasikan)
+    return escPosCommand + '\n';
 
   } catch (error) {
     console.warn('Failed to convert image to ESC/POS:', error);
@@ -107,6 +266,8 @@ const convertImageToESCPOS = (base64Image: string, logoWidth?: number, logoHeigh
 export const generateReceiptText = async (props: PrintTemplateProps): Promise<string> => {
   // Load custom settings or use defaults
   const customSettings = await loadTemplateSettings();
+  // Load app settings for formatting
+  const appSettings = await loadAppSettings();
 
   const {
     transaction,
@@ -121,6 +282,18 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
     logoWidth = customSettings?.logoWidth || props.logoWidth || 200,
     logoHeight = customSettings?.logoHeight || props.logoHeight || 80,
   } = props;
+
+  // Format functions using app settings
+  const formatIDR = (amount: number) => formatIDRHelper(amount, appSettings?.decimalPlaces ?? 2);
+  const formatDate = (dateInput: string | number | Date) => formatDateHelper(dateInput, appSettings?.dateFormat || "DD/MM/YYYY");
+  const formatTime = (dateInput: string | number | Date) => {
+    const date = new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   // ESC/POS Commands
   const ESC = '\x1B';
@@ -143,9 +316,9 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   if (showLogo && logoUrl) {
     try {
       receiptParts.push(ALIGN_CENTER); // Center align untuk logo
-      // Convert image to ESC/POS format (placeholder untuk sekarang)
-      // Pass logoWidth dan logoHeight untuk implementasi penuh nanti
-      const logoCommand = convertImageToESCPOS(logoUrl, logoWidth, logoHeight);
+      // Convert image to ESC/POS format dengan decode dan convert ke grayscale
+      // Pass logoWidth dan logoHeight untuk resize
+      const logoCommand = await convertImageToESCPOS(logoUrl, logoWidth, logoHeight);
       receiptParts.push(logoCommand);
       receiptParts.push('\n'); // Extra line after logo
     } catch (error) {
@@ -181,15 +354,8 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
     transactionInfo += `Pelanggan: ${transaction.customer_name}\n`;
   }
 
-  transactionInfo += `Tgl: ${date.toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })}\n` +
-    `Jam: ${date.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}\n` +
+  transactionInfo += `Tgl: ${formatDate(date)}\n` +
+    `Jam: ${formatTime(date)}\n` +
     '================================\n'; // 32 karakter
 
   receiptParts.push(transactionInfo);
@@ -204,7 +370,9 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   items.forEach((item) => {
     const itemName = item.product?.name || 'Produk';
     const quantity = item.quantity.toString();
-    const price = `Rp.${item.subtotal.toLocaleString('id-ID')}`;
+    // Format price using app settings - remove "Rp " prefix and adjust for receipt format
+    const formattedPrice = formatIDR(item.subtotal).replace('Rp ', '');
+    const price = `Rp.${formattedPrice}`;
 
     let itemLines = '';
     // Untuk 80mm, nama barang lebih kompak (16 karakter)
@@ -227,14 +395,20 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   const total = transaction.total || 0;
 
   // Summary with totals - disesuaikan untuk 80mm (32 karakter)
+  // Format prices using app settings - remove "Rp " prefix for receipt format
+  const formattedSubtotal = formatIDR(subtotal).replace('Rp ', '');
+  const formattedDiscount = formatIDR(discount).replace('Rp ', '');
+  const formattedTax = formatIDR(tax).replace('Rp ', '');
+  const formattedTotal = formatIDR(total).replace('Rp ', '');
+
   receiptParts.push(
     [
       '================================\n', // 32 karakter
       BOLD_ON, // Bold on
-      `SUBTOTAL   : Rp ${subtotal.toLocaleString('id-ID')}\n`,
-      discount > 0 ? `DISKON     : Rp ${discount.toLocaleString('id-ID')}\n` : '',
-      tax > 0 ? `PAJAK      : Rp ${tax.toLocaleString('id-ID')}\n` : '',
-      `TOTAL      : Rp ${total.toLocaleString('id-ID')}\n`,
+      `SUBTOTAL   : Rp ${formattedSubtotal}\n`,
+      discount > 0 ? `DISKON     : Rp ${formattedDiscount}\n` : '',
+      tax > 0 ? `PAJAK      : Rp ${formattedTax}\n` : '',
+      `TOTAL      : Rp ${formattedTotal}\n`,
       BOLD_OFF, // Bold off
       '================================\n', // 32 karakter
     ].filter(Boolean).join('')
@@ -290,6 +464,8 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
 export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<string> => {
   // Load custom settings or use defaults
   const customSettings = await loadTemplateSettings();
+  // Load app settings for formatting
+  const appSettings = await loadAppSettings();
 
   const {
     transaction,
@@ -305,30 +481,61 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
     logoHeight = customSettings?.logoHeight || 80,
   } = props;
 
+  // Format functions using app settings
+  const formatIDR = (amount: number) => formatIDRHelper(amount, appSettings?.decimalPlaces ?? 2);
+  const formatDate = (dateInput: string | number | Date) => formatDateHelper(dateInput, appSettings?.dateFormat || "DD/MM/YYYY");
+  const formatTime = (dateInput: string | number | Date) => {
+    const date = new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   const date = new Date(transaction.created_at || Date.now());
-  const formattedDate = date.toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-  const formattedTime = date.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedDate = formatDate(date);
+  const formattedTime = formatTime(date);
 
-  const paymentMethodLabel =
-    transaction.payment_method === 'cash'
-      ? 'Tunai'
-      : transaction.payment_method === 'card'
-        ? 'Kartu'
-        : 'Transfer';
+  // Get payment method label sesuai dengan paymentCard
+  const getPaymentMethodLabel = (method: string): string => {
+    const labels: Record<string, string> = {
+      'cash': 'Tunai',
+      'gopay': 'GoPay',
+      'ovo': 'OVO',
+      'dana': 'DANA',
+      'shopeepay': 'ShopeePay',
+      'linkaja': 'LinkAja',
+      'qris': 'QRIS',
+      'debit_card': 'Kartu Debit',
+      'credit_card': 'Kartu Kredit',
+      'bank_transfer': 'Transfer Bank',
+      'card': 'Kartu',
+      'transfer': 'Transfer',
+    };
+    return labels[method] || method;
+  };
 
-  const statusLabel =
-    transaction.payment_status === 'paid'
-      ? 'LUNAS'
-      : transaction.payment_status === 'pending'
-        ? 'MENUNGGU'
-        : 'DIBATALKAN';
+  // Ambil payment card jika ada payment_card_id
+  let paymentMethodLabel = 'Tunai'; // default
+  if (transaction.payment_card_id) {
+    try {
+      const paymentCard = await PaymentCardService.getById(transaction.payment_card_id);
+      if (paymentCard) {
+        paymentMethodLabel = getPaymentMethodLabel(paymentCard.method);
+      } else {
+        // Fallback ke payment_method jika payment card tidak ditemukan
+        paymentMethodLabel = getPaymentMethodLabel(transaction.payment_method || 'cash');
+      }
+    } catch (error) {
+      console.error('Error loading payment card:', error);
+      // Fallback ke payment_method jika error
+      paymentMethodLabel = getPaymentMethodLabel(transaction.payment_method || 'cash');
+    }
+  } else {
+    // Jika tidak ada payment_card_id, gunakan payment_method
+    paymentMethodLabel = getPaymentMethodLabel(transaction.payment_method || 'cash');
+  }
 
   // Calculate totals
   const subtotal = transaction.subtotal || 0;
@@ -470,25 +677,6 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           font-size: 12px;
           line-height: 1.6;
         }
-        .status-badge {
-          display: inline-block;
-          padding: 4px 12px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .status-paid {
-          background: #d1fae5;
-          color: #065f46;
-        }
-        .status-pending {
-          background: #fef3c7;
-          color: #92400e;
-        }
-        .status-cancelled {
-          background: #fee2e2;
-          color: #991b1b;
-        }
       </style>
     </head>
     <body>
@@ -541,7 +729,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
             <tr>
               <td>${item.product?.name || 'Produk'}</td>
               <td>${item.quantity}</td>
-              <td>Rp.${item.subtotal.toLocaleString('id-ID')}</td>
+              <td>${formatIDR(item.subtotal).replace('Rp ', 'Rp.')}</td>
             </tr>
           `
       )
@@ -553,23 +741,23 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
       
       <div class="summary-row" style="font-weight: bold;">
         <span class="summary-label">SUBTOTAL:</span>
-        <span class="summary-value">Rp ${subtotal.toLocaleString('id-ID')}</span>
+        <span class="summary-value">${formatIDR(subtotal)}</span>
       </div>
       ${discount > 0 ? `
       <div class="summary-row" style="font-weight: bold;">
         <span class="summary-label">DISKON:</span>
-        <span class="summary-value">Rp ${discount.toLocaleString('id-ID')}</span>
+        <span class="summary-value">${formatIDR(discount)}</span>
       </div>
       ` : ''}
       ${tax > 0 ? `
       <div class="summary-row" style="font-weight: bold;">
         <span class="summary-label">PAJAK:</span>
-        <span class="summary-value">Rp ${tax.toLocaleString('id-ID')}</span>
+        <span class="summary-value">${formatIDR(tax)}</span>
       </div>
       ` : ''}
       <div class="summary-row total-row">
         <span>TOTAL:</span>
-        <span>Rp ${total.toLocaleString('id-ID')}</span>
+        <span>${formatIDR(total)}</span>
       </div>
       
       <div class="divider-thick"></div>
@@ -577,14 +765,6 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
       <div class="info-row">
         <span class="label">Metode Pembayaran:</span>
         <span class="value">${paymentMethodLabel}</span>
-      </div>
-      <div class="info-row">
-        <span class="label">Status:</span>
-        <span class="value">
-          <span class="status-badge status-${transaction.payment_status}">
-            ${statusLabel}
-          </span>
-        </span>
       </div>
       
       <div class="divider-thick"></div>

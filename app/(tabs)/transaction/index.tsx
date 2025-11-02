@@ -8,10 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { TransactionService } from '@/services/transactionService';
 
-import { formatIDR } from '@/helper/lib/FormatIdr';
+import { useAppSettingsContext } from '@/context/AppSettingsContext';
 
 export default function Transaction() {
     const router = useRouter();
+    const { formatIDR, formatDateTime } = useAppSettingsContext();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -67,17 +68,6 @@ export default function Transaction() {
         }
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const renderTransaction = ({ item }: { item: Transaction }) => (
         <TouchableOpacity
             onPress={() => router.push(`/transaction/${item.id}`)}
@@ -94,7 +84,7 @@ export default function Transaction() {
                         </Text>
                     )}
                     <Text className="text-xs text-gray-500">
-                        {formatDate(item.created_at)}
+                        {formatDateTime(item.created_at)}
                     </Text>
                 </View>
                 <View className={`px-2 py-1 rounded ${getStatusColor(item.status)}`}>

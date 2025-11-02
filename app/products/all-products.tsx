@@ -1,76 +1,81 @@
-import { useRouter } from 'expo-router';
-
-import { useEffect, useState } from 'react';
-
-import { FlatList, Text, TouchableOpacity, View, Image, RefreshControl } from 'react-native';
+import { FlatList, Text, TouchableOpacity, View, RefreshControl } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { useProducts } from '@/hooks/useProducts';
+import FilterBottomSheet from '@/components/products/products/FilterBottomSheet';
 
-import { formatIDR } from '@/helper/lib/FormatIdr';
+import HeaderGradient from '@/components/ui/HeaderGradient';
+
+import AllProductsCard from '@/components/products/all-products/AllProductsCard';
+
+import { useStateAllProducts } from '@/components/products/all-products/lib/useStateAllProducts';
 
 export default function AllProducts() {
-    const router = useRouter();
-    const { products, refreshData, loading } = useProducts();
-    const [list, setList] = useState<any[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
-
-    useEffect(() => {
-        setList(products);
-    }, [products]);
-
-    useEffect(() => {
-        refreshData();
-    }, [refreshData]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        try {
-            await refreshData();
-        } catch {
-        } finally {
-            setRefreshing(false);
-        }
-    };
+    const {
+        router,
+        loading,
+        categories,
+        sizes,
+        formatIDR,
+        refreshing,
+        showFilterSheet,
+        selectedCategoryId,
+        selectedSizeId,
+        filteredList,
+        onRefresh,
+        handleOpenFilter,
+        handleCloseFilter,
+        handleApplyFilter,
+        handleResetFilter,
+    } = useStateAllProducts();
 
     const renderItem = ({ item }: { item: any }) => (
-        <View className="bg-white p-4 rounded-2xl mb-2 flex-row items-center justify-between">
-            <View className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 items-center justify-center mr-3">
-                {item.image_url ? (
-                    <Image source={{ uri: item.image_url }} className="w-full h-full" resizeMode="cover" />
-                ) : (
-                    <Ionicons name="image-outline" size={20} color="#9CA3AF" />
-                )}
-            </View>
-            <View className="flex-1 pr-2">
-                <Text numberOfLines={1} className="text-base font-semibold text-gray-900">{item.name}</Text>
-                <Text numberOfLines={1} className="text-xs text-gray-500">{item.barcode}</Text>
-                <View className="mt-1 flex-row items-center">
-                    <Ionicons name="albums-outline" size={14} color="#6B7280" />
-                    <Text className="ml-1 text-gray-600 text-xs">Stok: {item.stock}</Text>
-                </View>
-            </View>
-            <Text className="text-sm font-bold text-gray-900">{formatIDR(item.price || 0)}</Text>
-        </View>
+        <AllProductsCard item={item} formatIDR={formatIDR} />
     );
 
     return (
-        <View className="flex-1 bg-gradient-to-br from-slate-50 to-blue-50 px-4 pt-4">
-            <View className="flex-row items-center mb-4">
-                <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white items-center justify-center mr-2">
-                    <Ionicons name="arrow-back" size={20} color="#111827" />
-                </TouchableOpacity>
-                <Text className="text-xl font-extrabold text-gray-900">All Products</Text>
-            </View>
+        <View className="flex-1 bg-background">
+            <HeaderGradient
+                icon="AP"
+                title="All Products"
+                subtitle="Semua produk tersedia"
+                colors={['#FF9228', '#FF9228']}
+            >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                        <TouchableOpacity onPress={() => router.back()} className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3">
+                            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+
+                        <View className='flex-col gap-1'>
+                            <Text className="text-white font-bold">All Products</Text>
+                            <Text className="text-white/80 text-xs">Semua produk tersedia</Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={handleOpenFilter}
+                        className="w-10 h-10 rounded-full bg-white/30 items-center justify-center"
+                    >
+                        <Ionicons name="filter-outline" size={20} color="#FFFFFF" />
+                        {(selectedCategoryId !== null || selectedSizeId !== null) && (
+                            <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center border-2 border-white">
+                                <Text className="text-white text-[10px] font-bold">
+                                    {(selectedCategoryId !== null ? 1 : 0) + (selectedSizeId !== null ? 1 : 0)}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </HeaderGradient>
 
             {loading ? (
-                <View className="flex-1 items-center justify-center">
+                <View className="flex-1 items-center justify-center px-2 pt-4">
                     <Ionicons name="cube-outline" size={32} color="#3B82F6" />
                     <Text className="mt-2 text-gray-600">Memuat produk...</Text>
                 </View>
-            ) : list.length === 0 ? (
-                <View className="flex-1 items-center justify-center">
+            ) : filteredList.length === 0 ? (
+                <View className="flex-1 items-center justify-center px-2 pt-4">
                     <Ionicons name="pricetags-outline" size={40} color="#3B82F6" />
 
                     <Text className="mt-4 text-gray-600 text-lg">Tidak ada produk</Text>
@@ -85,22 +90,36 @@ export default function AllProducts() {
                     </View>
                 </View>
             ) : (
-                <FlatList
-                    data={list}
-                    keyExtractor={(item: any) => item.id.toString()}
-                    renderItem={renderItem}
-                    contentContainerStyle={{ paddingBottom: 24 }}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={['#3B82F6']}
-                            tintColor="#3B82F6"
-                            title="Memuat ulang..."
-                            titleColor="#6B7280"
-                        />
-                    }
-                />
+                <>
+                    <FlatList
+                        data={filteredList}
+                        keyExtractor={(item: any) => item.id.toString()}
+                        renderItem={renderItem}
+                        contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 16 }}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={refreshing}
+                                onRefresh={onRefresh}
+                                colors={['#3B82F6']}
+                                tintColor="#3B82F6"
+                                title="Memuat ulang..."
+                                titleColor="#6B7280"
+                            />
+                        }
+                    />
+
+                    {/* Filter Bottom Sheet */}
+                    <FilterBottomSheet
+                        visible={showFilterSheet}
+                        categories={categories}
+                        sizes={sizes}
+                        selectedCategoryId={selectedCategoryId}
+                        selectedSizeId={selectedSizeId}
+                        onClose={handleCloseFilter}
+                        onApply={handleApplyFilter}
+                        onReset={handleResetFilter}
+                    />
+                </>
             )}
         </View>
     );

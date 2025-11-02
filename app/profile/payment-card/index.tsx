@@ -1,69 +1,28 @@
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, Alert } from 'react-native';
-
-import { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 
 import { router } from 'expo-router';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { LinearGradient } from 'expo-linear-gradient';
+import HeaderGradient from '@/components/ui/HeaderGradient';
 
-import { PaymentCardService } from '@/services/paymentCard';
+import { useStatePaymentCard } from '@/components/profile/payment-card/useStatePaymentCard';
 
 export default function PaymentCardList() {
-    const [cards, setCards] = useState<PaymentCard[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-
-    const loadCards = useCallback(async () => {
-        setLoading(true);
-        try {
-            const fetched = await PaymentCardService.getAll();
-            setCards(fetched);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadCards();
-    }, [loadCards]);
-
-    const handleAdd = () => {
-        router.push('/profile/payment-card/new');
-    };
-
-    const handleEdit = (id: number) => {
-        router.push(`/profile/payment-card/${id}`);
-    };
-
-    const handleDelete = (id: number) => {
-        Alert.alert('Hapus', 'Yakin hapus metode pembayaran ini?', [
-            { text: 'Batal', style: 'cancel' },
-            {
-                text: 'Hapus', style: 'destructive', onPress: async () => {
-                    await PaymentCardService.delete(id);
-                    loadCards();
-                }
-            }
-        ]);
-    };
+    const { cards, loading, handleAdd, handleEdit, handleDelete } = useStatePaymentCard();
 
     return (
-        <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-
-            <LinearGradient
-                colors={['#1e40af', '#3b82f6', '#8b5cf6']}
+        <View className="flex-1 bg-background">
+            <HeaderGradient
+                title="Metode Pembayaran"
+                colors={['#FF9228', '#FF9228']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="pt-12 pb-8 px-6"
             >
-                <View className="flex-row justify-between items-center">
+                <View className="flex-row justify-between items-center flex-1">
                     <View className="flex-1">
-                        <Text className="text-3xl font-bold text-white mb-2">Metode Pembayaran</Text>
-                        <Text className="text-blue-100 text-base">Kelola bank, e-wallet, dan QRIS</Text>
+                        <Text className="text-2xl font-bold text-white mb-1">Metode Pembayaran</Text>
+                        <Text className="text-white/80 text-md">Kelola bank, e-wallet, dan QRIS</Text>
                     </View>
                     <TouchableOpacity
                         className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
@@ -72,20 +31,20 @@ export default function PaymentCardList() {
                         <Ionicons name="arrow-back" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </LinearGradient>
+            </HeaderGradient>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 <View className="px-4 mt-4">
                     {loading ? (
                         <Text className="text-gray-500">Memuat...</Text>
                     ) : cards.length === 0 ? (
-                        <View className="bg-white rounded-2xl p-6 items-center">
+                        <View className="bg-card rounded-2xl p-6 items-center border border-border">
                             <Text className="text-gray-600">Belum ada metode pembayaran</Text>
                         </View>
                     ) : (
                         <View className="flex-row flex-wrap gap-4">
                             {cards.map((card) => (
-                                <View key={card.id} className="bg-white rounded-2xl p-4" style={{ width: '48%' }}>
+                                <View key={card.id} className="bg-card rounded-2xl p-4 border border-border" style={{ width: '48%' }}>
                                     <View className="flex-1">
                                         <Text className="text-lg font-semibold text-gray-900 mb-1">{card.method.toUpperCase()}</Text>
                                         {card.bank ? <Text className="text-gray-600">Bank: {card.bank.toUpperCase()}</Text> : null}
@@ -113,7 +72,7 @@ export default function PaymentCardList() {
             <TouchableOpacity
                 onPress={handleAdd}
                 className="w-14 h-14 rounded-full items-center justify-center"
-                style={{ position: 'absolute', bottom: 24, right: 24, backgroundColor: '#3b82f6', elevation: 6 }}
+                style={{ position: 'absolute', bottom: 24, right: 24, backgroundColor: '#FF9228', elevation: 6 }}
             >
                 <Ionicons name="add" size={28} color="#fff" />
             </TouchableOpacity>

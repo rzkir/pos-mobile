@@ -2,7 +2,10 @@ import { Image, Text, TouchableOpacity, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAppSettingsContext } from '@/context/AppSettingsContext';
+
 export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: CardProductsProps) {
+    const { formatIDR } = useAppSettingsContext();
     return (
         <View
             className="bg-white mb-4 rounded-2xl p-3 border border-gray-100"
@@ -68,11 +71,11 @@ export default function CardProducts({ item, onViewDetails, onEdit, onDelete }: 
             <View className="flex-row justify-between items-end mb-4">
                 <View>
                     <Text className="text-2xl font-extrabold text-green-600 mb-1">
-                        Rp {item.price?.toLocaleString()}
+                        {formatIDR(item.price || 0)}
                     </Text>
 
                     <Text className="text-xs text-gray-500">
-                        Modal: Rp {item.modal?.toLocaleString()}
+                        Modal: {formatIDR(item.modal || 0)}
                     </Text>
                 </View>
 

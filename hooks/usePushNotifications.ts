@@ -9,55 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const SETTINGS_STORAGE_KEY = process.env
   .EXPO_PUBLIC_PUSH_NOTIFICATIONS as string;
 
-export interface NotificationSound {
-  id: string;
-  name: string;
-  value: string;
-  description: string;
-}
-
-export const NOTIFICATION_SOUNDS: NotificationSound[] = [
-  {
-    id: "default",
-    name: "Default",
-    value: "default",
-    description: "Suara default sistem",
-  },
-  { id: "bell", name: "Bell", value: "default", description: "Suara bel" },
-  { id: "chime", name: "Chime", value: "default", description: "Suara chime" },
-  { id: "alert", name: "Alert", value: "default", description: "Suara alert" },
-  {
-    id: "notification",
-    name: "Notification",
-    value: "default",
-    description: "Suara notifikasi",
-  },
-  {
-    id: "none",
-    name: "Tanpa Suara",
-    value: "",
-    description: "Tidak ada suara",
-  },
-];
-
-interface NotificationSettings {
-  pushEnabled: boolean;
-  soundEnabled: boolean;
-  lowStockAlerts: boolean;
-  selectedSound: string; // ID dari NOTIFICATION_SOUNDS
-}
-
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 export const usePushNotifications = () => {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] =
@@ -74,9 +25,14 @@ export const usePushNotifications = () => {
   );
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
-  // Load settings from storage
   useEffect(() => {
-    loadSettings();
+    const initialize = async () => {
+      await loadSettings();
+      // Check existing permission status
+      const { status } = await Notifications.getPermissionsAsync();
+      setNotificationPermission(status === "granted");
+    };
+    initialize();
   }, []);
 
   const loadSettings = async () => {
@@ -84,18 +40,17 @@ export const usePushNotifications = () => {
       const stored = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
       if (stored) {
         const parsedSettings = JSON.parse(stored);
-        // Ensure selectedSound exists, default to 'default' if missing
         if (!parsedSettings.selectedSound) {
           parsedSettings.selectedSound = "default";
         }
         setSettings(parsedSettings);
       }
     } catch {
-      // Silently fail
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Save settings to storage
   const saveSettings = async (newSettings: NotificationSettings) => {
     try {
       await AsyncStorage.setItem(
@@ -108,29 +63,26 @@ export const usePushNotifications = () => {
     }
   };
 
-  // Register for push notifications
   const registerForPushNotifications = async () => {
     try {
       setLoading(true);
 
-      // Check existing permissions
       const { status: existingStatus } =
         await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
-      // Request permission if not granted
       if (existingStatus !== "granted") {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
 
-      setNotificationPermission(finalStatus === "granted");
+      const hasPermission = finalStatus === "granted";
+      setNotificationPermission(hasPermission);
 
-      if (finalStatus !== "granted") {
+      if (!hasPermission) {
         return null;
       }
 
-      // Get push token
       const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
       const tokenData = projectId
         ? await Notifications.getExpoPushTokenAsync({ projectId })
@@ -138,13 +90,11 @@ export const usePushNotifications = () => {
       const token = typeof tokenData === "string" ? tokenData : tokenData.data;
       setExpoPushToken(token);
 
-      // Save token to storage
       await AsyncStorage.setItem(
         process.env.EXPO_PUBLIC_PUSH_TOKEN as string,
         token
       );
 
-      // Configure notification channel for Android
       if (Platform.OS === "android") {
         await Notifications.setNotificationChannelAsync("default", {
           name: "Default",
@@ -164,27 +114,25 @@ export const usePushNotifications = () => {
       }
 
       return token;
-    } catch {
+    } catch (error) {
+      console.error("Error registering for push notifications:", error);
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // Unregister from push notifications
   const unregisterPushNotifications = async () => {
     try {
       await AsyncStorage.removeItem(
         process.env.EXPO_PUBLIC_PUSH_TOKEN as string
       );
       setExpoPushToken(null);
-      setNotificationPermission(false);
-    } catch {
-      // Silently fail
-    }
+      // Don't change notificationPermission here, as it's about system permission
+      // Only clear the token and expoPushToken
+    } catch {}
   };
 
-  // Update push notifications setting
   const updatePushEnabled = async (enabled: boolean) => {
     const newSettings = { ...settings, pushEnabled: enabled };
     await saveSettings(newSettings);
@@ -196,53 +144,35 @@ export const usePushNotifications = () => {
     }
   };
 
-  // Update sound setting
   const updateSoundEnabled = async (enabled: boolean) => {
     const newSettings = { ...settings, soundEnabled: enabled };
     await saveSettings(newSettings);
   };
 
-  // Update selected sound
   const updateSelectedSound = async (soundId: string) => {
     const newSettings = { ...settings, selectedSound: soundId };
     await saveSettings(newSettings);
   };
 
-  // Get sound value for notification
   const getSoundValue = (): string | undefined => {
     if (!settings.soundEnabled) {
       return undefined;
     }
-    const sound = NOTIFICATION_SOUNDS.find(
-      (s) => s.id === settings.selectedSound
-    );
-    if (!sound || sound.value === "") {
-      return undefined;
-    }
-    return sound.value;
+    return "default";
   };
 
-  // Update low stock alerts setting
   const updateLowStockAlerts = async (enabled: boolean) => {
     const newSettings = { ...settings, lowStockAlerts: enabled };
     await saveSettings(newSettings);
   };
 
-  // Initialize on mount
+  // Setup notification listeners (always, regardless of settings)
   useEffect(() => {
-    registerForPushNotifications();
-
-    // Listen for notifications received while app is foregrounded
     notificationListener.current =
-      Notifications.addNotificationReceivedListener(() => {
-        // Handle notification if needed
-      });
+      Notifications.addNotificationReceivedListener(() => {});
 
-    // Listen for user tapping on notifications
     responseListener.current =
-      Notifications.addNotificationResponseReceivedListener(() => {
-        // Handle notification response if needed
-      });
+      Notifications.addNotificationResponseReceivedListener(() => {});
 
     return () => {
       if (notificationListener.current) {
@@ -254,60 +184,40 @@ export const usePushNotifications = () => {
     };
   }, []);
 
-  // Schedule a local notification (for testing)
-  const scheduleTestNotification = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Test Notifikasi",
-        body: "Ini adalah notifikasi percobaan",
-        sound: getSoundValue(),
-        data: { type: "test" },
-      },
-      trigger: null, // Show immediately
-    });
-  };
+  // Register for push notifications if enabled (only when settings are loaded)
+  useEffect(() => {
+    if (!loading && settings.pushEnabled && notificationPermission) {
+      // Only get token if permission is already granted
+      const getToken = async () => {
+        try {
+          const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
+          const tokenData = projectId
+            ? await Notifications.getExpoPushTokenAsync({ projectId })
+            : await Notifications.getExpoPushTokenAsync();
+          const token =
+            typeof tokenData === "string" ? tokenData : tokenData.data;
+          setExpoPushToken(token);
+          await AsyncStorage.setItem(
+            process.env.EXPO_PUBLIC_PUSH_TOKEN as string,
+            token
+          );
+        } catch (error) {
+          console.error("Error getting push token:", error);
+        }
+      };
+      getToken();
+    }
+  }, [loading, settings.pushEnabled, notificationPermission]);
 
-  // Test sound notification (with sound)
-  const scheduleTestSoundNotification = async () => {
-    const soundValue = getSoundValue() || "default";
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "🔔 Test Suara",
-        body: "Notifikasi ini akan berbunyi untuk menguji suara notifikasi",
-        sound: soundValue,
-        data: { type: "test_sound" },
-      },
-      trigger: null,
-      identifier: `test_sound_${Date.now()}`,
-    });
-  };
-
-  // Test low stock alert notification
-  const scheduleTestLowStockAlert = async () => {
-    // Always send test, regardless of settings
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "⚠️ Test Alert Stok Rendah",
-        body: "Produk Test tersisa 5 unit - Ini adalah notifikasi percobaan",
-        sound: getSoundValue(),
-        data: {
-          type: "low_stock",
-          productName: "Produk Test",
-          currentStock: 5,
-          isTest: true,
-        },
-      },
-      trigger: null,
-      identifier: `test_low_stock_${Date.now()}`,
-    });
-  };
-
-  // Send low stock alert notification
   const sendLowStockAlert = async (
     productName: string,
     currentStock: number
   ) => {
-    if (!settings.lowStockAlerts || !settings.pushEnabled) {
+    if (
+      !settings.lowStockAlerts ||
+      !settings.pushEnabled ||
+      !notificationPermission
+    ) {
       return;
     }
 
@@ -320,6 +230,25 @@ export const usePushNotifications = () => {
       },
       trigger: null,
       identifier: `low_stock_${Date.now()}`,
+      ...(Platform.OS === "android" && { channelId: "low_stock" }),
+    });
+  };
+
+  const testNotification = async () => {
+    if (!settings.pushEnabled || !notificationPermission) {
+      throw new Error("Notifikasi belum diaktifkan atau izin belum diberikan");
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "🔔 Test Notifikasi",
+        body: "Ini adalah notifikasi uji coba. Pengaturan notifikasi Anda berfungsi dengan baik!",
+        sound: getSoundValue(),
+        data: { type: "test" },
+      },
+      trigger: null,
+      identifier: `test_${Date.now()}`,
+      ...(Platform.OS === "android" && { channelId: "default" }),
     });
   };
 
@@ -335,9 +264,7 @@ export const usePushNotifications = () => {
     updateLowStockAlerts,
     updateSelectedSound,
     getSoundValue,
-    scheduleTestNotification,
-    scheduleTestSoundNotification,
-    scheduleTestLowStockAlert,
     sendLowStockAlert,
+    testNotification,
   };
 };

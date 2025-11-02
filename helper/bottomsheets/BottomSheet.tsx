@@ -1,19 +1,8 @@
-import React, { useRef } from 'react'
+import { useRef } from 'react'
 
 import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 import { Ionicons } from '@expo/vector-icons'
-
-interface BottomSheetProps {
-    visible: boolean;
-    title?: string;
-    onClose: () => void;
-    children: React.ReactNode;
-    footer?: React.ReactNode;
-    maxHeightPercent?: number;
-    showCloseButton?: boolean;
-    enableSwipeToClose?: boolean;
-}
 
 export default function BottomSheet({
     visible,
@@ -43,9 +32,10 @@ export default function BottomSheet({
                     </View>
 
                     {title && showCloseButton && (
-                        <View className="flex-row items-center justify-between px-5 mb-4">
+                        <View className="flex-row items-center justify-between px-6 mb-4">
                             <View className="w-6" />
                             <Text className="text-center text-lg font-semibold flex-1" style={{ color: '#fff' }}>{title || ''}</Text>
+
                             <TouchableOpacity onPress={onClose} className="w-6 h-6 items-center justify-center" activeOpacity={0.8}>
                                 <Ionicons name="close" size={20} color="#fff" />
                             </TouchableOpacity>

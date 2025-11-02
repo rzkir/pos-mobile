@@ -1,18 +1,10 @@
-import React, { useEffect, useState } from 'react'
-import { Text, TouchableOpacity, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import BottomSheet from '@/helper/bottomsheets/BottomSheet'
+import { useEffect, useState } from 'react'
 
-interface FilterBottomSheetProps {
-    visible: boolean
-    categories: any[]
-    sizes: any[]
-    selectedCategoryId: number | null
-    selectedSizeId: number | null
-    onClose: () => void
-    onApply: (categoryId: number | null, sizeId: number | null) => void
-    onReset: () => void
-}
+import { Text, TouchableOpacity, View } from 'react-native'
+
+import { Ionicons } from '@expo/vector-icons'
+
+import BottomSheet from '@/helper/bottomsheets/BottomSheet'
 
 export default function FilterBottomSheet({
     visible,
@@ -27,11 +19,9 @@ export default function FilterBottomSheet({
     const activeCategories = categories.filter(cat => cat.is_active)
     const activeSizes = sizes.filter(size => size.is_active)
 
-    // State temporary untuk menyimpan pilihan sementara sebelum diterapkan
     const [tempCategoryId, setTempCategoryId] = useState<number | null>(selectedCategoryId)
     const [tempSizeId, setTempSizeId] = useState<number | null>(selectedSizeId)
 
-    // Sync state temporary dengan state yang sebenarnya saat bottom sheet dibuka
     useEffect(() => {
         if (visible) {
             setTempCategoryId(selectedCategoryId)
@@ -59,7 +49,7 @@ export default function FilterBottomSheet({
             maxHeightPercent={0.7}
         >
             {/* Category Section */}
-            <View className="mb-6">
+            <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
                     <Text className="text-base font-semibold" style={{ color: '#fff' }}>
                         Kategori
@@ -112,7 +102,7 @@ export default function FilterBottomSheet({
             </View>
 
             {/* Size Section */}
-            <View className="mb-6">
+            <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
                     <Text className="text-base font-semibold" style={{ color: '#fff' }}>
                         Ukuran
@@ -165,7 +155,7 @@ export default function FilterBottomSheet({
             </View>
 
             {/* Footer Actions */}
-            <View className="flex-row gap-3 pt-4 border-t" style={{ borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
+            <View className="flex-row gap-3 px-4 pt-4 border-t" style={{ borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
                 <TouchableOpacity
                     onPress={handleReset}
                     className="flex-1 px-4 py-3 rounded-xl border"

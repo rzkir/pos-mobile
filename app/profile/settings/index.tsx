@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native'
 
 import { router } from 'expo-router'
@@ -10,7 +8,9 @@ import Toast from 'react-native-toast-message'
 
 import HeaderGradient from '@/components/ui/HeaderGradient'
 
-import { usePushNotifications, NOTIFICATION_SOUNDS } from '@/hooks/usePushNotifications'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+
+import { useAppSettings } from '@/hooks/useAppSettings'
 
 export default function Settings() {
     const {
@@ -21,17 +21,32 @@ export default function Settings() {
         updateSoundEnabled,
         updateLowStockAlerts,
         updateSelectedSound,
-        scheduleTestNotification,
-        scheduleTestSoundNotification,
-        scheduleTestLowStockAlert,
+        registerForPushNotifications,
     } = usePushNotifications()
 
-    const [dateFormat, setDateFormat] = useState('DD/MM/YYYY')
-
-    const [decimalPlaces, setDecimalPlaces] = useState(2)
+    const {
+        settings: appSettings,
+        loading: appSettingsLoading,
+        updateDateFormat,
+        updateDecimalPlaces,
+    } = useAppSettings()
 
     const handlePushNotificationsChange = async (enabled: boolean) => {
         try {
+            // Jika mengaktifkan dan izin belum diberikan, minta izin terlebih dahulu
+            if (enabled && !notificationPermission) {
+                const result = await registerForPushNotifications()
+
+                if (!result) {
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Izin Ditolak',
+                        text2: 'Notifikasi memerlukan izin untuk berfungsi. Silakan aktifkan di pengaturan perangkat.'
+                    })
+                    return
+                }
+            }
+
             await updatePushEnabled(enabled)
             Toast.show({
                 type: enabled ? 'success' : 'info',
@@ -40,27 +55,12 @@ export default function Settings() {
                     ? 'Anda akan menerima notifikasi dari aplikasi'
                     : 'Notifikasi telah dinonaktifkan'
             })
-        } catch {
+        } catch (error) {
+            console.error('Error updating push notifications:', error)
             Toast.show({
                 type: 'error',
                 text1: 'Gagal',
                 text2: 'Gagal mengubah pengaturan push notifications'
-            })
-        }
-    }
-
-    const handleSoundChange = async (enabled: boolean) => {
-        try {
-            await updateSoundEnabled(enabled)
-            Toast.show({
-                type: 'success',
-                text1: enabled ? 'Suara Diaktifkan' : 'Suara Dinonaktifkan'
-            })
-        } catch {
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal',
-                text2: 'Gagal mengubah pengaturan suara'
             })
         }
     }
@@ -81,57 +81,6 @@ export default function Settings() {
         }
     }
 
-    const handleTestNotification = async () => {
-        try {
-            await scheduleTestNotification()
-            Toast.show({
-                type: 'success',
-                text1: 'Notifikasi Test Dikirim',
-                text2: 'Periksa notifikasi Anda'
-            })
-        } catch {
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal',
-                text2: 'Gagal mengirim notifikasi test'
-            })
-        }
-    }
-
-    const handleTestSoundNotification = async () => {
-        try {
-            await scheduleTestSoundNotification()
-            Toast.show({
-                type: 'success',
-                text1: 'Test Suara Dikirim',
-                text2: 'Notifikasi dengan suara telah dikirim'
-            })
-        } catch {
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal',
-                text2: 'Gagal mengirim test suara'
-            })
-        }
-    }
-
-    const handleTestLowStockAlert = async () => {
-        try {
-            await scheduleTestLowStockAlert()
-            Toast.show({
-                type: 'success',
-                text1: 'Test Alert Stok Rendah Dikirim',
-                text2: 'Notifikasi alert stok rendah telah dikirim'
-            })
-        } catch {
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal',
-                text2: 'Gagal mengirim test alert stok rendah'
-            })
-        }
-    }
-
     const handleResetSettings = () => {
         Alert.alert(
             'Reset Pengaturan',
@@ -147,6 +96,8 @@ export default function Settings() {
                             await updateSoundEnabled(true)
                             await updateLowStockAlerts(true)
                             await updateSelectedSound('default')
+                            await updateDateFormat('DD/MM/YYYY')
+                            await updateDecimalPlaces(2)
 
                             Toast.show({
                                 type: 'success',
@@ -171,45 +122,55 @@ export default function Settings() {
             'Format Tanggal',
             'Pilih format tanggal:',
             [
-                { text: 'DD/MM/YYYY', onPress: () => setDateFormat('DD/MM/YYYY') },
-                { text: 'MM/DD/YYYY', onPress: () => setDateFormat('MM/DD/YYYY') },
-                { text: 'YYYY-MM-DD', onPress: () => setDateFormat('YYYY-MM-DD') },
+                {
+                    text: 'DD/MM/YYYY',
+                    onPress: async () => {
+                        await updateDateFormat('DD/MM/YYYY')
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Format Tanggal Diubah',
+                            text2: 'Format tanggal telah diubah menjadi DD/MM/YYYY'
+                        })
+                    }
+                },
+                {
+                    text: 'MM/DD/YYYY',
+                    onPress: async () => {
+                        await updateDateFormat('MM/DD/YYYY')
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Format Tanggal Diubah',
+                            text2: 'Format tanggal telah diubah menjadi MM/DD/YYYY'
+                        })
+                    }
+                },
+                {
+                    text: 'YYYY-MM-DD',
+                    onPress: async () => {
+                        await updateDateFormat('YYYY-MM-DD')
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Format Tanggal Diubah',
+                            text2: 'Format tanggal telah diubah menjadi YYYY-MM-DD'
+                        })
+                    }
+                },
                 { text: 'Batal', style: 'cancel' }
             ]
         )
     }
 
-    const handleSoundSelection = () => {
-        const soundOptions = NOTIFICATION_SOUNDS.map((sound) => ({
-            text: `${sound.name} - ${sound.description}`,
-            onPress: async () => {
-                try {
-                    await updateSelectedSound(sound.id)
-                    Toast.show({
-                        type: 'success',
-                        text1: 'Suara Diubah',
-                        text2: `Suara notifikasi diubah ke ${sound.name}`
-                    })
-                } catch {
-                    Toast.show({
-                        type: 'error',
-                        text1: 'Gagal',
-                        text2: 'Gagal mengubah suara notifikasi'
-                    })
-                }
-            }
-        }))
+    const handleDecimalPlacesChange = async (increment: boolean) => {
+        const newValue = increment
+            ? Math.min(4, appSettings.decimalPlaces + 1)
+            : Math.max(0, appSettings.decimalPlaces - 1)
 
-        const currentSound = NOTIFICATION_SOUNDS.find((s) => s.id === settings.selectedSound)
-
-        Alert.alert(
-            'Pilih Suara Notifikasi',
-            `Suara saat ini: ${currentSound?.name || 'Default'}`,
-            [
-                ...soundOptions,
-                { text: 'Batal', style: 'cancel' }
-            ]
-        )
+        await updateDecimalPlaces(newValue)
+        Toast.show({
+            type: 'success',
+            text1: 'Desimal Harga Diubah',
+            text2: `Desimal harga diubah menjadi ${newValue} angka di belakang koma`
+        })
     }
 
     return (
@@ -268,7 +229,7 @@ export default function Settings() {
                                     onValueChange={handlePushNotificationsChange}
                                     trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
                                     thumbColor={settings.pushEnabled && notificationPermission ? '#ffffff' : '#f3f4f6'}
-                                    disabled={notificationsLoading || !notificationPermission}
+                                    disabled={notificationsLoading}
                                 />
                             </View>
                         </View>
@@ -287,33 +248,12 @@ export default function Settings() {
                                 </View>
                                 <Switch
                                     value={settings.soundEnabled}
-                                    onValueChange={handleSoundChange}
+                                    onValueChange={updateSoundEnabled}
                                     trackColor={{ false: '#e5e7eb', true: '#f59e0b' }}
                                     thumbColor={settings.soundEnabled ? '#ffffff' : '#f3f4f6'}
                                     disabled={notificationsLoading}
                                 />
                             </View>
-
-                            {/* Custom Sound Selection */}
-                            {settings.soundEnabled && (
-                                <TouchableOpacity
-                                    onPress={handleSoundSelection}
-                                    className="border-t border-gray-100"
-                                >
-                                    <View className="flex-row items-center p-4">
-                                        <View className="w-10 h-10 rounded-xl items-center justify-center mr-3 ml-14">
-                                            <Ionicons name="musical-notes" size={20} color="#FF9228" />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text className="text-base font-semibold text-gray-900 mb-1">Pilih Suara</Text>
-                                            <Text className="text-sm text-gray-600">
-                                                {NOTIFICATION_SOUNDS.find((s) => s.id === settings.selectedSound)?.name || 'Default'}
-                                            </Text>
-                                        </View>
-                                        <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                                    </View>
-                                </TouchableOpacity>
-                            )}
                         </View>
 
                         {/* Low Stock Alerts */}
@@ -337,44 +277,6 @@ export default function Settings() {
                                 />
                             </View>
                         </View>
-
-                        {/* Test Notification Buttons */}
-                        <View className="flex-col gap-3">
-                            <TouchableOpacity
-                                onPress={handleTestNotification}
-                                className="bg-blue-500 rounded-2xl border border-border"
-                                disabled={notificationsLoading || !settings.pushEnabled}
-                            >
-                                <View className="flex-row items-center justify-center p-4">
-                                    <Ionicons name="notifications-outline" size={20} color="white" />
-                                    <Text className="text-white text-lg font-bold ml-2">Test Notifikasi</Text>
-                                </View>
-                            </TouchableOpacity>
-
-                            {/* Test Sound Button */}
-                            <TouchableOpacity
-                                onPress={handleTestSoundNotification}
-                                className="bg-green-500 rounded-2xl border border-border"
-                                disabled={notificationsLoading || !settings.pushEnabled}
-                            >
-                                <View className="flex-row items-center justify-center p-4">
-                                    <Ionicons name="volume-high" size={20} color="white" />
-                                    <Text className="text-white text-lg font-bold ml-2">Test Suara</Text>
-                                </View>
-                            </TouchableOpacity>
-
-                            {/* Test Low Stock Alert Button */}
-                            <TouchableOpacity
-                                onPress={handleTestLowStockAlert}
-                                className="bg-orange-500 rounded-2xl border border-border"
-                                disabled={notificationsLoading || !settings.pushEnabled}
-                            >
-                                <View className="flex-row items-center justify-center p-4">
-                                    <Ionicons name="warning" size={20} color="white" />
-                                    <Text className="text-white text-lg font-bold ml-2">Test Alert Stok Rendah</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 </View>
 
@@ -394,7 +296,7 @@ export default function Settings() {
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-lg font-bold text-gray-900 mb-1">Format Tanggal</Text>
-                                    <Text className="text-gray-600">{dateFormat}</Text>
+                                    <Text className="text-gray-600">{appSettings.dateFormat}</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                             </View>
@@ -409,22 +311,38 @@ export default function Settings() {
                                     </View>
                                     <View className="flex-1">
                                         <Text className="text-lg font-bold text-gray-900 mb-1">Desimal Harga</Text>
-                                        <Text className="text-gray-600">{decimalPlaces} angka di belakang koma</Text>
+                                        <Text className="text-gray-600">{appSettings.decimalPlaces} angka di belakang koma</Text>
                                     </View>
                                 </View>
                                 <View className="flex-row items-center">
                                     <TouchableOpacity
-                                        onPress={() => setDecimalPlaces(Math.max(0, decimalPlaces - 1))}
-                                        className="w-8 h-8 bg-gray-200 rounded-full items-center justify-center mr-2"
+                                        onPress={() => handleDecimalPlacesChange(false)}
+                                        disabled={appSettingsLoading || appSettings.decimalPlaces === 0}
+                                        className={`w-8 h-8 rounded-full items-center justify-center mr-2 ${appSettingsLoading || appSettings.decimalPlaces === 0
+                                            ? 'bg-gray-100'
+                                            : 'bg-gray-200'
+                                            }`}
                                     >
-                                        <Ionicons name="remove" size={16} color="#6b7280" />
+                                        <Ionicons
+                                            name="remove"
+                                            size={16}
+                                            color={appSettingsLoading || appSettings.decimalPlaces === 0 ? "#9ca3af" : "#6b7280"}
+                                        />
                                     </TouchableOpacity>
-                                    <Text className="text-lg font-bold text-gray-900 mx-3">{decimalPlaces}</Text>
+                                    <Text className="text-lg font-bold text-gray-900 mx-3">{appSettings.decimalPlaces}</Text>
                                     <TouchableOpacity
-                                        onPress={() => setDecimalPlaces(Math.min(4, decimalPlaces + 1))}
-                                        className="w-8 h-8 bg-gray-200 rounded-full items-center justify-center ml-2"
+                                        onPress={() => handleDecimalPlacesChange(true)}
+                                        disabled={appSettingsLoading || appSettings.decimalPlaces === 4}
+                                        className={`w-8 h-8 rounded-full items-center justify-center ml-2 ${appSettingsLoading || appSettings.decimalPlaces === 4
+                                            ? 'bg-gray-100'
+                                            : 'bg-gray-200'
+                                            }`}
                                     >
-                                        <Ionicons name="add" size={16} color="#6b7280" />
+                                        <Ionicons
+                                            name="add"
+                                            size={16}
+                                            color={appSettingsLoading || appSettings.decimalPlaces === 4 ? "#9ca3af" : "#6b7280"}
+                                        />
                                     </TouchableOpacity>
                                 </View>
                             </View>

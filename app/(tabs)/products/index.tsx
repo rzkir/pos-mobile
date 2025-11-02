@@ -2,28 +2,28 @@ import { FlatList, RefreshControl, ScrollView, Text, TextInput, TouchableOpacity
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { useProducts } from '@/components/products/lib/useProducts';
+import { useProducts } from '@/components/products/products/lib/useProducts';
 
 import ProductDetailsView from '@/components/ProductDetailsView';
 
-import ManagementSection from '@/components/products/ManagementSection';
+import ManagementSection from '@/components/products/products/ManagementSection';
 
-import CardProducts from '@/components/products/CardProducts';
+import CardProducts from '@/components/products/products/CardProducts';
 
-import FilterBottomSheet from '@/components/products/FilterBottomSheet';
+import FilterBottomSheet from '@/components/products/products/FilterBottomSheet';
 
 import HeaderGradient from '@/components/ui/HeaderGradient';
 
 export default function Products() {
+
     const {
-        // data
         products,
         categories,
         sizes,
         suppliers,
         loading,
-
-        // actions
+        formatDateTime,
+        formatIDR,
         onRefresh,
         handleEdit,
         handleAdd,
@@ -33,7 +33,6 @@ export default function Products() {
         handleDelete,
         handleNavigateAllProducts,
 
-        // view state
         searchTerm,
         setSearchTerm,
         bestSellerProducts,
@@ -44,7 +43,6 @@ export default function Products() {
         handleViewDetails,
         closeDetailsView,
 
-        // filter state
         showFilterSheet,
         selectedCategoryId,
         selectedSizeId,
@@ -71,7 +69,6 @@ export default function Products() {
         );
     }
 
-    // Show details view if selected
     if (showDetailsView && selectedProduct) {
         return (
             <ProductDetailsView
@@ -80,6 +77,8 @@ export default function Products() {
                 sizes={sizes}
                 suppliers={suppliers}
                 onClose={closeDetailsView}
+                formatIDR={formatIDR}
+                formatDateTime={formatDateTime}
                 onEdit={handleEdit}
             />
         );
@@ -124,7 +123,7 @@ export default function Products() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        colors={['#3B82F6']} // Android
+                        colors={['#FF9228']} // Android
                         tintColor="#3B82F6" // iOS
                         title="Memuat ulang..." // iOS
                         titleColor="#6B7280" // iOS
@@ -132,7 +131,6 @@ export default function Products() {
                 }
             >
                 <View className="pt-5 px-1">
-
                     {/* Search */}
                     <View className="relative mb-4">
                         <View className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
@@ -157,10 +155,11 @@ export default function Products() {
                     onNavigateCategory={handleNavigateToCategory}
                     onNavigateSize={handleNavigateToSize}
                     onNavigateSupplier={handleNavigateToSupplier}
+                    handleNavigateAllProducts={handleNavigateAllProducts}
                 />
 
                 {/* CTA: Filter dan Lihat Semua Produk */}
-                <View className="px-1 mb-3 flex-row justify-between items-center gap-2">
+                <View className="px-1 mb-4 mt-1 flex-row justify-between items-center gap-2">
                     <TouchableOpacity
                         onPress={handleOpenFilter}
                         className="flex-1 bg-gray-600 px-4 py-3 rounded-2xl"
@@ -193,7 +192,7 @@ export default function Products() {
 
                 {/* Best Seller Products Section */}
                 {bestSellerProducts.length > 0 && (
-                    <View className="mb-6 mt-4">
+                    <View className="mb-4 mt-1">
                         <View className="flex-row items-center justify-between mb-4 px-1">
                             <View className="flex-row items-center">
                                 <View className="bg-yellow-100 p-2 rounded-xl mr-2">
@@ -235,7 +234,7 @@ export default function Products() {
 
                 {/* Regular Products Section */}
                 {regularProducts.length > 0 && (
-                    <View className="mb-6">
+                    <View className="mb-4 mt-1">
                         <View className="flex-row items-center justify-between mb-4 px-1">
                             <View className="flex-row items-center">
                                 <View className="bg-blue-100 p-2 rounded-xl mr-2">
@@ -251,9 +250,9 @@ export default function Products() {
                                 </View>
                             </View>
                         </View>
-                        <View className="flex-row flex-wrap px-1">
+                        <View className="flex-col px-1">
                             {regularProducts.map((item: any) => (
-                                <View key={item.id.toString()} className="w-1/2 px-1 mb-4">
+                                <View key={item.id.toString()} className="mb-4">
                                     <CardProducts
                                         item={item}
                                         onViewDetails={handleViewDetails}
@@ -268,7 +267,7 @@ export default function Products() {
 
                 {/* Empty State */}
                 {bestSellerProducts.length === 0 && regularProducts.length === 0 && (
-                    <View className="mt-5 items-center w-full">
+                    <View className="mt-1 items-center w-full">
                         <View className="bg-white p-8 w-full rounded-3l items-center">
                             <View className="w-20 h-20 bg-gray-100 rounded-3l items-center justify-center mb-6">
                                 <Ionicons name="cube-outline" size={40} color="#9CA3AF" />

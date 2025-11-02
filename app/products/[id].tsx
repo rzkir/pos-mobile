@@ -1,12 +1,6 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-
-import { useEffect, useRef, useState } from 'react';
-
-import { Alert, Image, Text, TextInput, TouchableOpacity, View, Switch } from 'react-native';
+import { Image, Text, TouchableOpacity, View, Switch } from 'react-native';
 
 import { Picker } from '@react-native-picker/picker';
-
-import Toast from 'react-native-toast-message';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -18,526 +12,75 @@ import Select from '@/components/ui/select';
 
 import { BarcodeVisual } from '@/components/ui/BarcodeVisual';
 
-import { useCategories } from '@/hooks/useCategories';
+import HeaderGradient from '@/components/ui/HeaderGradient';
 
-import { useProducts } from '@/hooks/useProducts';
-
-import { useSizes } from '@/hooks/useSizes';
-
-import { useSuppliers } from '@/hooks/useSuppliers';
-
-import * as ImagePicker from 'expo-image-picker';
+import { useStateCreateProducts } from '@/components/products/create/lib/useStateCreateProducts';
 
 export default function EditProduct() {
-    const { id } = useLocalSearchParams();
-
-    const router = useRouter();
-
-    const isEdit = id !== 'new';
-
     const {
-        products,
-        createProduct,
-        updateProduct
-    } = useProducts();
-
-    const { categories } = useCategories();
-    const { sizes } = useSizes();
-    const { suppliers } = useSuppliers();
-
-    const [showScanner, setShowScanner] = useState(false);
-    const [barcodeAction, setBarcodeAction] = useState<string>('generate');
-    const [formData, setFormData] = useState({
-        name: '',
-        price: '',
-        modal: '',
-        stock: '',
-        unit: '',
-        barcode: '',
-        category_id: '',
-        size_id: '',
-        supplier_id: '',
-        description: '',
-        min_stock: '',
-        discount: '',
-        image_url: '',
-        best_seller: false
-    });
-
-    const nameRef = useRef<TextInput>(null);
-    const priceRef = useRef<TextInput>(null);
-    const modalRef = useRef<TextInput>(null);
-    const stockRef = useRef<TextInput>(null);
-    const barcodeRef = useRef<TextInput>(null);
-    const descriptionRef = useRef<TextInput>(null);
-    const minStockRef = useRef<TextInput>(null);
-    const discountRef = useRef<TextInput>(null);
-
-    const formatIdrNumber = (raw: string) => {
-        if (!raw) return '';
-        const digitsOnly = raw.replace(/[^0-9]/g, '');
-        if (!digitsOnly) return '';
-        return new Intl.NumberFormat('id-ID').format(Number(digitsOnly));
-    };
-
-    const unformatIdrNumber = (formatted: string) => {
-        if (!formatted) return '';
-        return formatted.replace(/\./g, '');
-    };
-
-    useEffect(() => {
-        if (isEdit && products.length > 0) {
-            const product = products.find((p: any) => p.id === parseInt(id as string));
-            if (product) {
-                const priceValue = formatIdrNumber(product.price?.toString() || '');
-                const modalValue = formatIdrNumber(product.modal?.toString() || '');
-
-                setFormData({
-                    name: product.name || '',
-                    price: priceValue,
-                    modal: modalValue,
-                    stock: formatIdrNumber(product.stock?.toString() || ''),
-                    unit: product.unit || '',
-                    barcode: product.barcode || '',
-                    category_id: product.category_id?.toString() || '',
-                    size_id: product.size_id?.toString() || '',
-                    supplier_id: product.supplier_id?.toString() || '',
-                    description: product.description || '',
-                    min_stock: product.min_stock?.toString() || '',
-                    discount: product.discount?.toString() || '',
-                    image_url: product.image_url || '',
-                    best_seller: Boolean(product.best_seller)
-                });
-
-            }
-        }
-    }, [isEdit, id, products]);
-
-    const handleInputChange = (field: string, value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handlePriceChange = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            price: formatIdrNumber(value)
-        }));
-    };
-
-    const handleModalChange = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            modal: formatIdrNumber(value)
-        }));
-    };
-
-    const handleBarcodeScan = (barcode: string) => {
-        setFormData(prev => ({
-            ...prev,
-            barcode: barcode
-        }));
-        setShowScanner(false);
-    };
-
-    const isDecimalUnit = (unit: string) => ['kg', 'liter', 'meter'].includes(unit);
-
-    const sanitizeDecimalInput = (value: string, maxDecimals: number = 3) => {
-        let sanitized = value.replace(/[^0-9.,]/g, '').replace(',', '.');
-        const parts = sanitized.split('.');
-        if (parts.length > 2) {
-            sanitized = parts[0] + '.' + parts.slice(1).join('');
-        }
-        const [intPart, decPart] = sanitized.split('.');
-        if (decPart !== undefined) {
-            return intPart + '.' + decPart.slice(0, maxDecimals);
-        }
-        return intPart;
-    };
-
-    const handleStockChange = (value: string) => {
-        if (isDecimalUnit(formData.unit)) {
-            const cleaned = sanitizeDecimalInput(value);
-            const newStockNumber = parseFloat(cleaned || '0');
-            const currentMinStockNumber = parseFloat((formData.min_stock || '0').replace(',', '.'));
-
-            if (!Number.isNaN(currentMinStockNumber) && currentMinStockNumber > newStockNumber) {
-                Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
-                setFormData(prev => ({
-                    ...prev,
-                    stock: cleaned,
-                    min_stock: String(newStockNumber)
-                }));
-                return;
-            }
-
-            setFormData(prev => ({
-                ...prev,
-                stock: cleaned
-            }));
-            return;
-        }
-
-        const formattedStock = formatIdrNumber(value);
-        const newStockNumber = parseInt(unformatIdrNumber(formattedStock) || '0', 10);
-        const currentMinStockNumber = parseInt(formData.min_stock || '0', 10);
-
-        if (!Number.isNaN(currentMinStockNumber) && currentMinStockNumber > newStockNumber) {
-            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
-            setFormData(prev => ({
-                ...prev,
-                stock: formattedStock,
-                min_stock: String(newStockNumber)
-            }));
-            return;
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            stock: formattedStock
-        }));
-    };
-
-    const handleMinStockChange = (value: string) => {
-        if (isDecimalUnit(formData.unit)) {
-            const cleaned = sanitizeDecimalInput(value);
-            const inputMin = parseFloat(cleaned || '0');
-            const stockNumber = parseFloat((formData.stock ? (isDecimalUnit(formData.unit) ? formData.stock : unformatIdrNumber(formData.stock)) : '0').toString().replace(',', '.'));
-
-            if (inputMin > stockNumber) {
-                Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
-                setFormData(prev => ({
-                    ...prev,
-                    min_stock: String(stockNumber)
-                }));
-                return;
-            }
-
-            setFormData(prev => ({
-                ...prev,
-                min_stock: cleaned
-            }));
-            return;
-        }
-
-        const digitsOnly = value.replace(/[^0-9]/g, '');
-        const inputMin = parseInt(digitsOnly || '0', 10);
-        const stockNumber = parseInt(unformatIdrNumber(formData.stock) || '0', 10);
-
-        if (inputMin > stockNumber) {
-            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
-            setFormData(prev => ({
-                ...prev,
-                min_stock: String(stockNumber)
-            }));
-            return;
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            min_stock: digitsOnly
-        }));
-    };
-
-    const generateEAN13 = () => {
-        let base = '';
-        for (let i = 0; i < 12; i++) {
-            base += Math.floor(Math.random() * 10).toString();
-        }
-
-        const digits = base.split('').map((d) => parseInt(d, 10));
-        let sum = 0;
-        for (let i = 0; i < digits.length; i++) {
-            const positionFromRight = digits.length - i;
-            const weight = positionFromRight % 2 === 0 ? 3 : 1;
-            sum += digits[i] * weight;
-        }
-        const checksum = (10 - (sum % 10)) % 10;
-        return base + checksum.toString();
-    };
-
-    const handleBarcodeGenerate = () => {
-        const code = generateEAN13();
-        setFormData((prev) => ({ ...prev, barcode: code }));
-    };
-
-    useEffect(() => {
-        if (barcodeAction === 'generate' && !isEdit && !formData.barcode) {
-            const code = generateEAN13();
-            setFormData((prev) => ({ ...prev, barcode: code }));
-        }
-    }, [barcodeAction, isEdit, formData.barcode]);
-
-    const pickFromGallery = async () => {
-        try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                Toast.show({ type: 'error', text1: 'Izin galeri diperlukan untuk memilih gambar' });
-                return;
-            }
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-            });
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const uri = result.assets[0].uri;
-                setFormData(prev => ({ ...prev, image_url: uri }));
-            }
-        } catch {
-            Toast.show({ type: 'error', text1: 'Gagal memilih gambar' });
-        }
-    };
-
-    const captureWithCamera = async () => {
-        try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            if (status !== 'granted') {
-                Toast.show({ type: 'error', text1: 'Izin kamera diperlukan untuk mengambil foto' });
-                return;
-            }
-            const result = await ImagePicker.launchCameraAsync({
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-            });
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const uri = result.assets[0].uri;
-                setFormData(prev => ({ ...prev, image_url: uri }));
-            }
-        } catch {
-            Toast.show({ type: 'error', text1: 'Gagal mengambil foto' });
-        }
-    };
-
-    const handlePickImage = () => {
-        Alert.alert(
-            'Pilih Sumber Gambar',
-            'Silakan pilih dari galeri atau gunakan kamera',
-            [
-                { text: 'Batal', style: 'cancel' },
-                { text: 'Galeri', onPress: pickFromGallery },
-                { text: 'Kamera', onPress: captureWithCamera },
-            ]
-        );
-    };
-
-    const handleCategorySelect = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            category_id: value
-        }));
-    };
-
-    const handleSizeSelect = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            size_id: value
-        }));
-    };
-
-    const handleSupplierSelect = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            supplier_id: value
-        }));
-    };
-
-    const handleUnitSelect = (value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            unit: value
-        }));
-    };
-
-    const stepForUnit = (unit: string) => (isDecimalUnit(unit) ? 0.1 : 1);
-
-    const parseStockNumber = (raw: string, unit: string) => {
-        return isDecimalUnit(unit)
-            ? parseFloat((raw || '0').toString().replace(',', '.'))
-            : parseInt(unformatIdrNumber(raw) || '0', 10);
-    };
-
-    const formatStockString = (num: number, unit: string) => {
-        if (isDecimalUnit(unit)) {
-            const fixed = Number(num.toFixed(3));
-            return String(fixed);
-        }
-        return formatIdrNumber(String(Math.floor(num)));
-    };
-
-    const incrementStock = (target: 'stock' | 'min_stock') => {
-        const unit = formData.unit || 'pcs';
-        const step = stepForUnit(unit);
-        const current = target === 'stock' ? formData.stock : formData.min_stock;
-        const currentNum = parseStockNumber(current, unit);
-        const nextNum = currentNum + step;
-        const nextStr = formatStockString(nextNum, unit);
-        if (target === 'stock') {
-            handleStockChange(nextStr);
-        } else {
-            handleMinStockChange(nextStr);
-        }
-    };
-
-    const decrementStock = (target: 'stock' | 'min_stock') => {
-        const unit = formData.unit || 'pcs';
-        const step = stepForUnit(unit);
-        const current = target === 'stock' ? formData.stock : formData.min_stock;
-        const currentNum = parseStockNumber(current, unit);
-        const nextNum = Math.max(0, currentNum - step);
-        const nextStr = formatStockString(nextNum, unit);
-        if (target === 'stock') {
-            handleStockChange(nextStr);
-        } else {
-            handleMinStockChange(nextStr);
-        }
-    };
-
-    const incrementDiscount = () => {
-        const current = parseFloat(formData.discount) || 0;
-        const next = Math.min(100, current + 1); // Max 100%
-        setFormData(prev => ({
-            ...prev,
-            discount: next.toString()
-        }));
-    };
-
-    const decrementDiscount = () => {
-        const current = parseFloat(formData.discount) || 0;
-        const next = Math.max(0, current - 1); // Min 0%
-        setFormData(prev => ({
-            ...prev,
-            discount: next.toString()
-        }));
-    };
-
-    const validateForm = () => {
-        if (!formData.name.trim()) {
-            Toast.show({ type: 'error', text1: 'Nama produk harus diisi' });
-            return false;
-        }
-        if (!formData.price || parseFloat(unformatIdrNumber(formData.price)) <= 0) {
-            Toast.show({ type: 'error', text1: 'Harga harus diisi dan lebih dari 0' });
-            return false;
-        }
-        const stockNumber = isDecimalUnit(formData.unit)
-            ? parseFloat((formData.stock || '0').toString().replace(',', '.'))
-            : parseInt(unformatIdrNumber(formData.stock) || '0', 10);
-        if (!formData.stock || Number.isNaN(stockNumber) || stockNumber < 0) {
-            Toast.show({ type: 'error', text1: 'Stok harus diisi dan tidak boleh negatif' });
-            return false;
-        }
-        // Validasi stok minimum
-        const minStockNumber = isDecimalUnit(formData.unit)
-            ? parseFloat((formData.min_stock || '0').toString().replace(',', '.'))
-            : parseInt(formData.min_stock || '0', 10);
-        if (minStockNumber < 0) {
-            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh negatif' });
-            return false;
-        }
-        if (minStockNumber > stockNumber) {
-            Toast.show({ type: 'error', text1: 'Stok minimum tidak boleh melebihi stok aktual' });
-            return false;
-        }
-        return true;
-    };
-
-    const handleSave = async () => {
-        if (!validateForm()) return;
-
-        try {
-            const productData = {
-                uid: `PROD${Date.now()}`,
-                name: formData.name,
-                price: parseFloat(unformatIdrNumber(formData.price)),
-                modal: parseFloat(unformatIdrNumber(formData.modal)) || 0,
-                stock: isDecimalUnit(formData.unit)
-                    ? parseFloat((formData.stock || '0').toString().replace(',', '.'))
-                    : parseInt(unformatIdrNumber(formData.stock)),
-                sold: 0,
-                unit: formData.unit || 'pcs',
-                image_url: formData.image_url || '',
-                barcode: formData.barcode || `BC${Date.now()}`,
-                is_active: true,
-                category_id: formData.category_id && formData.category_id !== '' ? parseInt(formData.category_id) : undefined,
-                size_id: formData.size_id && formData.size_id !== '' ? parseInt(formData.size_id) : undefined,
-                supplier_id: formData.supplier_id && formData.supplier_id !== '' ? parseInt(formData.supplier_id) : undefined,
-                description: formData.description,
-                min_stock: isDecimalUnit(formData.unit)
-                    ? parseFloat((formData.min_stock || '0').toString().replace(',', '.')) || 0
-                    : parseInt(formData.min_stock) || 0,
-                discount: parseFloat(formData.discount) || 0,
-                best_seller: formData.best_seller,
-                expiration_date: '',
-                created_by: 'admins'
-            };
-
-            if (isEdit) {
-                await updateProduct(parseInt(id as string), productData);
-                Toast.show({ type: 'success', text1: 'Produk berhasil diperbarui' });
-            } else {
-                await createProduct(productData);
-                Toast.show({ type: 'success', text1: 'Produk berhasil ditambahkan' });
-            }
-
-            router.back();
-        } catch (error) {
-            Toast.show({ type: 'error', text1: 'Gagal menyimpan produk' });
-            console.error('Error saving product:', error);
-        }
-    };
-
-    // Format options for Select component
-    const categoryOptions = categories.map((cat: any) => ({
-        label: cat.name,
-        value: cat.id
-    }));
-
-    const sizeOptions = sizes.map((size: any) => ({
-        label: size.name,
-        value: size.id
-    }));
-
-    const supplierOptions = suppliers.map((supplier: any) => ({
-        label: supplier.name,
-        value: supplier.id
-    }));
-
-    const unitOptions = [
-        { label: 'Pcs (Satuan)', value: 'pcs' },
-        { label: 'Kg (Kilogram)', value: 'kg' },
-        { label: 'Liter', value: 'liter' },
-        { label: 'Meter', value: 'meter' },
-        { label: 'Box (Kotak)', value: 'box' },
-        { label: 'Pack (Paket)', value: 'pack' },
-        { label: 'Botol', value: 'botol' },
-        { label: 'Gram', value: 'gram' },
-        { label: 'Dus', value: 'dus' },
-        { label: 'Roll', value: 'roll' }
-    ];
+        router,
+        isEdit,
+        showScanner,
+        setShowScanner,
+        barcodeAction,
+        setBarcodeAction,
+        formData,
+        setFormData,
+        nameRef,
+        priceRef,
+        modalRef,
+        stockRef,
+        barcodeRef,
+        descriptionRef,
+        minStockRef,
+        discountRef,
+        isDecimalUnit,
+        handleInputChange,
+        handlePriceChange,
+        handleModalChange,
+        handleBarcodeScan,
+        handleBarcodeGenerate,
+        handleStockChange,
+        handleMinStockChange,
+        handleCategorySelect,
+        handleSizeSelect,
+        handleSupplierSelect,
+        handleUnitSelect,
+        handlePickImage,
+        incrementStock,
+        decrementStock,
+        incrementDiscount,
+        decrementDiscount,
+        handleDiscountChange,
+        handleSave,
+        categoryOptions,
+        sizeOptions,
+        supplierOptions,
+        unitOptions,
+    } = useStateCreateProducts();
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-xs">
-                <TouchableOpacity onPress={() => router.back()} className="px-3 py-2">
-                    <Text className="text-blue-600 text-base">Batal</Text>
-                </TouchableOpacity>
-                <Text className="text-xl font-semibold text-gray-900">
-                    {isEdit ? 'Edit Produk' : 'Tambah Produk'}
-                </Text>
-                <TouchableOpacity onPress={handleSave} className="bg-blue-600 px-4 py-2 rounded-full">
-                    <Text className="text-white text-base font-semibold">Simpan</Text>
-                </TouchableOpacity>
-            </View>
+            <HeaderGradient
+                title={isEdit ? 'Edit Produk' : 'Tambah Produk'}
+                colors={['#FF9228', '#FF9228']}
+            >
+                <View className='flex-row items-center justify-between w-full'>
+                    <TouchableOpacity onPress={() => router.back()} className="px-3 py-2">
+                        <Text className="text-white text-base font-semibold">Batal</Text>
+                    </TouchableOpacity>
+                    <Text className="text-xl font-semibold text-white">
+                        {isEdit ? 'Edit Produk' : 'Tambah Produk'}
+                    </Text>
+                    <TouchableOpacity onPress={handleSave} className="bg-white px-4 py-2 rounded-full">
+                        <Text className="text-orange-600 text-base font-semibold">Simpan</Text>
+                    </TouchableOpacity>
+                </View>
+            </HeaderGradient>
 
             <KeyboardAwareScrollView
                 className="flex-1"
-                contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
                 keyboardShouldPersistTaps="always"
                 enableOnAndroid={true}
                 enableAutomaticScroll={true}
@@ -715,7 +258,7 @@ export default function EditProduct() {
                                     style={{ height: 50 }}
                                 >
                                     <Picker.Item label="Pilih kategori" value="" />
-                                    {categoryOptions.map((option) => (
+                                    {categoryOptions.map((option: { label: string; value: number }) => (
                                         <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
                                     ))}
                                 </Picker>
@@ -731,7 +274,7 @@ export default function EditProduct() {
                                     style={{ height: 50 }}
                                 >
                                     <Picker.Item label="Pilih ukuran" value="" />
-                                    {sizeOptions.map((option) => (
+                                    {sizeOptions.map((option: { label: string; value: number }) => (
                                         <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
                                     ))}
                                 </Picker>
@@ -747,7 +290,7 @@ export default function EditProduct() {
                                     style={{ height: 50 }}
                                 >
                                     <Picker.Item label="Pilih supplier" value="" />
-                                    {supplierOptions.map((option) => (
+                                    {supplierOptions.map((option: { label: string; value: number }) => (
                                         <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
                                     ))}
                                 </Picker>
@@ -799,22 +342,7 @@ export default function EditProduct() {
                                     ref={discountRef}
                                     label="Diskon (%)"
                                     value={formData.discount}
-                                    onChangeText={(text) => {
-                                        // Allow only numbers and one decimal point
-                                        const cleaned = text.replace(/[^0-9.]/g, '');
-                                        // Prevent multiple decimal points
-                                        const parts = cleaned.split('.');
-                                        const sanitized = parts.length > 2
-                                            ? parts[0] + '.' + parts.slice(1).join('')
-                                            : cleaned;
-                                        // Limit to 100
-                                        const numValue = parseFloat(sanitized) || 0;
-                                        if (numValue > 100) {
-                                            setFormData(prev => ({ ...prev, discount: '100' }));
-                                        } else {
-                                            setFormData(prev => ({ ...prev, discount: sanitized }));
-                                        }
-                                    }}
+                                    onChangeText={handleDiscountChange}
                                     placeholder="0"
                                     keyboardType="decimal-pad"
                                     returnKeyType="next"

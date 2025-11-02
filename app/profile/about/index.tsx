@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StatusBar, Linking, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking, Alert, Share, Platform } from 'react-native'
 
 import { router } from 'expo-router'
 
@@ -9,6 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import Toast from 'react-native-toast-message'
 
 import * as Application from 'expo-application'
+
+import HeaderGradient from '@/components/ui/HeaderGradient'
 
 export default function About() {
     const appVersion = Application.nativeApplicationVersion || '1.0.0'
@@ -23,19 +25,19 @@ export default function About() {
                 {
                     text: 'Email',
                     onPress: () => {
-                        Linking.openURL('mailto:support@posmobile.com?subject=Bantuan POS Mobile')
+                        Linking.openURL('mailto:spacedigitalia@gmail.com?subject=Bantuan Kasir Mini')
                     }
                 },
                 {
                     text: 'WhatsApp',
                     onPress: () => {
-                        Linking.openURL('https://wa.me/6281234567890?text=Halo, saya butuh bantuan untuk aplikasi POS Mobile')
+                        Linking.openURL('https://wa.me/6281398632939?text=Halo, saya butuh bantuan untuk aplikasi Kasir Mini')
                     }
                 },
                 {
                     text: 'Telepon',
                     onPress: () => {
-                        Linking.openURL('tel:+6281234567890')
+                        Linking.openURL('tel:+6281398632939')
                     }
                 },
                 { text: 'Batal', style: 'cancel' }
@@ -52,7 +54,6 @@ export default function About() {
                 {
                     text: 'Ya, Beri Rating',
                     onPress: () => {
-                        // Here you would typically open the app store
                         Toast.show({
                             type: 'success',
                             text1: 'Terima Kasih!',
@@ -64,64 +65,71 @@ export default function About() {
         )
     }
 
-    const handleShareApp = () => {
-        Alert.alert(
-            'Bagikan Aplikasi',
-            'Bagikan POS Mobile ke teman-teman Anda',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Bagikan',
-                    onPress: () => {
-                        Toast.show({
-                            type: 'info',
-                            text1: 'Fitur Share',
-                            text2: 'Fitur share akan segera tersedia'
-                        })
-                    }
+    const handleShareApp = async () => {
+        try {
+            const shareMessage = `📱 ${appName} v${appVersion}
+
+🎯 Sistem Point of Sale Modern untuk Bisnis Anda
+
+✨ Fitur Utama:
+• Manajemen Transaksi yang Mudah
+• Manajemen Produk & Inventori
+• Laporan & Analytics Lengkap
+• Scan Barcode untuk Input Cepat
+• Pencetakan Struk Otomatis
+
+💬 Butuh bantuan?
+WhatsApp: https://wa.me/6281398632939
+Email: support@posmobile.com
+
+🌐 Kunjungi website kami:
+https://kasirmini.biz.id
+
+Dikembangkan dengan ❤️ untuk kemudahan bisnis Anda
+
+#POSMobile #PointOfSale #BusinessApp`
+
+            const result = await Share.share({
+                message: shareMessage,
+                title: `Bagikan ${appName}`,
+                ...(Platform.OS === 'android' && {
+                    dialogTitle: `Bagikan ${appName}`,
+                }),
+            })
+
+            if (result.action === Share.sharedAction) {
+                if (result.activityType) {
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Berhasil Dibagikan',
+                        text2: 'Terima kasih telah membagikan aplikasi!',
+                        visibilityTime: 2000
+                    })
+                } else {
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Berhasil Dibagikan',
+                        text2: 'Aplikasi berhasil dibagikan',
+                        visibilityTime: 2000
+                    })
                 }
-            ]
-        )
+            }
+        } catch (error: any) {
+            Toast.show({
+                type: 'error',
+                text1: 'Gagal Membagikan',
+                text2: error.message || 'Terjadi kesalahan saat membagikan aplikasi',
+                visibilityTime: 3000
+            })
+        }
     }
 
     const handlePrivacyPolicy = () => {
-        Alert.alert(
-            'Kebijakan Privasi',
-            'Kebijakan privasi dan perlindungan data pengguna',
-            [
-                { text: 'Tutup', style: 'cancel' },
-                {
-                    text: 'Baca Selengkapnya',
-                    onPress: () => {
-                        Toast.show({
-                            type: 'info',
-                            text1: 'Kebijakan Privasi',
-                            text2: 'Halaman kebijakan privasi akan segera tersedia'
-                        })
-                    }
-                }
-            ]
-        )
+        router.push('/profile/about/kebijakan-privasi')
     }
 
     const handleTermsOfService = () => {
-        Alert.alert(
-            'Syarat dan Ketentuan',
-            'Syarat dan ketentuan penggunaan aplikasi',
-            [
-                { text: 'Tutup', style: 'cancel' },
-                {
-                    text: 'Baca Selengkapnya',
-                    onPress: () => {
-                        Toast.show({
-                            type: 'info',
-                            text1: 'Syarat dan Ketentuan',
-                            text2: 'Halaman syarat dan ketentuan akan segera tersedia'
-                        })
-                    }
-                }
-            ]
-        )
+        router.push('/profile/about/syarat-dan-ketentuan')
     }
 
     const handleCheckUpdates = () => {
@@ -133,15 +141,14 @@ export default function About() {
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
-            <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-
+        <View className="flex-1 bg-background">
             {/* Header */}
-            <LinearGradient
-                colors={['#1e40af', '#3b82f6', '#8b5cf6']}
+            <HeaderGradient
+                colors={['#FF9228', '#FF9228']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="pt-12 pb-8 px-6"
+                title="Tentang Aplikasi"
+                icon="ℹ️"
             >
                 <View className="flex-row justify-between items-center">
                     <View className="flex-1">
@@ -159,24 +166,16 @@ export default function About() {
                         <Ionicons name="arrow-back" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </LinearGradient>
+            </HeaderGradient>
 
             <ScrollView
-                className="flex-1 -mt-4"
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
             >
                 {/* App Information Card */}
-                <View className="px-6 mb-8">
+                <View className="px-4 mt-4 mb-4">
                     <View
-                        className="bg-white rounded-3xl overflow-hidden"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 8 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 20,
-                            elevation: 8
-                        }}
+                        className="bg-card rounded-2xl overflow-hidden border border-border"
                     >
                         <LinearGradient
                             colors={['#f8fafc', '#ffffff']}
@@ -209,8 +208,8 @@ export default function About() {
                             </View>
 
                             {/* Version Information */}
-                            <View className="space-y-4">
-                                <View className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                            <View className="flex-col gap-4">
+                                <View className="flex-row items-center justify-between p-4 bg-card rounded-2xl border border-border">
                                     <View className="flex-row items-center">
                                         <View className="w-10 h-10 bg-blue-100 rounded-2xl items-center justify-center mr-3">
                                             <Ionicons name="information-circle" size={20} color="#3b82f6" />
@@ -220,7 +219,7 @@ export default function About() {
                                     <Text className="text-gray-900 font-bold">{appVersion}</Text>
                                 </View>
 
-                                <View className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                <View className="flex-row items-center justify-between p-4 bg-card rounded-2xl border border-border">
                                     <View className="flex-row items-center">
                                         <View className="w-10 h-10 bg-green-100 rounded-2xl items-center justify-center mr-3">
                                             <Ionicons name="build" size={20} color="#10b981" />
@@ -230,14 +229,14 @@ export default function About() {
                                     <Text className="text-gray-900 font-bold">{buildVersion}</Text>
                                 </View>
 
-                                <View className="flex-row items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                <View className="flex-row items-center justify-between p-4 bg-card rounded-2xl border border-border">
                                     <View className="flex-row items-center">
                                         <View className="w-10 h-10 bg-purple-100 rounded-2xl items-center justify-center mr-3">
                                             <Ionicons name="calendar" size={20} color="#8b5cf6" />
                                         </View>
                                         <Text className="text-gray-600 font-medium">Tanggal Rilis</Text>
                                     </View>
-                                    <Text className="text-gray-900 font-bold">2024</Text>
+                                    <Text className="text-gray-900 font-bold">2025</Text>
                                 </View>
                             </View>
                         </LinearGradient>
@@ -245,18 +244,11 @@ export default function About() {
                 </View>
 
                 {/* Features Section */}
-                <View className="px-6 mb-8">
-                    <Text className="text-2xl font-bold text-gray-900 mb-6">Fitur Utama</Text>
+                <View className="px-4 mt-4 mb-4">
+                    <Text className="text-xl font-semibold text-gray-900 mb-4">Fitur Utama</Text>
 
-                    <View className="space-y-4">
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                    <View className="flex-col gap-4">
+                        <View className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -272,14 +264,7 @@ export default function About() {
                             </View>
                         </View>
 
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                        <View className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -295,14 +280,7 @@ export default function About() {
                             </View>
                         </View>
 
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                        <View className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -318,14 +296,7 @@ export default function About() {
                             </View>
                         </View>
 
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                        <View className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -344,20 +315,13 @@ export default function About() {
                 </View>
 
                 {/* Support Section */}
-                <View className="px-6 mb-8">
+                <View className="px-4 mt-4 mb-4">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Dukungan & Bantuan</Text>
 
-                    <View className="space-y-4">
+                    <View className="flex-col gap-4">
                         <TouchableOpacity
                             onPress={handleContactSupport}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -376,14 +340,7 @@ export default function About() {
 
                         <TouchableOpacity
                             onPress={handleCheckUpdates}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -402,14 +359,7 @@ export default function About() {
 
                         <TouchableOpacity
                             onPress={handleRateApp}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -428,14 +378,7 @@ export default function About() {
 
                         <TouchableOpacity
                             onPress={handleShareApp}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -455,20 +398,13 @@ export default function About() {
                 </View>
 
                 {/* Legal Section */}
-                <View className="px-6 mb-8">
+                <View className="px-4 mt-4 mb-4">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Informasi Legal</Text>
 
-                    <View className="space-y-4">
+                    <View className="flex-col gap-4">
                         <TouchableOpacity
                             onPress={handlePrivacyPolicy}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -487,14 +423,7 @@ export default function About() {
 
                         <TouchableOpacity
                             onPress={handleTermsOfService}
-                            className="bg-white rounded-2xl overflow-hidden"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.1,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
@@ -514,18 +443,11 @@ export default function About() {
                 </View>
 
                 {/* Developer Information */}
-                <View className="px-6 mb-8">
+                <View className="px-4 mt-4 mb-4">
                     <Text className="text-2xl font-bold text-gray-900 mb-6">Informasi Developer</Text>
 
                     <View
-                        className="bg-white rounded-3xl overflow-hidden"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 8 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 20,
-                            elevation: 8
-                        }}
+                        className="bg-card rounded-2xl overflow-hidden border border-border"
                     >
                         <LinearGradient
                             colors={['#f8fafc', '#ffffff']}
@@ -544,21 +466,22 @@ export default function About() {
                                 <Text className="text-gray-600 text-center mb-4">
                                     Dikembangkan dengan ❤️ untuk kemudahan bisnis Anda
                                 </Text>
-                                <View className="flex-row space-x-4">
+
+                                <View className="flex-row gap-4">
                                     <TouchableOpacity
-                                        onPress={() => Linking.openURL('https://github.com')}
+                                        onPress={() => Linking.openURL('https://github.com/rzkir')}
                                         className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center"
                                     >
                                         <Ionicons name="logo-github" size={24} color="#374151" />
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        onPress={() => Linking.openURL('https://linkedin.com')}
+                                        onPress={() => Linking.openURL('https://www.linkedin.com/in/rizki-ramadhan12')}
                                         className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center"
                                     >
                                         <Ionicons name="logo-linkedin" size={24} color="#374151" />
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        onPress={() => Linking.openURL('mailto:dev@posmobile.com')}
+                                        onPress={() => Linking.openURL('mailto:spacedigitalia@gmail.com?subject=Halo, saya butuh bantuan untuk aplikasi POS Mobile')}
                                         className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center"
                                     >
                                         <Ionicons name="mail" size={24} color="#374151" />
@@ -570,23 +493,10 @@ export default function About() {
                 </View>
 
                 {/* Copyright */}
-                <View className="px-6 mb-8">
-                    <View className="bg-white rounded-2xl p-6 items-center"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 12,
-                            elevation: 4
-                        }}
-                    >
-                        <Text className="text-gray-500 text-center">
-                            © 2024 POS Mobile. All rights reserved.
-                        </Text>
-                        <Text className="text-gray-400 text-sm text-center mt-2">
-                            Dibuat dengan React Native & Expo
-                        </Text>
-                    </View>
+                <View className="px-4 mt-4 mb-4">
+                    <Text className="text-gray-500 text-center">
+                        © 2025 Kasir Mini. All rights reserved.
+                    </Text>
                 </View>
             </ScrollView>
         </View>

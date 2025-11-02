@@ -18,7 +18,30 @@ interface HeaderGradientProps {
   end?: { x: number; y: number };
   style?: ViewStyle;
   icon?: string;
+  logoUrl?: string;
   title: string;
   subtitle?: string;
   children?: React.ReactNode;
+}
+
+interface FilterBottomSheetProps {
+  visible: boolean;
+  categories: any[];
+  sizes: any[];
+  selectedCategoryId: number | null;
+  selectedSizeId: number | null;
+  onClose: () => void;
+  onApply: (categoryId: number | null, sizeId: number | null) => void;
+  onReset: () => void;
+}
+
+interface BottomSheetProps {
+  visible: boolean;
+  title?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  maxHeightPercent?: number;
+  showCloseButton?: boolean;
+  enableSwipeToClose?: boolean;
 }

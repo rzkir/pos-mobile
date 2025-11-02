@@ -4,9 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-import { formatDate, formatDateTime } from '../helper/lib/FormatDate';
-
 import { BarcodeVisual } from './ui/BarcodeVisual';
+
+import HeaderGradient from './ui/HeaderGradient';
 
 export default function ProductDetailsView({
     product,
@@ -14,18 +14,20 @@ export default function ProductDetailsView({
     sizes,
     suppliers,
     onClose,
-    onEdit
+    onEdit,
+    formatIDR,
+    formatDateTime
 }: ProductDetailsViewProps) {
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             {/* Header with Gradient */}
-            <LinearGradient
-                colors={['#667eea', '#764ba2']}
+            <HeaderGradient
+                colors={['#FF9228', '#FF9228']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="px-6 pt-4 pb-4"
+                title="Detail Produk"
             >
-                <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center justify-between w-full">
                     <TouchableOpacity
                         onPress={onClose}
                         className="bg-white/20 backdrop-blur-sm p-3 rounded-full"
@@ -33,7 +35,8 @@ export default function ProductDetailsView({
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text className="text-2xl font-bold text-white">Detail Produk</Text>
+                    <Text className="text-xl font-bold text-white">Detail Produk</Text>
+
                     <TouchableOpacity
                         onPress={() => onEdit(product)}
                         className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-2xl"
@@ -41,45 +44,13 @@ export default function ProductDetailsView({
                         <Text className="text-white font-bold text-base">Edit</Text>
                     </TouchableOpacity>
                 </View>
-            </LinearGradient>
+            </HeaderGradient>
 
             {/* Content */}
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-                {/* Product Image with Enhanced Design */}
-                <View className="items-center mb-6 mt-4">
-                    <View
-                        className="bg-white rounded-3xl p-4"
-                        style={{
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 8 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 20,
-                            elevation: 8
-                        }}
-                    >
-                        {product.image_url ? (
-                            <Image
-                                source={{ uri: product.image_url }}
-                                style={{ width: 180, height: 180, borderRadius: 20 }}
-                                resizeMode="cover"
-                            />
-                        ) : (
-                            <LinearGradient
-                                colors={['#f3f4f6', '#e5e7eb']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={{ width: 180, height: 180, borderRadius: 20 }}
-                                className="items-center justify-center"
-                            >
-                                <Ionicons name="image-outline" size={80} color="#9CA3AF" />
-                            </LinearGradient>
-                        )}
-                    </View>
-                </View>
-
-                {/* Basic Information with Modern Card */}
+                {/* Product Image, Title, and Category in Row */}
                 <View
-                    className="bg-white rounded-3xl p-8 mb-6"
+                    className="bg-white rounded-3xl p-6 mb-6 mt-4 flex-row items-center gap-4"
                     style={{
                         shadowColor: '#000',
                         shadowOffset: { width: 0, height: 4 },
@@ -88,33 +59,72 @@ export default function ProductDetailsView({
                         elevation: 6
                     }}
                 >
-                    <Text className="text-3xl font-bold text-gray-900 mb-4 text-center leading-tight">
-                        {product.name}
-                    </Text>
-
-                    <View className="items-center mb-6">
-                        <BarcodeVisual
-                            barcode={product.barcode}
-                            width={280}
-                            height={60}
-                            showText={true}
-                        />
+                    {/* Product Image */}
+                    <View
+                        className="bg-white rounded-2xl p-2"
+                        style={{
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 8,
+                            elevation: 4
+                        }}
+                    >
+                        {product.image_url ? (
+                            <Image
+                                source={{ uri: product.image_url }}
+                                style={{ width: 100, height: 100, borderRadius: 16 }}
+                                resizeMode="cover"
+                            />
+                        ) : (
+                            <LinearGradient
+                                colors={['#f3f4f6', '#e5e7eb']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={{ width: 100, height: 100, borderRadius: 16 }}
+                                className="items-center justify-center"
+                            >
+                                <Ionicons name="image-outline" size={40} color="#9CA3AF" />
+                            </LinearGradient>
+                        )}
                     </View>
 
-                    <View className="flex-row items-center justify-center space-x-4">
-                        <View
-                            className={`px-4 py-2 rounded-2xl ${product.is_active ? 'bg-green-100' : 'bg-red-100'
-                                }`}
-                        >
-                            <Text className={`text-sm font-bold ${product.is_active ? 'text-green-700' : 'text-red-700'
-                                }`}>
-                                {product.is_active ? '✓ Aktif' : '✗ Tidak Aktif'}
-                            </Text>
-                        </View>
-                        <View className="bg-blue-100 px-4 py-2 rounded-2xl">
-                            <Text className="text-sm font-bold text-blue-700">
-                                Unit: {product.unit}
-                            </Text>
+                    {/* Title, Category, Unit, and Status */}
+                    <View className="flex-1">
+                        <Text className="text-xl font-bold text-gray-900 mb-2 leading-tight">
+                            {product.name}
+                        </Text>
+                        <View className="flex-row items-center gap-3 flex-wrap">
+                            {product.category_id && (
+                                <View className="flex-row items-center">
+                                    <View className="bg-purple-100 p-1.5 rounded-lg mr-2">
+                                        <Ionicons name="grid-outline" size={16} color="#8b5cf6" />
+                                    </View>
+                                    <Text className="text-sm font-semibold text-purple-700">
+                                        {categories.find(cat => cat.id === product.category_id)?.name || 'Tidak Diketahui'}
+                                    </Text>
+                                </View>
+                            )}
+                            <View className="flex-row items-center">
+                                <View className="bg-blue-100 p-1.5 rounded-lg mr-2">
+                                    <Ionicons name="cube-outline" size={16} color="#3b82f6" />
+                                </View>
+                                <Text className="text-sm font-semibold text-blue-700">
+                                    {product.unit}
+                                </Text>
+                            </View>
+                            <View className="flex-row items-center">
+                                <View className={`p-1.5 rounded-lg mr-2 ${product.is_active ? 'bg-green-100' : 'bg-red-100'}`}>
+                                    <Ionicons
+                                        name={product.is_active ? "checkmark-circle-outline" : "close-circle-outline"}
+                                        size={16}
+                                        color={product.is_active ? "#10b981" : "#ef4444"}
+                                    />
+                                </View>
+                                <Text className={`text-sm font-semibold ${product.is_active ? 'text-green-700' : 'text-red-700'}`}>
+                                    {product.is_active ? 'Aktif' : 'Tidak Aktif'}
+                                </Text>
+                            </View>
                         </View>
                     </View>
                 </View>
@@ -221,32 +231,30 @@ export default function ProductDetailsView({
                     </View>
                 </LinearGradient>
 
+                {/* Basic Information with Modern Card */}
+                <View
+                    className="bg-white rounded-3xl p-8 mb-6"
+                    style={{
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 12,
+                        elevation: 6
+                    }}
+                >
+
+                    <View className="items-center mb-6">
+                        <BarcodeVisual
+                            barcode={product.barcode}
+                            width={280}
+                            height={60}
+                            showText={true}
+                        />
+                    </View>
+                </View>
+
                 {/* Additional Information with Modern Cards */}
                 <View className="flex-col gap-4 mb-6">
-                    {/* Category */}
-                    {product.category_id && (
-                        <View
-                            className="bg-white rounded-2xl p-6"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.08,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
-                        >
-                            <View className="flex-row items-center mb-3">
-                                <View className="bg-purple-100 p-2 rounded-xl mr-3">
-                                    <Ionicons name="grid-outline" size={20} color="#8b5cf6" />
-                                </View>
-                                <Text className="text-sm text-gray-500 font-medium">Kategori</Text>
-                            </View>
-                            <Text className="text-xl font-bold text-gray-900">
-                                {categories.find(cat => cat.id === product.category_id)?.name || 'Tidak Diketahui'}
-                            </Text>
-                        </View>
-                    )}
-
                     {/* Size */}
                     {product.size_id && (
                         <View
@@ -319,31 +327,6 @@ export default function ProductDetailsView({
                         </View>
                     )}
 
-                    {/* Expiration Date */}
-                    {product.expiration_date && (
-                        <View
-                            className="bg-white rounded-2xl p-6"
-                            style={{
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.08,
-                                shadowRadius: 12,
-                                elevation: 4
-                            }}
-                        >
-                            <View className="flex-row items-center mb-3">
-                                <View className="bg-orange-100 p-2 rounded-xl mr-3">
-                                    <Ionicons name="calendar-outline" size={20} color="#f97316" />
-                                </View>
-                                <Text className="text-sm text-gray-500 font-medium">Tanggal Kadaluarsa</Text>
-                            </View>
-                            <Text className="text-xl font-bold text-gray-900">
-                                {formatDate(product.expiration_date)}
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Description */}
                     {product.description && (
                         <View
                             className="bg-white rounded-2xl p-6"

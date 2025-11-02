@@ -14,9 +14,12 @@ import { Alert } from "react-native";
 
 import Toast from "react-native-toast-message";
 
+import { useAppSettingsContext } from "@/context/AppSettingsContext";
+
 export function useProducts() {
   const router = useRouter();
 
+  const { formatIDR, formatDateTime } = useAppSettingsContext();
   const { products, loading, deleteProduct, refreshData } = useCoreProducts();
 
   const { categories, refreshCategories } = useCategories();
@@ -256,6 +259,8 @@ export function useProducts() {
     sizes,
     suppliers,
     loading,
+    formatIDR,
+    formatDateTime,
 
     // actions
     deleteProduct,

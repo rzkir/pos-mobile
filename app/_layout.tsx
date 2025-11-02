@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 
 import { Stack } from 'expo-router';
 
+import { Platform } from 'react-native';
+
 import { StatusBar } from 'expo-status-bar';
+
+import * as SystemUI from 'expo-system-ui';
 
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +22,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ProductProvider } from '@/context';
 
+import { AppSettingsProvider } from '@/context/AppSettingsContext';
+
+export const unstable_settings = {
+  initialRouteName: 'index',
+};
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -28,31 +38,44 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export const unstable_settings = {
-  initialRouteName: 'index',
-};
-
 export default function RootLayout() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
+    // Set status bar background color for Android
+    if (Platform.OS === 'android') {
+      SystemUI.setBackgroundColorAsync('#FF9228').catch(() => { });
+
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF9228',
+        sound: 'default',
+      }).catch(() => { });
+
+      Notifications.setNotificationChannelAsync('low_stock', {
+        name: 'Low Stock Alerts',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF9228',
+        sound: 'default',
+      }).catch(() => { });
+    }
+
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
       if (notification.request.content.data) {
         const data = notification.request.content.data;
         if (data.type === 'low_stock') {
-          console.log('Low stock alert:', data);
         }
       }
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log('Notification response:', response);
       const data = response.notification.request.content.data;
 
       if (data?.type === 'low_stock') {
-        console.log('Navigate to low stock product:', data);
       }
     });
 
@@ -69,24 +92,27 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar hidden={false} translucent backgroundColor="#FF9228" />
+        <StatusBar style="dark" backgroundColor="#FF9228" />
+
         <PermissionProvider>
-          <ProductProvider>
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-              <Stack
-                initialRouteName="index"
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  animationDuration: 300,
-                  contentStyle: { backgroundColor: '#ffffff' },
-                }}
-              >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(tabs)" />
-              </Stack>
-            </SafeAreaView>
-          </ProductProvider>
+          <AppSettingsProvider>
+            <ProductProvider>
+              <SafeAreaView className='flex-1 bg-background'>
+                <Stack
+                  initialRouteName="index"
+                  screenOptions={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    animationDuration: 300,
+                    contentStyle: { backgroundColor: '#ffffff' },
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+              </SafeAreaView>
+            </ProductProvider>
+          </AppSettingsProvider>
         </PermissionProvider>
       </SafeAreaProvider>
       <Toast />

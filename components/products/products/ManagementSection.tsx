@@ -9,7 +9,8 @@ export default function ManagementSection({
     productsCount,
     onNavigateCategory,
     onNavigateSize,
-    onNavigateSupplier
+    onNavigateSupplier,
+    handleNavigateAllProducts
 }: ManagementSectionProps) {
     return (
         <View className="flex-row flex-wrap">
@@ -81,7 +82,10 @@ export default function ManagementSection({
 
             {/* Products Summary Section */}
             <View className="w-1/2 px-1 mb-4">
-                <View className="bg-white p-5 rounded-2xl border border-border">
+                <TouchableOpacity
+                    onPress={handleNavigateAllProducts}
+                    className="bg-white p-5 rounded-2xl border border-border"
+                >
                     <View className="flex-col items-start justify-start relative gap-4">
                         <View className="w-12 h-12 bg-blue-500 rounded-2xl items-center justify-center">
                             <Ionicons name="cube-outline" size={24} color="white" />
@@ -94,7 +98,7 @@ export default function ManagementSection({
                             <Text className="text-blue-700 text-sm font-bold">{productsCount}</Text>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </View>
         </View>
     );

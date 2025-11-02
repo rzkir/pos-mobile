@@ -12,8 +12,9 @@ import { usePrinter } from '@/hooks'
 
 import { generateReceiptText } from './template'
 
+import HeaderGradient from '@/components/ui/HeaderGradient'
+
 export default function Printer() {
-    // ===== STATE PRINTER CLASSIC menggunakan hook =====
     const {
         devices: classicDevices,
         connectedAddress: classicConnected,
@@ -88,13 +89,13 @@ export default function Printer() {
     return (
         <View className="flex-1 bg-gray-50">
             {/* Header */}
-            <LinearGradient
-                colors={["#1e40af", "#3b82f6", "#8b5cf6"]}
+            <HeaderGradient
+                colors={['#FF9228', '#FF9228']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="pt-12 pb-8 px-6"
+                title="Printer ESC/POS"
             >
-                <View className="flex-row justify-between items-center">
+                <View className="flex-row justify-between items-center w-full">
                     <View className="flex-1">
                         <Text className="text-3xl font-bold text-white mb-2">
                             Printer ESC/POS
@@ -110,97 +111,95 @@ export default function Printer() {
                         <Ionicons name="arrow-back" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </LinearGradient>
+            </HeaderGradient>
+
             <ScrollView
-                className="flex-1 -mt-4"
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
             >
                 {/* Printer Classic Section */}
-                <View className="px-6 mb-8">
-                    <Text className="text-2xl font-bold text-gray-900 mb-6">Printer ESC/POS (Bluetooth Classic)</Text>
-                    <View className="space-y-4">
-                        {/* Classic Header */}
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 }}>
-                            <View className="flex-row items-center justify-between p-6">
-                                <View className="flex-row items-center flex-1">
+                <View className="px-4 mb-6 mt-4 flex-col gap-4">
+                    {/* Classic Header */}
+                    <View className="bg-card border border-border rounded-2xl overflow-hidden">
+                        <View className="flex-row items-center justify-between p-6">
+                            <View className="flex-col flex-1 gap-2">
+                                <View className='flex-row items-center'>
                                     <LinearGradient
                                         colors={['#2563eb', '#1e40af']}
                                         className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
                                     >
                                         <Ionicons name="print" size={24} color="white" />
                                     </LinearGradient>
-                                    <View className="flex-1">
-                                        <Text className="text-lg font-bold text-gray-900 mb-1">Printer Classic</Text>
-                                        <Text className="text-gray-600">Muat daftar perangkat paired dan tes cetak</Text>
-                                    </View>
+
+                                    <Text className="text-lg font-bold text-gray-900">Printer Classic</Text>
                                 </View>
-                                <TouchableOpacity
-                                    onPress={enableClassicAndList}
-                                    disabled={loading}
-                                    className={`px-4 py-2 rounded-xl ${loading ? 'bg-blue-400' : 'bg-blue-600'}`}
-                                >
-                                    <Text className="text-white font-semibold">
-                                        {loading ? 'Memuat...' : 'Muat Perangkat'}
-                                    </Text>
-                                </TouchableOpacity>
+
+                                <Text className="text-gray-600">Muat daftar perangkat paired dan tes cetak</Text>
                             </View>
-                        </View>
-                        {/* Classic Devices List */}
-                        <View className="bg-white rounded-2xl overflow-hidden"
-                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 }}>
-                            <View className="p-4">
-                                {classicDevices.length === 0 ? (
-                                    <Text className="text-gray-500 px-2 py-2">Belum ada daftar. Tap Muat Perangkat.</Text>
-                                ) : (
-                                    classicDevices.map((d: any) => (
-                                        <View key={d.address} className="flex-row items-center justify-between px-2 py-3 border-b border-gray-100">
-                                            <View className="flex-1">
-                                                <Text className="text-gray-900 font-semibold">{d.name || 'Printer'}</Text>
-                                                <Text className="text-gray-500 text-xs">{d.address}</Text>
-                                            </View>
-                                            <TouchableOpacity
-                                                onPress={() => connectClassic(d.address)}
-                                                className={`px-3 py-2 rounded-xl ${classicConnected === d.address ? 'bg-red-600' : 'bg-emerald-600'}`}
-                                            >
-                                                <Text className="text-white text-sm font-semibold">{classicConnected === d.address ? 'Putuskan' : 'Hubungkan'}</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    ))
-                                )}
-                            </View>
-                        </View>
-                        {/* Test Print Button */}
-                        <TouchableOpacity
-                            onPress={testPrintClassic}
-                            className="rounded-2xl overflow-hidden"
-                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 }}
-                        >
-                            <LinearGradient
-                                colors={['#10b981', '#059669', '#047857']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                className="p-5"
+
+                            <TouchableOpacity
+                                onPress={enableClassicAndList}
+                                disabled={loading}
+                                className={`px-4 py-2 rounded-xl ${loading ? 'bg-blue-400' : 'bg-blue-600'}`}
                             >
-                                <View className="flex-row items-center justify-center">
-                                    <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-4">
-                                        <Ionicons name="checkmark-circle" size={22} color="white" />
+                                <Text className="text-white font-semibold">
+                                    {loading ? 'Memuat...' : 'Muat Perangkat'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    {/* Classic Devices List */}
+                    <View className="bg-card border border-border rounded-2xl overflow-hidden">
+                        <View className="p-4">
+                            {classicDevices.length === 0 ? (
+                                <Text className="text-gray-500 px-2 py-2">Belum ada daftar. Tap Muat Perangkat.</Text>
+                            ) : (
+                                classicDevices.map((d: any) => (
+                                    <View key={d.address} className="flex-row items-center justify-between px-2 py-3 border-b border-gray-100">
+                                        <View className="flex-1">
+                                            <Text className="text-gray-900 font-semibold">{d.name || 'Printer'}</Text>
+                                            <Text className="text-gray-500 text-xs">{d.address}</Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => connectClassic(d.address)}
+                                            className={`px-3 py-2 rounded-xl ${classicConnected === d.address ? 'bg-red-600' : 'bg-emerald-600'}`}
+                                        >
+                                            <Text className="text-white text-sm font-semibold">{classicConnected === d.address ? 'Putuskan' : 'Hubungkan'}</Text>
+                                        </TouchableOpacity>
                                     </View>
-                                    <View className="flex-1">
-                                        <Text className="text-white text-base font-bold mb-0.5">Tes Cetak (Classic)</Text>
-                                        <Text className="text-green-100 text-xs">Kirim teks sederhana ke printer</Text>
-                                    </View>
-                                    <Ionicons name="arrow-forward" size={18} color="white" />
+                                ))
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Test Print Button */}
+                    <TouchableOpacity
+                        onPress={testPrintClassic}
+                        className="rounded-2xl overflow-hidden"
+                    >
+                        <LinearGradient
+                            colors={['#10b981', '#059669', '#047857']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            className="p-5"
+                        >
+                            <View className="flex-row items-center justify-center">
+                                <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-4">
+                                    <Ionicons name="checkmark-circle" size={22} color="white" />
                                 </View>
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </View>{/* END space-y-4 */}
+                                <View className="flex-1">
+                                    <Text className="text-white text-base font-bold mb-0.5">Tes Cetak (Classic)</Text>
+                                    <Text className="text-green-100 text-xs">Kirim teks sederhana ke printer</Text>
+                                </View>
+                                <Ionicons name="arrow-forward" size={18} color="white" />
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Template Custom Section */}
-                <View className="px-6 mb-8">
-                    <Text className="text-2xl font-bold text-gray-900 mb-6">Template Struk</Text>
+                <View className="px-4 mb-6">
+                    <Text className="text-2xl font-bold text-gray-900 mb-4">Template Struk</Text>
                     <TouchableOpacity
                         onPress={() => router.push('/profile/printer/template/custom')}
                         className="rounded-2xl overflow-hidden"

@@ -1,178 +1,26 @@
-import { useState, useEffect } from 'react';
-
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Ionicons } from '@expo/vector-icons';
 
+import HeaderGradient from '@/components/ui/HeaderGradient';
+
 import { router } from 'expo-router';
 
-import Toast from 'react-native-toast-message';
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import * as ImagePicker from 'expo-image-picker';
-
-import * as FileSystem from 'expo-file-system/legacy';
-
-import { DEFAULT_TEMPLATE } from './index';
-
-const STORAGE_KEY = process.env.EXPO_PUBLIC_PRINTER_CUSTUM as string;
+import { useStateTemplatePrinter } from '@/components/profile/printer/useStateTemplatePrinter';
 
 export default function CustomTemplate() {
-    const [settings, setSettings] = useState<TemplateSettings>(DEFAULT_TEMPLATE);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        loadSettings();
-    }, []);
-
-    const loadSettings = async () => {
-        try {
-            setLoading(true);
-            const stored = await AsyncStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                setSettings(JSON.parse(stored));
-            }
-        } catch (error) {
-            console.error('Error loading template settings:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal Memuat',
-                text2: 'Gagal memuat pengaturan template',
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const saveSettings = async () => {
-        try {
-            setSaving(true);
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-            Toast.show({
-                type: 'success',
-                text1: 'Berhasil',
-                text2: 'Pengaturan template berhasil disimpan',
-            });
-            router.back();
-        } catch (error) {
-            console.error('Error saving template settings:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal Menyimpan',
-                text2: 'Gagal menyimpan pengaturan template',
-            });
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handlePickLogo = async () => {
-        try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Izin Diperlukan', 'Izin akses galeri diperlukan untuk memilih logo');
-                return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [3, 1],
-                quality: 0.8,
-            });
-
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const uri = result.assets[0].uri;
-
-                // Convert image to base64 for printer compatibility
-                try {
-                    const base64 = await FileSystem.readAsStringAsync(uri, {
-                        encoding: FileSystem.EncodingType.Base64,
-                    });
-
-                    // Get file extension to determine MIME type
-                    const fileExtension = uri.split('.').pop()?.toLowerCase() || 'png';
-                    const mimeType = fileExtension === 'jpg' || fileExtension === 'jpeg'
-                        ? 'image/jpeg'
-                        : fileExtension === 'png'
-                            ? 'image/png'
-                            : 'image/png';
-
-                    // Create data URI format for HTML/printer use
-                    const base64DataUri = `data:${mimeType};base64,${base64}`;
-
-                    setSettings({ ...settings, logoUrl: base64DataUri, showLogo: true });
-                    Toast.show({
-                        type: 'success',
-                        text1: 'Berhasil',
-                        text2: 'Logo berhasil dipilih dan dikonversi ke base64',
-                    });
-                } catch (convertError) {
-                    console.error('Error converting to base64:', convertError);
-                    Toast.show({
-                        type: 'error',
-                        text1: 'Gagal',
-                        text2: 'Gagal mengonversi logo ke base64',
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error picking logo:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Gagal',
-                text2: 'Gagal memilih logo',
-            });
-        }
-    };
-
-    const handleRemoveLogo = () => {
-        Alert.alert(
-            'Hapus Logo',
-            'Apakah Anda yakin ingin menghapus logo?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: () => {
-                        setSettings({ ...settings, logoUrl: '', showLogo: false });
-                        Toast.show({
-                            type: 'success',
-                            text1: 'Berhasil',
-                            text2: 'Logo berhasil dihapus',
-                        });
-                    },
-                },
-            ]
-        );
-    };
-
-    const resetToDefault = () => {
-        Alert.alert(
-            'Reset ke Default',
-            'Apakah Anda yakin ingin mengembalikan semua pengaturan ke default?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Reset',
-                    style: 'destructive',
-                    onPress: () => {
-                        setSettings(DEFAULT_TEMPLATE);
-                        Toast.show({
-                            type: 'success',
-                            text1: 'Berhasil',
-                            text2: 'Pengaturan telah direset ke default',
-                        });
-                    },
-                },
-            ]
-        );
-    };
+    const {
+        settings,
+        setSettings,
+        loading,
+        saving,
+        saveSettings,
+        handlePickLogo,
+        handleRemoveLogo,
+        resetToDefault,
+    } = useStateTemplatePrinter();
 
     if (loading) {
         return (
@@ -183,17 +31,18 @@ export default function CustomTemplate() {
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             {/* Header */}
-            <LinearGradient
-                colors={['#8b5cf6', '#7c3aed', '#6d28d9']}
+            <HeaderGradient
+                title="Custom Template Struk"
+                subtitle="Sesuaikan informasi toko dan pesan footer"
+                colors={['#FF9228', '#FF9228']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="pt-12 pb-8 px-6"
             >
-                <View className="flex-row justify-between items-center">
+                <View className="flex-row justify-between items-center flex-1">
                     <View className="flex-1">
-                        <Text className="text-3xl font-bold text-white mb-2">Custom Template Struk</Text>
+                        <Text className="text-xl font-bold text-white mb-2">Custom Template Struk</Text>
                         <Text className="text-purple-100 text-base">Sesuaikan informasi toko dan pesan footer</Text>
                     </View>
                     <TouchableOpacity
@@ -203,21 +52,20 @@ export default function CustomTemplate() {
                         <Ionicons name="arrow-back" size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </LinearGradient>
+            </HeaderGradient>
 
             <ScrollView
-                className="flex-1 -mt-4"
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
             >
-                <View className="px-6 pt-6">
+                <View className="px-4 pt-6">
                     {/* Informasi Toko */}
                     <View className="bg-white rounded-2xl p-6 mb-6 overflow-hidden"
                         style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 }}>
                         <View className="flex-row items-center mb-4">
                             <LinearGradient
-                                colors={['#8b5cf6', '#7c3aed']}
-                                className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                                colors={['#FF9228', '#FF9228']}
+                                className="w-10 h-10 rounded-xl items-center justify-center mr-3 overflow-hidden"
                             >
                                 <Ionicons name="storefront" size={20} color="white" />
                             </LinearGradient>
@@ -465,7 +313,7 @@ export default function CustomTemplate() {
             </ScrollView>
 
             {/* Save Button */}
-            <View className="px-6 pb-4 pt-2 bg-white border-t border-gray-200">
+            <View className="px-6 pt-2 bg-white border-t border-gray-200">
                 <TouchableOpacity
                     onPress={saveSettings}
                     disabled={saving || !settings.storeName.trim()}

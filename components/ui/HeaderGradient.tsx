@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 
 export default function HeaderGradient({
     colors = ['#FF9228', '#FF9228'],
@@ -8,6 +8,7 @@ export default function HeaderGradient({
     end = { x: 1, y: 1 },
     style,
     icon,
+    logoUrl,
     title,
     subtitle,
     children,
@@ -31,7 +32,15 @@ export default function HeaderGradient({
         >
             {children || (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {icon && (
+                    {logoUrl ? (
+                        <View className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3 overflow-hidden">
+                            <Image
+                                source={{ uri: logoUrl }}
+                                className="w-full h-full"
+                                resizeMode="cover"
+                            />
+                        </View>
+                    ) : icon && (
                         <View className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3">
                             <Text className="text-white font-bold">{icon}</Text>
                         </View>
