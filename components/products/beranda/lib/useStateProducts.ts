@@ -113,18 +113,36 @@ export function useStateProducts() {
         JSON.stringify(productIdToQty)
       );
 
-      const transaction = await TransactionService.getOrCreateDraft();
+      // Cek apakah ada transaction ID yang sedang aktif (untuk menambahkan produk)
+      const currentTransactionId = await AsyncStorage.getItem(
+        "current_transaction_id"
+      );
 
       setProductIdToQty({});
 
-      router.push({
-        pathname: "/transaction/[id]",
-        params: { id: transaction.id.toString() },
-      });
+      if (currentTransactionId) {
+        // Menambahkan produk ke transaksi yang sudah ada
+        router.push({
+          pathname: "/transaction/[id]",
+          params: { id: currentTransactionId },
+        });
+      } else {
+        // Membuat transaksi baru
+        const transaction = await TransactionService.getOrCreateDraft();
+
+        router.push({
+          pathname: "/transaction/[id]",
+          params: { id: transaction.id.toString() },
+        });
+      }
     } catch (error) {
       console.error("Error creating transaction:", error);
     }
   }, [productIdToQty]);
+
+  const handleNavigateAllProducts = () => {
+    router.push("/checkout");
+  };
 
   return {
     search,
@@ -141,6 +159,7 @@ export function useStateProducts() {
     selectedCount,
     selectedTotal,
     handleCartPress,
+    handleNavigateAllProducts,
     products,
     productsWithRelations,
     formatIDR,

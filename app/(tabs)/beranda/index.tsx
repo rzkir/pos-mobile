@@ -27,6 +27,7 @@ export default function Beranda() {
         selectedCount,
         selectedTotal,
         handleCartPress,
+        handleNavigateAllProducts,
         products,
         formatIDR,
         companyProfile,
@@ -97,7 +98,7 @@ export default function Beranda() {
                             </View>
                         </View>
                         <TouchableOpacity
-                            onPress={handleCartPress}
+                            onPress={handleNavigateAllProducts}
                             className="w-10 h-10 rounded-full bg-white/30 items-center justify-center"
                         >
                             <Ionicons name="cart" size={22} color="white" />
@@ -267,16 +268,31 @@ export default function Beranda() {
             {selectedCount > 0 && (
                 <View className="absolute left-0 right-0 bottom-0 px-4 pb-4" style={{ backgroundColor: 'transparent' }}>
                     <View className="bg-black rounded-2xl p-4 flex-row items-center justify-between opacity-95">
-                        <View>
+                        <View className="flex-1 mr-3" style={{ minWidth: 0 }}>
                             <Text className="text-white text-sm">{selectedCount} item dipilih</Text>
-                            <Text className="text-gray-300 text-xs" numberOfLines={1}>
-                                {Object.keys(productIdToQty).map(pid => {
-                                    const p = products.find((pp: any) => pp.id === Number(pid))
-                                    return p?.name
-                                }).filter(Boolean).join(', ')}
+                            <Text
+                                className="text-gray-300 text-xs"
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                                style={{ flexShrink: 1 }}
+                            >
+                                {(() => {
+                                    const selectedProducts = Object.keys(productIdToQty)
+                                        .map(pid => {
+                                            const p = products.find((pp: any) => pp.id === Number(pid))
+                                            return p?.name
+                                        })
+                                        .filter(Boolean)
+
+                                    const maxDisplay = 2
+                                    if (selectedProducts.length <= maxDisplay) {
+                                        return selectedProducts.join(', ')
+                                    }
+                                    return selectedProducts.slice(0, maxDisplay).join(', ') + ` +${selectedProducts.length - maxDisplay} lainnya`
+                                })()}
                             </Text>
                         </View>
-                        <View className="flex-row items-center">
+                        <View className="flex-row items-center" style={{ flexShrink: 0 }}>
                             <Text className="text-white font-bold mr-3">{formatIDR(selectedTotal)}</Text>
                             <TouchableOpacity
                                 onPress={handleCartPress}

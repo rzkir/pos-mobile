@@ -573,22 +573,33 @@ export function useStateCreateTransaction({
     return () => backHandler.remove();
   }, [cleanupLocalStorage, router]);
 
-  // Load selected products from beranda if available
+  // Load selected products from beranda/checkout if available
   useEffect(() => {
     const loadSelectedProducts = async () => {
       try {
         const selectedData = await AsyncStorage.getItem("selected_products");
+        const currentTransactionId = await AsyncStorage.getItem(
+          "current_transaction_id"
+        );
+
         if (selectedData) {
-          // Hapus semua item transaction yang ada sebelumnya (dari session sebelumnya)
-          const existingItems =
-            await TransactionService.getItemsByTransactionId(transactionId);
-          for (const item of existingItems) {
-            await TransactionService.deleteItem(item.id);
+          const isAddingToExisting =
+            currentTransactionId &&
+            parseInt(currentTransactionId, 10) === transactionId;
+
+          if (!isAddingToExisting) {
+            // Jika ini transaksi baru, hapus semua item yang ada sebelumnya
+            const existingItems =
+              await TransactionService.getItemsByTransactionId(transactionId);
+            for (const item of existingItems) {
+              await TransactionService.deleteItem(item.id);
+            }
           }
 
           const selected = JSON.parse(selectedData);
           await addProductsToTransaction(selected);
           await AsyncStorage.removeItem("selected_products");
+          await AsyncStorage.removeItem("current_transaction_id");
         }
       } catch (error) {
         console.error("Error loading selected products:", error);
