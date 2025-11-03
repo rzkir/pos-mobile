@@ -14,7 +14,10 @@ import FilterBottomSheet from '@/components/products/products/FilterBottomSheet'
 
 import HeaderGradient from '@/components/ui/HeaderGradient';
 
+import { useRouter } from 'expo-router';
+
 export default function Products() {
+    const router = useRouter();
 
     const {
         products,
@@ -102,17 +105,28 @@ export default function Products() {
                             <Text className="text-white/80 text-xs">Kelola inventori produk Anda</Text>
                         </View>
                     </View>
-
-                    <TouchableOpacity
-                        onPress={handleAdd}
-                        className="bg-green-500 px-4 py-2 rounded-xl"
-                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, backgroundColor: '#66BB6A' }}
-                    >
-                        <View className="flex-row items-center">
-                            <Ionicons name="add" size={18} color="white" />
-                            <Text className="text-white font-semibold ml-2">Tambah</Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity
+                            onPress={() => router.push('/products/barcode')}
+                            className="bg-orange-500 px-4 py-2 rounded-xl"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}
+                        >
+                            <View className="flex-row items-center">
+                                <Ionicons name="barcode-outline" size={18} color="white" />
+                                <Text className="text-white font-semibold ml-2">Barcode</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleAdd}
+                            className="bg-green-500 px-4 py-2 rounded-xl"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, backgroundColor: '#66BB6A' }}
+                        >
+                            <View className="flex-row items-center">
+                                <Ionicons name="add" size={18} color="white" />
+                                <Text className="text-white font-semibold ml-2">Tambah</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </HeaderGradient>
 

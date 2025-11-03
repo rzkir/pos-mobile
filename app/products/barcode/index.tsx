@@ -1,210 +1,207 @@
+import { useMemo, useState } from 'react';
 
-import { useCategories } from '@/hooks/useCategories'
+import { FlatList, RefreshControl, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { ProductCategoryService } from '@/services/productCategoryService'
+import { Ionicons } from '@expo/vector-icons';
 
-import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router';
 
-import { formatDate } from '@/helper/lib/FormatDate'
+import { BarcodeVisual } from '@/components/ui/BarcodeVisual';
 
-import { useRouter } from 'expo-router'
+import HeaderGradient from '@/components/ui/HeaderGradient';
 
-import { useState } from 'react'
+import { useProducts } from '@/hooks/useProducts';
 
-import { Alert, FlatList, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { usePrinter } from '@/hooks/usePrinter';
 
-import Toast from 'react-native-toast-message'
+export default function ProductsBarcodes() {
+    const router = useRouter();
+    const { products, refreshData } = useProducts();
+    const [search, setSearch] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+    const { printText } = usePrinter();
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-export default function CategoryList() {
-    const router = useRouter()
-    const { categories, loading, refreshCategories } = useCategories()
-    const [refreshing, setRefreshing] = useState(false)
+    const list = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        let base = products as any[];
+        if (term) {
+            base = base.filter(p =>
+                String(p?.name ?? '').toLowerCase().includes(term) ||
+                String(p?.barcode ?? '').toLowerCase().includes(term)
+            );
+        }
+        return base;
+    }, [products, search]);
 
     const onRefresh = async () => {
-        setRefreshing(true)
+        setRefreshing(true);
         try {
-            await refreshCategories()
-        } catch (error) {
-            console.error('Error refreshing categories:', error)
+            await refreshData();
         } finally {
-            setRefreshing(false)
+            setRefreshing(false);
         }
-    }
+    };
 
-    const handleEdit = (category: any) => {
-        router.push(`/products/category/${category.id}`)
-    }
+    const isSelected = (id: number) => selectedIds.has(id);
 
-    const handleDelete = (category: any) => {
-        Alert.alert(
-            'Konfirmasi Hapus',
-            `Apakah Anda yakin ingin menghapus kategori "${category.name}"?`,
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await ProductCategoryService.delete(category.id)
-                            await refreshCategories()
-                            Toast.show({ type: 'success', text1: 'Kategori berhasil dihapus' })
-                        } catch (error) {
-                            console.error('Error deleting category:', error)
-                            Toast.show({ type: 'error', text1: 'Gagal menghapus kategori' })
-                        }
-                    }
-                }
-            ]
-        )
-    }
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
 
-    const handleAdd = () => {
-        router.push('/products/category/new')
-    }
+    const selectAllFiltered = () => {
+        setSelectedIds(new Set(list.map((p: any) => p.id)));
+    };
 
-    const renderTableHeader = () => (
-        <View className="bg-gray-100 flex-row items-center py-3 px-4 border-b border-gray-200 rounded-t-lg">
-            <View className="flex-1">
-                <Text className="font-semibold text-gray-700 text-xs">Nama Kategori</Text>
-            </View>
-            <View className="w-24 items-center">
-                <Text className="font-semibold text-gray-700 text-xs">Status</Text>
-            </View>
-            <View className="w-28 items-center">
-                <Text className="font-semibold text-gray-700 text-xs">Tanggal</Text>
-            </View>
-            <View className="w-24 items-end">
-                <Text className="font-semibold text-gray-700 text-xs">Aksi</Text>
-            </View>
-        </View>
-    )
+    const clearSelection = () => setSelectedIds(new Set());
 
-    const renderCategoryRow = ({ item, index }: { item: any, index: number }) => (
-        <View className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} flex-row items-center py-3 px-4 border-b border-gray-100`}>
-            <View className="flex-1 pr-2">
-                <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
-                    {item.name}
-                </Text>
-            </View>
+    const generateBarcodePattern = (code: string): number[] => {
+        const pattern: number[] = [];
+        pattern.push(1, 0, 1);
+        for (let i = 0; i < code.length; i++) {
+            const charCode = code.charCodeAt(i);
+            for (let j = 0; j < 5; j++) {
+                pattern.push((charCode >> j) & 1);
+            }
+        }
+        pattern.push(1, 0, 1);
+        return pattern;
+    };
 
-            <View className="w-24 items-center">
-                <View className={`${item.is_active ? 'bg-emerald-100 border-emerald-200' : 'bg-rose-100 border-rose-200'} px-2 py-0.5 rounded-full border`}>
-                    <Text className={`text-[10px] font-semibold text-center ${item.is_active ? 'text-emerald-700' : 'text-rose-700'}`}>
-                        {item.is_active ? 'Aktif' : 'Tidak'}
-                    </Text>
-                </View>
-            </View>
-            <View className="w-28 items-center">
-                <Text className="text-gray-500 text-xs">
-                    {formatDate(item.created_at)}
-                </Text>
-            </View>
-            <View className="w-24 flex-row justify-end">
-                <TouchableOpacity
-                    onPress={() => handleEdit(item)}
-                    className="bg-blue-500/90 px-2 py-1 rounded-md mr-2"
-                    accessibilityLabel="Edit kategori"
-                >
-                    <Ionicons name="create-outline" size={14} color="#ffffff" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => handleDelete(item)}
-                    className="bg-red-500/90 px-2 py-1 rounded-md"
-                    accessibilityLabel="Hapus kategori"
-                >
-                    <Ionicons name="trash-outline" size={14} color="#ffffff" />
-                </TouchableOpacity>
-            </View>
-        </View>
-    )
+    const buildTextBarcode = (name: string, code: string) => {
+        const pattern = generateBarcodePattern(code || '');
+        const barChar = '█';
+        const spaceChar = ' ';
+        const width = pattern.length;
+        let graphic = '';
+        for (let row = 0; row < 6; row++) {
+            let line = '';
+            for (let i = 0; i < width; i++) {
+                line += pattern[i] === 1 ? barChar : spaceChar;
+            }
+            graphic += line + '\n';
+        }
+        const header = name ? `${name}\n` : '';
+        const codeLine = code ? `\n${code}\n` : '\n';
+        return `${header}${graphic}${codeLine}\n`;
+    };
 
-    if (loading) {
-        return (
-            <View className="flex-1 bg-gray-50">
-                <View className="flex-1 justify-center items-center">
-                    <Text className="text-gray-600">Memuat kategori...</Text>
-                </View>
-            </View>
-        )
-    }
+    const printItem = async (item: any) => {
+        const payload = buildTextBarcode(String(item?.name ?? ''), String(item?.barcode ?? ''));
+        await printText(payload);
+    };
 
-    return (
-        <View className="flex-1 bg-gray-50">
-            {/* Header */}
-            <View className="bg-white p-4 border-b border-gray-200">
-                <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center">
-                        <Ionicons name="grid-outline" size={24} color="#374151" />
-                        <Text className="text-xl font-bold text-gray-800 ml-2">
-                            Daftar Kategori
-                        </Text>
+    const printSelected = async () => {
+        if (selectedIds.size === 0) return;
+        const selectedMap = new Set(selectedIds);
+        const items = (products as any[]).filter(p => selectedMap.has(p.id));
+        const payload = items
+            .map(p => buildTextBarcode(String(p?.name ?? ''), String(p?.barcode ?? '')))
+            .join('\n\n');
+        await printText(payload);
+    };
+
+    const renderItem = ({ item }: { item: any }) => (
+        <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-100">
+            <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center">
+                    <TouchableOpacity onPress={() => toggleSelect(item.id)} className="mr-2">
+                        <Ionicons name={isSelected(item.id) ? 'checkbox' : 'square-outline'} size={20} color={isSelected(item.id) ? '#10B981' : '#6B7280'} />
+                    </TouchableOpacity>
+                    <View className="bg-blue-100 p-2 rounded-xl mr-2">
+                        <Ionicons name="cube-outline" size={18} color="#3B82F6" />
                     </View>
-
-                    <TouchableOpacity
-                        onPress={handleAdd}
-                        className="bg-green-500 px-4 py-2 rounded-lg flex-row items-center"
-                    >
-                        <Ionicons name="add" size={16} color="white" />
-                        <Text className="text-white font-semibold ml-1">Tambah</Text>
+                    <Text className="text-base font-semibold text-gray-900">{item.name}</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                    <TouchableOpacity onPress={() => printItem(item)} className="px-3 py-1.5 bg-gray-800 rounded-lg">
+                        <Text className="text-white text-xs font-semibold">Print</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push(`/products/${item.id}`)} className="px-3 py-1.5 bg-orange-500 rounded-lg">
+                        <Text className="text-white text-xs font-semibold">Detail</Text>
                     </TouchableOpacity>
                 </View>
             </View>
-
-            {/* Table */}
-            {categories.length > 0 ? (
-                <View className="mx-2 mt-4 rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    {renderTableHeader()}
-                    <FlatList
-                        data={categories}
-                        keyExtractor={(item) => String(item.id)}
-                        renderItem={({ item, index }) => renderCategoryRow({ item, index })}
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={onRefresh}
-                                colors={['#3B82F6']}
-                                tintColor="#3B82F6"
-                                title="Memuat ulang..."
-                                titleColor="#6B7280"
-                            />
-                        }
-                        ListFooterComponent={<View className="h-2" />}
-                    />
-                </View>
+            {item.barcode ? (
+                <BarcodeVisual barcode={item.barcode} width={280} height={60} />
             ) : (
-                <ScrollView
-                    className="flex-1"
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={['#3B82F6']}
-                            tintColor="#3B82F6"
-                            title="Memuat ulang..."
-                            titleColor="#6B7280"
-                        />
-                    }
-                >
-                    <View className="py-20 items-center mx-4">
-                        <Ionicons name="grid-outline" size={64} color="#9CA3AF" />
-                        <Text className="text-gray-500 text-center mt-4 text-lg">
-                            Belum ada kategori
-                        </Text>
-                        <Text className="text-gray-400 text-center mt-2">
-                            Tambahkan kategori pertama untuk mengatur produk
-                        </Text>
-                        <TouchableOpacity
-                            onPress={handleAdd}
-                            className="bg-green-500 px-6 py-3 rounded-lg mt-4"
-                        >
-                            <Text className="text-white font-semibold">
-                                Tambah Kategori Pertama
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
+                <View className="px-3 py-2 bg-gray-100 rounded-lg">
+                    <Text className="text-gray-500 text-sm">Tidak ada barcode</Text>
+                </View>
             )}
         </View>
-    )
+    );
+
+    return (
+        <View className="flex-1 bg-background">
+            <HeaderGradient
+                title="Barcode Produk"
+                subtitle="Lihat semua barcode produk"
+                icon="B"
+                colors={['#FF9228', '#FF9228']}
+            >
+                <View className="flex-row items-center justify-between w-full">
+                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 p-3 rounded-full">
+                        <Ionicons name="arrow-back" size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <Text className="text-white font-bold text-xl">Barcode Produk</Text>
+                    <View className="w-10" />
+                </View>
+            </HeaderGradient>
+
+            <FlatList
+                className="flex-1 px-4"
+                data={list}
+                keyExtractor={(item: any) => item.id.toString()}
+                ListHeaderComponent={(
+                    <View className="pt-5 px-1">
+                        <View className="relative mb-4">
+                            <View className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
+                                <Ionicons name="search" size={20} color="#6B7280" />
+                            </View>
+                            <TextInput
+                                className="bg-white/95 backdrop-blur-sm pl-12 pr-4 py-4 rounded-2xl border-0 text-gray-800 placeholder-gray-500"
+                                placeholder="Cari berdasarkan nama atau barcode..."
+                                value={search}
+                                onChangeText={setSearch}
+                                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}
+                            />
+                        </View>
+                        <View className="flex-row items-center justify-between mb-3">
+                            <View className="flex-row items-center gap-2">
+                                <TouchableOpacity onPress={selectAllFiltered} className="px-3 py-2 bg-gray-200 rounded-lg">
+                                    <Text className="text-gray-800 text-xs font-semibold">Pilih Semua</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={clearSelection} className="px-3 py-2 bg-gray-100 rounded-lg">
+                                    <Text className="text-gray-600 text-xs font-semibold">Bersihkan</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity
+                                onPress={printSelected}
+                                disabled={selectedIds.size === 0}
+                                className={`px-4 py-2 rounded-xl ${selectedIds.size === 0 ? 'bg-gray-300' : 'bg-gray-800'}`}
+                            >
+                                <View className="flex-row items-center">
+                                    <Ionicons name="print-outline" size={18} color="#fff" />
+                                    <Text className="text-white font-semibold ml-2 text-xs">Cetak Terpilih ({selectedIds.size})</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+                renderItem={renderItem}
+                contentContainerStyle={{ paddingBottom: 16 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF9228']} />}
+                ListEmptyComponent={(
+                    <View className="mt-6 items-center">
+                        <Text className="text-gray-500">Tidak ada produk</Text>
+                    </View>
+                )}
+            />
+        </View>
+    );
 }

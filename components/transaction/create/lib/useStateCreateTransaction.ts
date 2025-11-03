@@ -674,6 +674,33 @@ export function useStateCreateTransaction({
     setShowPaymentModal(true);
   }, []);
 
+  const handleMarkCancelled = useCallback(async () => {
+    if (!transaction) return;
+    try {
+      const updated = await TransactionService.update(transactionId, {
+        status: "cancelled",
+        payment_status: "cancelled",
+      });
+      if (!updated) throw new Error("Failed to cancel transaction");
+      await TransactionService.clearActiveTransaction();
+      Toast.show({
+        type: "success",
+        text1: "Transaksi Dibatalkan",
+        text2: "Status transaksi telah diubah menjadi dibatalkan",
+        visibilityTime: 2000,
+      });
+      router.back();
+    } catch (error) {
+      console.error("Error cancelling transaction:", error);
+      Toast.show({
+        type: "error",
+        text1: "Kesalahan",
+        text2: "Gagal membatalkan transaksi",
+        visibilityTime: 3000,
+      });
+    }
+  }, [transaction, transactionId, router]);
+
   const handleBatal = useCallback(async () => {
     Alert.alert(
       "Konfirmasi",
@@ -722,9 +749,23 @@ export function useStateCreateTransaction({
   }, [handleBatal]);
 
   const handleBack = useCallback(async () => {
-    await cleanupLocalStorage();
-    router.back();
-  }, [cleanupLocalStorage, router]);
+    try {
+      if (transaction) {
+        await TransactionService.update(transactionId, {
+          payment_status: "pending",
+        });
+      }
+    } catch (error) {
+      // non-fatal: still navigate back
+      console.error("Error setting payment_status to pending on back:", error);
+    } finally {
+      try {
+        await TransactionService.clearActiveTransaction();
+      } catch {}
+      await cleanupLocalStorage();
+      router.back();
+    }
+  }, [transaction, transactionId, cleanupLocalStorage, router]);
 
   // Load transaction and payment cards on mount
   useEffect(() => {
@@ -779,14 +820,13 @@ export function useStateCreateTransaction({
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        cleanupLocalStorage();
-        router.back();
+        handleBack();
         return true; // Prevent default behavior
       }
     );
 
     return () => backHandler.remove();
-  }, [cleanupLocalStorage, router]);
+  }, [handleBack]);
 
   // Load selected products from beranda/checkout if available
   useEffect(() => {
@@ -821,7 +861,7 @@ export function useStateCreateTransaction({
       }
     };
 
-    if (transaction && transaction.status === "draft") {
+    if (transaction && transaction.status === "pending") {
       loadSelectedProducts();
     }
   }, [transaction, addProductsToTransaction, transactionId]);
@@ -887,6 +927,7 @@ export function useStateCreateTransaction({
     processPayment,
     savePaymentInfo,
     handleBayar,
+    handleMarkCancelled,
     handleBatal,
     handleSettings,
     handleBack,

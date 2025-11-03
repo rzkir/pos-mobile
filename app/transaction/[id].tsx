@@ -10,8 +10,6 @@ import { useCategories } from '@/hooks/useCategories';
 
 import { useSizes } from '@/hooks/useSizes';
 
-import Toast from 'react-native-toast-message';
-
 import { useAppSettingsContext } from "@/context/AppSettingsContext";
 
 import Input from '@/components/ui/input';
@@ -75,6 +73,7 @@ export default function TransactionDetail() {
         processPayment,
         savePaymentInfo,
         handleBayar,
+        handleMarkCancelled,
         handleSettings,
         handleBack,
         addProductQty,
@@ -148,7 +147,7 @@ export default function TransactionDetail() {
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Customer Info */}
-                {transaction.status === 'draft' && (
+                {transaction.status === 'pending' && (
                     <View className="bg-white mx-4 mt-4 rounded-2xl p-4 border border-gray-200">
                         <View>
                             <Input
@@ -254,7 +253,7 @@ export default function TransactionDetail() {
                                 </View>
 
                                 {/* Payment Info Section - Show after payment info is filled */}
-                                {paymentInfoFilled && transaction.status === 'draft' && (
+                                {paymentInfoFilled && transaction.status === 'pending' && (
                                     <>
                                         <View className="h-px bg-gray-200 my-3" />
                                         <Text className="text-sm font-bold text-gray-900 mb-3">Informasi Pembayaran</Text>
@@ -296,7 +295,7 @@ export default function TransactionDetail() {
                         );
                     })()}
 
-                    {transaction.status !== 'draft' && (
+                    {transaction.status !== 'pending' && (
                         <>
                             <View className="h-px bg-gray-200 my-3" />
                             <View className="flex-row justify-between items-center mb-2">
@@ -310,14 +309,17 @@ export default function TransactionDetail() {
                                 <Text className="text-xs text-gray-500">Status</Text>
                                 <View className={`px-2 py-1 rounded ${transaction.payment_status === 'paid' ? 'bg-green-100' :
                                     transaction.payment_status === 'cancelled' ? 'bg-red-100' :
-                                        'bg-yellow-100'
+                                        transaction.payment_status === 'return' ? 'bg-blue-100' :
+                                            'bg-yellow-100'
                                     }`}>
                                     <Text className={`text-xs font-semibold ${transaction.payment_status === 'paid' ? 'text-green-700' :
                                         transaction.payment_status === 'cancelled' ? 'text-red-700' :
-                                            'text-yellow-700'
+                                            transaction.payment_status === 'return' ? 'text-blue-700' :
+                                                'text-yellow-700'
                                         }`}>
                                         {transaction.payment_status === 'pending' ? 'Menunggu' :
-                                            transaction.payment_status === 'paid' ? 'Lunas' : 'Dibatalkan'}
+                                            transaction.payment_status === 'paid' ? 'Lunas' :
+                                                transaction.payment_status === 'cancelled' ? 'Dibatalkan' : 'Retur'}
                                     </Text>
                                 </View>
                             </View>
@@ -333,7 +335,7 @@ export default function TransactionDetail() {
             </ScrollView>
 
             {/* Action Buttons */}
-            {transaction.status === 'draft' && (
+            {transaction.status === 'pending' && (
                 <>
                     {/* Tambah Produk & Scan Buttons */}
                     <View className="px-4 pb-2 bg-white gap-2">
@@ -362,17 +364,10 @@ export default function TransactionDetail() {
                         {!paymentInfoFilled ? (
                             <>
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        Toast.show({
-                                            type: 'info',
-                                            text1: 'Cetak',
-                                            text2: 'Fitur cetak sementara',
-                                            visibilityTime: 2000
-                                        });
-                                    }}
-                                    className="flex-1 bg-white border border-blue-300 rounded-xl py-3.5 items-center"
+                                    onPress={handleMarkCancelled}
+                                    className="flex-1 bg-white border border-red-300 rounded-xl py-3.5 items-center"
                                 >
-                                    <Text className="text-sm font-semibold text-blue-600">Cetak Sementara</Text>
+                                    <Text className="text-sm font-semibold text-red-600">Canceled</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={handleBayar}

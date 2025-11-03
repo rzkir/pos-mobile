@@ -20,7 +20,6 @@ export default function Transaction() {
     const loadTransactions = async () => {
         try {
             const allTransactions = await TransactionService.getAll();
-            // Sort by created_at descending (newest first)
             const sorted = allTransactions.sort((a, b) =>
                 new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
@@ -48,8 +47,10 @@ export default function Transaction() {
                 return 'bg-green-100 text-green-800';
             case 'cancelled':
                 return 'bg-red-100 text-red-800';
-            case 'draft':
+            case 'pending':
                 return 'bg-yellow-100 text-yellow-800';
+            case 'return':
+                return 'bg-blue-100 text-blue-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -68,9 +69,16 @@ export default function Transaction() {
         }
     };
 
+    const getPaymentStatusStyles = (status?: string) => {
+        if (status === 'paid') return { bg: 'bg-green-100', text: 'text-green-700', label: 'Lunas' };
+        if (status === 'cancelled') return { bg: 'bg-red-100', text: 'text-red-700', label: 'Dibatalkan' };
+        if (status === 'return') return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Return' };
+        return { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' };
+    };
+
     const renderTransaction = ({ item }: { item: Transaction }) => (
         <TouchableOpacity
-            onPress={() => router.push(`/transaction/${item.id}`)}
+            onPress={() => router.push(`/transaction/details?id=${item.id}`)}
             className="bg-white mb-3 mx-4 rounded-lg shadow-sm border border-gray-200 p-4"
         >
             <View className="flex-row justify-between items-start mb-2">
@@ -104,6 +112,14 @@ export default function Transaction() {
                     <Text className="text-xs text-gray-600 capitalize">
                         {item.payment_method}
                     </Text>
+                    {(() => {
+                        const s = getPaymentStatusStyles(item.payment_status as any);
+                        return (
+                            <View className={`px-2 py-0.5 rounded ${s.bg}`}>
+                                <Text className={`text-[10px] font-semibold ${s.text}`}>{s.label}</Text>
+                            </View>
+                        );
+                    })()}
                 </View>
                 <Text className="text-base font-bold text-gray-900">
                     {formatIDR(item.total)}

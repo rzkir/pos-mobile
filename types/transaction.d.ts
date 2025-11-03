@@ -9,9 +9,9 @@ interface Transaction {
   total: number;
   payment_method: "cash" | "card" | "transfer";
   payment_card_id?: number;
-  payment_status: "pending" | "paid" | "cancelled";
-  status: "draft" | "completed" | "cancelled";
-  created_by: string;
+  payment_status: "pending" | "paid" | "cancelled" | "return";
+  status: "pending" | "completed" | "cancelled" | "return";
+  created_by?: string;
   created_at: string;
   updated_at: string;
 }
@@ -77,3 +77,40 @@ interface ProductsBottomSheetProps {
   ) => void;
   handleResetFilters: () => void;
 }
+
+type StatusChartItem = { label: string; value: number; color: string };
+type PaymentChartItem = { label: string; value: number };
+type FinancialBarItem = { value: number; label: string; frontColor: string };
+
+type ChartProps = {
+  chartWidth: number;
+  statusChartData: StatusChartItem[];
+  totalTransactions: number;
+  dailyRevenueData: { value: number; label: string }[];
+  formatIDR: (value: number) => string;
+  paymentChartData: PaymentChartItem[];
+  paymentBarWidth: number;
+  paymentBarSpacing: number;
+  paymentChartContentWidth: number;
+  paymentCountPie: { label: string; value: number; color: string }[];
+  financialBarData: FinancialBarItem[];
+};
+
+type NonChartProps = {
+  totalTransactions: number;
+  totalRevenue: number;
+  formatIDR: (value: number) => string;
+  completedTransactions: number;
+  cancelledTransactions: number;
+  draftTransactions: number;
+  returnTransactions: number;
+  totalSubtotal: number;
+  totalDiscount: number;
+  totalTax: number;
+  cashRevenue: number;
+  cardRevenue: number;
+  transferRevenue: number;
+  cashTransactions: number;
+  cardTransactions: number;
+  transferTransactions: number;
+};

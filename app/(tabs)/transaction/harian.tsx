@@ -87,6 +87,21 @@ export default function Harian() {
         loadTransactions();
     };
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-100 text-green-800';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'return':
+                return 'bg-blue-100 text-blue-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
     const formatDateLabel = (dateString: string) => {
         const [day, month, year] = dateString.split('/');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -148,8 +163,8 @@ export default function Harian() {
                                 })}
                             </Text>
                         </View>
-                        <View className="bg-green-100 px-2 py-1 rounded">
-                            <Text className="text-xs font-medium text-green-800 capitalize">
+                        <View className={`px-2 py-1 rounded ${getStatusColor(transaction.status).split(' ')[0]}`}>
+                            <Text className={`text-xs font-medium capitalize ${getStatusColor(transaction.status).split(' ')[1]}`}>
                                 {transaction.status}
                             </Text>
                         </View>

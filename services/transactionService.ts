@@ -56,7 +56,7 @@ export class TransactionService {
 
     if (activeTransactionId) {
       const existingTransaction = await this.getById(activeTransactionId);
-      if (existingTransaction && existingTransaction.status === "draft") {
+      if (existingTransaction && existingTransaction.status === "pending") {
         return existingTransaction;
       }
     }
@@ -81,8 +81,7 @@ export class TransactionService {
       total: 0,
       payment_method: "cash",
       payment_status: "pending",
-      status: "draft",
-      created_by: "kasir",
+      status: "pending",
     });
 
     // Set as active transaction

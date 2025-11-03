@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "pos-mobile",
-    "slug": "pos-mobile",
+    "name": "Pos Mobile",
+    "slug": "Pos Mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "posmobile",
+    "scheme": "Pos Mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -57,10 +57,7 @@
           "image": "./assets/images/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#ffffff"
         }
       ],
       "expo-font",
