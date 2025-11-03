@@ -106,11 +106,36 @@ type NonChartProps = {
   returnTransactions: number;
   totalSubtotal: number;
   totalDiscount: number;
-  totalTax: number;
   cashRevenue: number;
   cardRevenue: number;
   transferRevenue: number;
   cashTransactions: number;
   cardTransactions: number;
   transferTransactions: number;
+};
+
+type DatePreset = "all" | "today" | "7d" | "30d";
+
+type Filters = {
+  datePreset: DatePreset;
+  paymentMethod: Transaction["payment_method"] | "all";
+  paymentStatus: Transaction["payment_status"] | "all";
+  status: Transaction["status"] | "all";
+  customerName: string;
+  layout: "list" | "grid";
+};
+
+type AllTransactionCardProps = {
+  item: Transaction;
+  layout: "list" | "grid";
+  onPress: () => void;
+  formatIDR: (amount: number) => string;
+  formatDateTime: (iso: string) => string;
+  getStatusColor: (status: string) => string;
+  getPaymentMethodIcon: (method: string) => string;
+  getPaymentStatusStyles: (status?: string) => {
+    bg: string;
+    text: string;
+    label: string;
+  };
 };

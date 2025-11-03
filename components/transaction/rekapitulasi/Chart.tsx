@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { View, Text, ScrollView } from 'react-native';
 
 import { PieChart, BarChart, LineChart } from 'react-native-gifted-charts';
@@ -21,6 +19,16 @@ const Legend = ({ items }: { items: { label: string; color: string; value: numbe
     );
 };
 
+const SectionHeader = ({ title }: { title: string }) => (
+    <View className="mb-3">
+        <View className="flex-row items-center">
+            <View className="w-1.5 h-1.5 rounded-full bg-blue-600 mr-2" />
+            <Text className="text-sm font-semibold text-gray-900">{title}</Text>
+        </View>
+        <View className="mt-2 h-[1px] bg-gray-100" />
+    </View>
+);
+
 export default function Chart({
     chartWidth,
     statusChartData,
@@ -36,8 +44,8 @@ export default function Chart({
 }: ChartProps) {
     return (
         <View className="px-4 mt-4">
-            <Text className="text-base font-semibold text-gray-800 mb-3">Grafik Status Transaksi</Text>
-            <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200">
+            <SectionHeader title="Grafik Status Transaksi" />
+            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {statusChartData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
                 ) : (
@@ -64,8 +72,8 @@ export default function Chart({
                 )}
             </View>
 
-            <Text className="text-base font-semibold text-gray-800 mb-3">Pendapatan Harian</Text>
-            <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200">
+            <SectionHeader title="Pendapatan Harian" />
+            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {dailyRevenueData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
                 ) : (
@@ -85,7 +93,7 @@ export default function Chart({
                         yAxisTextStyle={{ color: '#6b7280', fontSize: 10 }}
                         xAxisLabelTextStyle={{ color: '#374151', fontSize: 10 }}
                         formatYLabel={(val: string) => formatIDR(Number(val)).replace('Rp', '').trim()}
-                        rulesColor={'#e5e7eb'}
+                        rulesColor={'#f3f4f6'}
                         rulesType={'dashed'}
                         yAxisThickness={0}
                         xAxisThickness={0}
@@ -94,8 +102,8 @@ export default function Chart({
                 )}
             </View>
 
-            <Text className="text-base font-semibold text-gray-800 mb-3">Grafik Pendapatan per Metode</Text>
-            <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200">
+            <SectionHeader title="Grafik Pendapatan per Metode" />
+            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {paymentChartData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
                 ) : (
@@ -114,13 +122,13 @@ export default function Chart({
                             roundedTop
                             showValuesAsTopLabel
                             topLabelTextStyle={{ color: '#111827', fontSize: 10, fontWeight: '600' }}
-                            rulesColor={'#e5e7eb'}
+                            rulesColor={'#f3f4f6'}
                             rulesType={'dashed'}
                             yAxisThickness={0}
                             xAxisThickness={0}
                             isAnimated
                             renderTooltip={(item: { value?: number; label?: string }) => (
-                                <View className="bg-white rounded px-2 py-1 border border-gray-200">
+                                <View className="bg-white rounded px-2 py-1 border border-gray-100">
                                     <Text className="text-xs text-gray-800">{item.label}</Text>
                                     <Text className="text-xs font-semibold text-green-600">{formatIDR((item.value ?? 0) as number)}</Text>
                                 </View>
@@ -130,8 +138,8 @@ export default function Chart({
                 )}
             </View>
 
-            <Text className="text-base font-semibold text-gray-800 mb-3">Jumlah Transaksi per Metode</Text>
-            <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200">
+            <SectionHeader title="Jumlah Transaksi per Metode" />
+            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {paymentCountPie.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
                 ) : (
@@ -150,8 +158,8 @@ export default function Chart({
                 )}
             </View>
 
-            <Text className="text-base font-semibold text-gray-800 mb-3">Rincian Keuangan</Text>
-            <View className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-200">
+            <SectionHeader title="Rincian Keuangan" />
+            <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {financialBarData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
                 ) : (
@@ -168,7 +176,7 @@ export default function Chart({
                         roundedTop
                         showValuesAsTopLabel
                         topLabelTextStyle={{ color: '#111827', fontSize: 10, fontWeight: '600' }}
-                        rulesColor={'#e5e7eb'}
+                        rulesColor={'#f3f4f6'}
                         rulesType={'dashed'}
                         yAxisThickness={0}
                         xAxisThickness={0}
@@ -179,5 +187,3 @@ export default function Chart({
         </View>
     );
 }
-
-

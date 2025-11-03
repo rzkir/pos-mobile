@@ -1,4 +1,4 @@
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -9,6 +9,20 @@ const NOTIFICATION_SETTINGS_KEY = process.env
  * Service untuk mengirim notifikasi transaksi sukses
  */
 export class TransactionNotificationService {
+  private static notifications: typeof import("expo-notifications") | null =
+    null;
+
+  private static async getNotificationsModule() {
+    if (this.notifications) return this.notifications;
+    if (Constants.appOwnership === "expo") return null;
+    try {
+      const mod = await import("expo-notifications");
+      this.notifications = mod;
+      return mod;
+    } catch {
+      return null;
+    }
+  }
   // Get notification settings
   private static async getSettings(): Promise<NotificationSettings | null> {
     try {
@@ -95,7 +109,8 @@ export class TransactionNotificationService {
 
       // Send notification
       const sound = this.getSoundValue(settings);
-
+      const Notifications = await this.getNotificationsModule();
+      if (!Notifications) return;
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "✅ Transaksi Berhasil",

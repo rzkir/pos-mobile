@@ -391,14 +391,12 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   // Calculate totals
   const subtotal = transaction.subtotal || 0;
   const discount = transaction.discount || 0;
-  const tax = transaction.tax || 0;
   const total = transaction.total || 0;
 
   // Summary with totals - disesuaikan untuk 80mm (32 karakter)
   // Format prices using app settings - remove "Rp " prefix for receipt format
   const formattedSubtotal = formatIDR(subtotal).replace('Rp ', '');
   const formattedDiscount = formatIDR(discount).replace('Rp ', '');
-  const formattedTax = formatIDR(tax).replace('Rp ', '');
   const formattedTotal = formatIDR(total).replace('Rp ', '');
 
   receiptParts.push(
@@ -407,7 +405,6 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
       BOLD_ON, // Bold on
       `SUBTOTAL   : Rp ${formattedSubtotal}\n`,
       discount > 0 ? `DISKON     : Rp ${formattedDiscount}\n` : '',
-      tax > 0 ? `PAJAK      : Rp ${formattedTax}\n` : '',
       `TOTAL      : Rp ${formattedTotal}\n`,
       BOLD_OFF, // Bold off
       '================================\n', // 32 karakter
@@ -540,7 +537,6 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
   // Calculate totals
   const subtotal = transaction.subtotal || 0;
   const discount = transaction.discount || 0;
-  const tax = transaction.tax || 0;
   const total = transaction.total || 0;
 
   return `
@@ -749,12 +745,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         <span class="summary-value">${formatIDR(discount)}</span>
       </div>
       ` : ''}
-      ${tax > 0 ? `
-      <div class="summary-row" style="font-weight: bold;">
-        <span class="summary-label">PAJAK:</span>
-        <span class="summary-value">${formatIDR(tax)}</span>
-      </div>
-      ` : ''}
+      
       <div class="summary-row total-row">
         <span>TOTAL:</span>
         <span>${formatIDR(total)}</span>

@@ -238,12 +238,14 @@ export class TransactionService {
       const transaction = await this.getById(transactionId);
       if (transaction) {
         const discount = transaction.discount || 0; // additional promo/discount
-        const tax = transaction.tax || 0;
-        const total = subtotal - totalItemsDiscount - discount + tax;
+        // Tax disabled: total = subtotal - item discounts - extra discount
+        const total = subtotal - totalItemsDiscount - discount;
 
         await this.update(transactionId, {
           subtotal,
           total,
+          // Ensure tax stays zero for compatibility
+          tax: 0,
         });
       }
     } catch (error) {

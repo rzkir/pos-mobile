@@ -2,6 +2,16 @@ import { View, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
+const SectionHeader = ({ title }: { title: string }) => (
+    <View className="mb-3">
+        <View className="flex-row items-center">
+            <View className="w-1.5 h-1.5 rounded-full bg-blue-600 mr-2" />
+            <Text className="text-sm font-semibold text-gray-900">{title}</Text>
+        </View>
+        <View className="mt-2 h-[1px] bg-gray-100" />
+    </View>
+);
+
 const StatCard = ({
     title,
     value,
@@ -15,12 +25,17 @@ const StatCard = ({
     color?: string;
     subtitle?: string;
 }) => (
-    <View className="bg-white rounded-lg p-4 mb-3 mx-4 shadow-sm border border-gray-200">
-        <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-sm text-gray-600">{title}</Text>
-            <Ionicons name={icon as any} size={20} color={color} />
+    <View className="bg-white rounded-2xl p-4 mb-3 mx-4 shadow-sm border border-gray-100">
+        <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center">
+                <View className="w-1.5 h-1.5 rounded-full bg-blue-600 mr-2" />
+                <Text className="text-[13px] font-semibold text-gray-900">{title}</Text>
+            </View>
+            <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: `${color}15` }}>
+                <Ionicons name={icon as any} size={18} color={color} />
+            </View>
         </View>
-        <Text className="text-2xl font-bold text-gray-900">{value}</Text>
+        <Text className="text-3xl font-extrabold text-gray-900 tracking-tight">{value}</Text>
         {subtitle && <Text className="text-xs text-gray-500 mt-1">{subtitle}</Text>}
     </View>
 );
@@ -35,7 +50,7 @@ export default function NonChart({
     returnTransactions,
     totalSubtotal,
     totalDiscount,
-    totalTax,
+
     cashRevenue,
     cardRevenue,
     transferRevenue,
@@ -51,8 +66,8 @@ export default function NonChart({
             <StatCard title="Total Pendapatan" value={formatIDR(totalRevenue)} icon="cash" color="#10b981" />
 
             {/* Transaction Status */}
-            <View className="px-4 mb-2 mt-2">
-                <Text className="text-base font-semibold text-gray-800 mb-3">Status Transaksi</Text>
+            <View className="px-4 mb-2 mt-4">
+                <SectionHeader title="Status Transaksi" />
             </View>
 
             <StatCard
@@ -88,11 +103,11 @@ export default function NonChart({
             />
 
             {/* Financial Breakdown */}
-            <View className="px-4 mb-2 mt-2">
-                <Text className="text-base font-semibold text-gray-800 mb-3">Rincian Keuangan</Text>
+            <View className="px-4 mb-2 mt-4">
+                <SectionHeader title="Rincian Keuangan" />
             </View>
 
-            <View className="bg-white rounded-lg p-4 mb-3 mx-4 shadow-sm border border-gray-200">
+            <View className="bg-white rounded-2xl p-4 mb-3 mx-4 shadow-sm border border-gray-100">
                 <View className="flex-row justify-between items-center mb-2">
                     <Text className="text-sm text-gray-600">Subtotal</Text>
                     <Text className="text-base font-semibold text-gray-900">{formatIDR(totalSubtotal)}</Text>
@@ -101,25 +116,24 @@ export default function NonChart({
                     <Text className="text-sm text-gray-600">Diskon</Text>
                     <Text className="text-base font-semibold text-red-600">-{formatIDR(totalDiscount)}</Text>
                 </View>
-                <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-sm text-gray-600">Pajak</Text>
-                    <Text className="text-base font-semibold text-gray-900">{formatIDR(totalTax)}</Text>
-                </View>
-                <View className="border-t border-gray-200 mt-2 pt-2 flex-row justify-between items-center">
+
+                <View className="border-t border-gray-100 mt-3 pt-3 flex-row justify-between items-center">
                     <Text className="text-base font-bold text-gray-800">Total Pendapatan</Text>
-                    <Text className="text-lg font-bold text-green-600">{formatIDR(totalRevenue)}</Text>
+                    <Text className="text-xl font-extrabold text-green-600">{formatIDR(totalRevenue)}</Text>
                 </View>
             </View>
 
             {/* Payment Method Breakdown */}
-            <View className="px-4 mb-2 mt-2">
-                <Text className="text-base font-semibold text-gray-800 mb-3">Metode Pembayaran</Text>
+            <View className="px-4 mb-2 mt-4">
+                <SectionHeader title="Metode Pembayaran" />
             </View>
 
-            <View className="bg-white rounded-lg p-4 mb-3 mx-4 shadow-sm border border-gray-200">
+            <View className="bg-white rounded-2xl p-4 mb-3 mx-4 shadow-sm border border-gray-100">
                 <View className="flex-row justify-between items-center mb-3">
                     <View className="flex-row items-center gap-2">
-                        <Ionicons name="cash" size={20} color="#10b981" />
+                        <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: '#10b98115' }}>
+                            <Ionicons name="cash" size={18} color="#10b981" />
+                        </View>
                         <Text className="text-sm text-gray-700">Tunai</Text>
                     </View>
                     <View className="items-end">
@@ -129,7 +143,9 @@ export default function NonChart({
                 </View>
                 <View className="flex-row justify-between items-center mb-3">
                     <View className="flex-row items-center gap-2">
-                        <Ionicons name="card" size={20} color="#3b82f6" />
+                        <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: '#3b82f615' }}>
+                            <Ionicons name="card" size={18} color="#3b82f6" />
+                        </View>
                         <Text className="text-sm text-gray-700">Kartu</Text>
                     </View>
                     <View className="items-end">
@@ -139,7 +155,9 @@ export default function NonChart({
                 </View>
                 <View className="flex-row justify-between items-center">
                     <View className="flex-row items-center gap-2">
-                        <Ionicons name="swap-horizontal" size={20} color="#8b5cf6" />
+                        <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: '#8b5cf615' }}>
+                            <Ionicons name="swap-horizontal" size={18} color="#8b5cf6" />
+                        </View>
                         <Text className="text-sm text-gray-700">Transfer</Text>
                     </View>
                     <View className="items-end">
@@ -151,5 +169,3 @@ export default function NonChart({
         </>
     );
 }
-
-

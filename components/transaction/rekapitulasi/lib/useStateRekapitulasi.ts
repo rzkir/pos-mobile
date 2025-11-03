@@ -76,7 +76,6 @@ export default function useStateRekapitulasi() {
     const totalRevenueLocal = totals.reduce((sum, t) => sum + t.total, 0);
     const totalSubtotalLocal = totals.reduce((sum, t) => sum + t.subtotal, 0);
     const totalDiscountLocal = totals.reduce((sum, t) => sum + t.discount, 0);
-    const totalTaxLocal = totals.reduce((sum, t) => sum + t.tax, 0);
 
     const cashTransactionsLocal = transactions.filter(
       (t) => t.payment_method === "cash" && t.status === "completed"
@@ -149,7 +148,6 @@ export default function useStateRekapitulasi() {
     const financialBarDataLocal = [
       { value: totalSubtotalLocal, label: "Subtotal", frontColor: "#6b7280" },
       { value: totalDiscountLocal, label: "Diskon", frontColor: "#ef4444" },
-      { value: totalTaxLocal, label: "Pajak", frontColor: "#8b5cf6" },
       { value: totalRevenueLocal, label: "Total", frontColor: "#10b981" },
     ].filter((d) => d.value > 0);
 
@@ -168,7 +166,7 @@ export default function useStateRekapitulasi() {
       totalRevenue: totalRevenueLocal,
       totalSubtotal: totalSubtotalLocal,
       totalDiscount: totalDiscountLocal,
-      totalTax: totalTaxLocal,
+      // totalTax removed
       cashTransactions: cashTransactionsLocal,
       cardTransactions: cardTransactionsLocal,
       transferTransactions: transferTransactionsLocal,
@@ -207,7 +205,7 @@ export default function useStateRekapitulasi() {
     totalRevenue,
     totalSubtotal,
     totalDiscount,
-    totalTax,
+    // totalTax removed
     cashTransactions,
     cardTransactions,
     transferTransactions,

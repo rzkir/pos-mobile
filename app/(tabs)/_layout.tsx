@@ -18,8 +18,6 @@ export default function TabLayout() {
                     tabBarInactiveTintColor: isDark ? '#A1A5B7' : '#6B7280',
                     tabBarStyle: {
                         backgroundColor: isDark ? '#181A20' : '#FFFFFF',
-                        borderTopColor: isDark ? '#212529' : '#E5E7EB',
-                        borderTopWidth: 1,
                         height: isTablet ? 68 : 56,
                         paddingHorizontal: isTablet ? 24 : 12,
                     },

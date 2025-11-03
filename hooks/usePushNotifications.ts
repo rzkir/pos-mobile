@@ -2,12 +2,25 @@ import { useState, useEffect, useRef } from "react";
 
 import { Platform } from "react-native";
 
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SETTINGS_STORAGE_KEY = process.env
   .EXPO_PUBLIC_PUSH_NOTIFICATIONS as string;
+
+let Notifications: typeof import("expo-notifications") | null = null;
+
+const loadNotifications = async () => {
+  if (Notifications) return Notifications;
+  try {
+    const mod = await import("expo-notifications");
+    Notifications = mod;
+    return Notifications;
+  } catch {
+    return null;
+  }
+};
 
 export const usePushNotifications = () => {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
@@ -20,16 +33,19 @@ export const usePushNotifications = () => {
     selectedSound: "default",
   });
   const [loading, setLoading] = useState(true);
-  const notificationListener = useRef<Notifications.EventSubscription | null>(
-    null
-  );
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     const initialize = async () => {
       await loadSettings();
       // Check existing permission status
-      const { status } = await Notifications.getPermissionsAsync();
+      const notif = await loadNotifications();
+      if (!notif) {
+        setNotificationPermission(false);
+        return;
+      }
+      const { status } = await notif.getPermissionsAsync();
       setNotificationPermission(status === "granted");
     };
     initialize();
@@ -67,12 +83,14 @@ export const usePushNotifications = () => {
     try {
       setLoading(true);
 
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
+      const notif = await loadNotifications();
+      if (!notif) return null;
+
+      const { status: existingStatus } = await notif.getPermissionsAsync();
       let finalStatus = existingStatus;
 
       if (existingStatus !== "granted") {
-        const { status } = await Notifications.requestPermissionsAsync();
+        const { status } = await notif.requestPermissionsAsync();
         finalStatus = status;
       }
 
@@ -83,10 +101,19 @@ export const usePushNotifications = () => {
         return null;
       }
 
+      // In Expo Go, remote push tokens are not supported.
+      // We still consider permission granted and return a placeholder token
+      // so the UI can enable notification settings without error.
+      if (Constants.appOwnership === "expo") {
+        const placeholderToken = "expo-go-local";
+        setExpoPushToken(placeholderToken);
+        return placeholderToken;
+      }
+
       const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
       const tokenData = projectId
-        ? await Notifications.getExpoPushTokenAsync({ projectId })
-        : await Notifications.getExpoPushTokenAsync();
+        ? await notif.getExpoPushTokenAsync({ projectId })
+        : await notif.getExpoPushTokenAsync();
       const token = typeof tokenData === "string" ? tokenData : tokenData.data;
       setExpoPushToken(token);
 
@@ -96,17 +123,17 @@ export const usePushNotifications = () => {
       );
 
       if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync("default", {
+        await notif.setNotificationChannelAsync("default", {
           name: "Default",
-          importance: Notifications.AndroidImportance.MAX,
+          importance: (await loadNotifications())!.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF9228",
           sound: "default",
         });
 
-        await Notifications.setNotificationChannelAsync("low_stock", {
+        await notif.setNotificationChannelAsync("low_stock", {
           name: "Low Stock Alerts",
-          importance: Notifications.AndroidImportance.HIGH,
+          importance: (await loadNotifications())!.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF9228",
           sound: "default",
@@ -166,13 +193,19 @@ export const usePushNotifications = () => {
     await saveSettings(newSettings);
   };
 
-  // Setup notification listeners (always, regardless of settings)
+  // Setup notification listeners (guarded by availability)
   useEffect(() => {
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener(() => {});
-
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener(() => {});
+    let mounted = true;
+    (async () => {
+      const notif = await loadNotifications();
+      if (!mounted || !notif) return;
+      notificationListener.current = notif.addNotificationReceivedListener(
+        () => {}
+      );
+      responseListener.current = notif.addNotificationResponseReceivedListener(
+        () => {}
+      );
+    })();
 
     return () => {
       if (notificationListener.current) {
@@ -181,6 +214,7 @@ export const usePushNotifications = () => {
       if (responseListener.current) {
         responseListener.current.remove();
       }
+      mounted = false;
     };
   }, []);
 
@@ -190,10 +224,12 @@ export const usePushNotifications = () => {
       // Only get token if permission is already granted
       const getToken = async () => {
         try {
+          const notif = await loadNotifications();
+          if (!notif) return;
           const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
           const tokenData = projectId
-            ? await Notifications.getExpoPushTokenAsync({ projectId })
-            : await Notifications.getExpoPushTokenAsync();
+            ? await notif.getExpoPushTokenAsync({ projectId })
+            : await notif.getExpoPushTokenAsync();
           const token =
             typeof tokenData === "string" ? tokenData : tokenData.data;
           setExpoPushToken(token);
@@ -221,7 +257,9 @@ export const usePushNotifications = () => {
       return;
     }
 
-    await Notifications.scheduleNotificationAsync({
+    const notif = await loadNotifications();
+    if (!notif) return;
+    await notif.scheduleNotificationAsync({
       content: {
         title: "⚠️ Stok Rendah",
         body: `${productName} tersisa ${currentStock} unit`,
@@ -239,7 +277,9 @@ export const usePushNotifications = () => {
       throw new Error("Notifikasi belum diaktifkan atau izin belum diberikan");
     }
 
-    await Notifications.scheduleNotificationAsync({
+    const notif = await loadNotifications();
+    if (!notif) throw new Error("Modul notifikasi tidak tersedia");
+    await notif.scheduleNotificationAsync({
       content: {
         title: "🔔 Test Notifikasi",
         body: "Ini adalah notifikasi uji coba. Pengaturan notifikasi Anda berfungsi dengan baik!",

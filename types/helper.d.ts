@@ -45,3 +45,10 @@ interface BottomSheetProps {
   showCloseButton?: boolean;
   enableSwipeToClose?: boolean;
 }
+
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  showCharts: boolean;
+  setShowCharts: (value: boolean) => void;
+};

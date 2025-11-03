@@ -117,10 +117,7 @@ export default function TransactionSuccess() {
                             <Text className="text-gray-600">Diskon</Text>
                             <Text className="text-gray-900 font-semibold">{formatIDR(transaction.discount)}</Text>
                         </View>
-                        <View className="flex-row justify-between mb-2">
-                            <Text className="text-gray-600">Pajak</Text>
-                            <Text className="text-gray-900 font-semibold">{formatIDR(transaction.tax)}</Text>
-                        </View>
+                        {/* Pajak dihapus */}
                         <View className="h-px bg-gray-100 my-3" />
                         <View className="flex-row justify-between mb-2">
                             <Text className="text-lg font-bold text-gray-900">Total</Text>

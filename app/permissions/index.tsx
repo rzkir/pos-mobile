@@ -14,8 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 const PermissionScreen = () => {
     const { requestPermissions, loading, allPermissionsGranted } = usePermissions();
     const hasRedirected = useRef(false);
@@ -78,7 +76,7 @@ const PermissionScreen = () => {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <View className="flex-1 bg-background">
             <View className="flex-1 px-6 py-8">
                 {/* Header */}
                 <View className="items-center mb-12">
@@ -172,7 +170,7 @@ const PermissionScreen = () => {
                     Anda dapat mengubah izin ini kapan saja di pengaturan aplikasi
                 </Text>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 

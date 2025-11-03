@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router';
+
 import { Ionicons } from '@expo/vector-icons';
+
 import { View, Text, useWindowDimensions } from 'react-native';
 
 export default function TransactionLayout() {
@@ -15,8 +17,6 @@ export default function TransactionLayout() {
                 tabBarInactiveTintColor: isDark ? '#a1a1aa' : '#6b7280',
                 tabBarStyle: {
                     backgroundColor: isDark ? '#18181b' : '#ffffff',
-                    borderBottomColor: isDark ? '#27272a' : '#e5e7eb',
-                    borderBottomWidth: 1,
                     borderTopWidth: 0,
                     height: isTablet ? 68 : 56,
                     paddingHorizontal: isTablet ? 24 : 12,

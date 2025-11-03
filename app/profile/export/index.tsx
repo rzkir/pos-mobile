@@ -12,8 +12,102 @@ import Toast from 'react-native-toast-message'
 
 import { DataExportImportService } from '@/services/dataExportImportService'
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
 export default function ExportData() {
     const [isExporting, setIsExporting] = useState(false)
+
+    const handleExportToDownloads = async () => {
+        try {
+            setIsExporting(true)
+            const jsonData = await DataExportImportService.exportAllData()
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+            const fileName = `pos_data_export_${timestamp}.json`
+
+            if (Platform.OS === 'android') {
+                const FileSystem = await import('expo-file-system' as any)
+                const FS = FileSystem.default || FileSystem
+                const SAF = FS.StorageAccessFramework
+
+                if (SAF && SAF.requestDirectoryPermissionsAsync && SAF.createFileAsync) {
+                    // Coba pakai URI Downloads yang tersimpan agar langsung simpan tanpa prompt
+                    let targetDirectoryUri: string | null = await AsyncStorage.getItem('downloadsDirectoryUri')
+
+                    if (!targetDirectoryUri) {
+                        // Minta user pilih folder (anjurkan pilih Downloads), simpan untuk berikutnya
+                        const permissions = await SAF.requestDirectoryPermissionsAsync()
+                        if (!permissions?.granted || !permissions.directoryUri) {
+                            throw new Error('Izin penyimpanan ditolak')
+                        }
+                        targetDirectoryUri = permissions.directoryUri as string
+                        await AsyncStorage.setItem('downloadsDirectoryUri', targetDirectoryUri)
+                    }
+
+                    if (!targetDirectoryUri) {
+                        throw new Error('Gagal menentukan folder tujuan')
+                    }
+                    const directoryUri: string = targetDirectoryUri
+                    // Buat file dan tulis konten JSON
+                    const fileUri = await SAF.createFileAsync(directoryUri, fileName, 'application/json')
+                    const writeMethod = FS.writeAsStringAsync || FS.default?.writeAsStringAsync
+                    if (!writeMethod) {
+                        throw new Error('writeAsStringAsync tidak tersedia')
+                    }
+                    await writeMethod(fileUri, jsonData)
+
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Export Berhasil',
+                        text2: 'File disimpan ke folder yang Anda pilih',
+                        visibilityTime: 4000
+                    })
+                    return
+                }
+
+                // Jika SAF tidak tersedia (mis. emulator/Expo Go tertentu), fallback ke Share
+                Toast.show({
+                    type: 'info',
+                    text1: 'SAF tidak tersedia',
+                    text2: 'Mengalihkan ke menu Share untuk memilih lokasi simpan',
+                    visibilityTime: 4000
+                })
+            }
+
+            // Platform lain: gunakan share sheet agar user bisa simpan ke Files/Drive
+            try {
+                const SharingModule = await import('expo-sharing' as any)
+                const Sharing = SharingModule.default || SharingModule
+                const isAvailable = await (Sharing.isAvailableAsync?.() || Sharing.isAvailableAsync())
+                if (isAvailable) {
+                    const FileSystem = await import('expo-file-system' as any)
+                    const FS = FileSystem.default || FileSystem
+                    const cacheDir = FS.cacheDirectory || FS.documentDirectory
+                    if (!cacheDir) throw new Error('Direktori sementara tidak tersedia')
+                    const tempUri = `${cacheDir}${fileName}`
+                    const writeMethod = FS.writeAsStringAsync || FS.default?.writeAsStringAsync
+                    if (!writeMethod) throw new Error('writeAsStringAsync tidak tersedia')
+                    await writeMethod(tempUri, jsonData)
+                    const shareMethod = Sharing.shareAsync || Sharing.default?.shareAsync
+                    await shareMethod(tempUri, { mimeType: 'application/json', dialogTitle: 'Export Data POS', UTI: 'public.json' })
+                    Toast.show({ type: 'success', text1: 'Export Berhasil', text2: 'Silakan pilih lokasi simpan', visibilityTime: 4000 })
+                    return
+                }
+            } catch { }
+
+            throw new Error('Fitur simpan tidak tersedia di perangkat ini')
+        } catch (error) {
+            console.error('Export to Downloads error:', error)
+            Toast.show({
+                type: 'error',
+                text1: 'Gagal',
+                text2: error instanceof Error ? error.message : 'Gagal menyimpan file',
+                visibilityTime: 4000
+            })
+        } finally {
+            setIsExporting(false)
+        }
+    }
 
     const handleExportData = async () => {
         try {
@@ -249,9 +343,22 @@ export default function ExportData() {
                                 {isExporting ? (
                                     <Text className="text-white text-lg font-bold">Mengekspor Data...</Text>
                                 ) : (
-                                    <Text className="text-white text-lg font-bold">Ekspor Data Sekarang</Text>
+                                    <Text className="text-white text-lg font-bold">Bagikan / Simpan via Share</Text>
                                 )}
                             </TouchableOpacity>
+
+                            {Platform.OS === 'android' && (
+                                <View className="mt-3">
+                                    <TouchableOpacity
+                                        onPress={handleExportToDownloads}
+                                        disabled={isExporting}
+                                        className={`rounded-2xl py-4 items-center ${isExporting ? 'bg-gray-300' : 'bg-emerald-600'}`}
+                                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 }}
+                                    >
+                                        <Text className="text-white text-lg font-bold">Simpan ke Folder (Android)</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     </View>
                 </View>

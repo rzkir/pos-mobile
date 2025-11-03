@@ -1,4 +1,4 @@
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -13,6 +13,20 @@ const NOTIFIED_PRODUCTS_KEY = process.env
  * Bisa dipanggil dari context atau service lainnya tanpa dependency ke hook
  */
 export class LowStockNotificationService {
+  private static notifications: typeof import("expo-notifications") | null =
+    null;
+
+  private static async getNotificationsModule() {
+    if (this.notifications) return this.notifications;
+    if (Constants.appOwnership === "expo") return null;
+    try {
+      const mod = await import("expo-notifications");
+      this.notifications = mod;
+      return mod;
+    } catch {
+      return null;
+    }
+  }
   // Get notification settings
   private static async getSettings(): Promise<NotificationSettings | null> {
     try {
@@ -132,7 +146,8 @@ export class LowStockNotificationService {
 
       // Stock is low and not yet notified, send notification
       const sound = this.getSoundValue(settings);
-
+      const Notifications = await this.getNotificationsModule();
+      if (!Notifications) return;
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "⚠️ Stok Rendah",
