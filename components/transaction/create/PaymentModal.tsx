@@ -23,6 +23,8 @@ export default function PaymentModal({
     onAmountPaidChange,
     onSavePaymentInfo,
 }: PaymentModalProps) {
+    const selectedCard = paymentCards.find((c) => c.id === selectedPaymentCardId);
+
     return (
         <BottomSheet
             visible={visible}
@@ -146,6 +148,209 @@ export default function PaymentModal({
                         </View>
                     )}
                 </View>
+
+                {/* QRIS Instructions and QR Code */}
+                {selectedCard && selectedCard.method === 'qris' && (
+                    <View className="mb-4">
+                        <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+                            <Text className="text-sm font-bold text-gray-900 mb-3">Bayar dengan QRIS</Text>
+
+                            {selectedCard.image?.url ? (
+                                <View className="items-center mb-3">
+                                    <Image
+                                        source={{ uri: selectedCard.image.url }}
+                                        className="w-56 h-56 rounded"
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                            ) : (
+                                <View className="items-center justify-center h-56 bg-gray-100 rounded mb-3">
+                                    <Ionicons name="qr-code-outline" size={48} color="#6B7280" />
+                                </View>
+                            )}
+
+                            <View className="mt-1">
+                                <Text className="text-xs text-gray-700 font-semibold mb-2">Langkah-langkah:</Text>
+                                <View className="flex-col gap-2">
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">1.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Buka aplikasi e-wallet yang mendukung QRIS (GoPay, OVO, DANA, ShopeePay, dll).</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">2.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Pilih menu Scan, lalu arahkan kamera ke kode QR di atas.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">3.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Pastikan nominal sesuai: {formatIDR(transaction?.total || 0)}.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">4.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Konfirmasi pembayaran di aplikasi Anda hingga berhasil.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">5.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Tekan tombol &quot;Konfirmasi Pembayaran&quot; di bawah untuk menyelesaikan transaksi.</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* E-Wallet (GoPay/OVO/DANA/ShopeePay/LinkAja) Instructions */}
+                {selectedCard && (
+                    selectedCard.method === 'gopay' ||
+                    selectedCard.method === 'ovo' ||
+                    selectedCard.method === 'dana' ||
+                    selectedCard.method === 'shopeepay' ||
+                    selectedCard.method === 'linkaja'
+                ) && (
+                        <View className="mb-4">
+                            <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+                                <Text className="text-sm font-bold text-gray-900 mb-3">Bayar dengan {getPaymentMethodLabel(selectedCard.method)}</Text>
+
+                                {selectedCard.image?.url && (
+                                    <View className="items-center mb-3">
+                                        <Image
+                                            source={{ uri: selectedCard.image.url }}
+                                            className="w-32 h-12"
+                                            resizeMode="contain"
+                                        />
+                                    </View>
+                                )}
+
+                                {(selectedCard.account_number || selectedCard.holder_name) && (
+                                    <View className="bg-white border border-gray-200 rounded-xl p-3 mb-3">
+                                        {selectedCard.account_number && (
+                                            <Text className="text-xs text-gray-700">Nomor/ID Tujuan: <Text className="font-semibold">{selectedCard.account_number}</Text></Text>
+                                        )}
+                                        {selectedCard.holder_name && (
+                                            <Text className="text-xs text-gray-700 mt-1">Nama Penerima: <Text className="font-semibold">{selectedCard.holder_name}</Text></Text>
+                                        )}
+                                    </View>
+                                )}
+
+                                <View className="mt-1">
+                                    <Text className="text-xs text-gray-700 font-semibold mb-2">Langkah-langkah:</Text>
+                                    <View className="flex-col gap-2">
+                                        <View className="flex-row">
+                                            <Text className="text-xs text-gray-500 mr-2">1.</Text>
+                                            <Text className="text-xs text-gray-700 flex-1">Buka aplikasi {getPaymentMethodLabel(selectedCard.method)}.</Text>
+                                        </View>
+                                        <View className="flex-row">
+                                            <Text className="text-xs text-gray-500 mr-2">2.</Text>
+                                            <Text className="text-xs text-gray-700 flex-1">Pilih menu Kirim/Transfer ke {selectedCard.account_number ? 'nomor tujuan di bawah' : 'merchant'}.</Text>
+                                        </View>
+                                        {selectedCard.account_number && (
+                                            <View className="flex-row">
+                                                <Text className="text-xs text-gray-500 mr-2">3.</Text>
+                                                <Text className="text-xs text-gray-700 flex-1">Masukkan nomor tujuan dan nominal {formatIDR(transaction?.total || 0)}.</Text>
+                                            </View>
+                                        )}
+                                        {!selectedCard.account_number && (
+                                            <View className="flex-row">
+                                                <Text className="text-xs text-gray-500 mr-2">3.</Text>
+                                                <Text className="text-xs text-gray-700 flex-1">Masukkan nominal {formatIDR(transaction?.total || 0)}.</Text>
+                                            </View>
+                                        )}
+                                        <View className="flex-row">
+                                            <Text className="text-xs text-gray-500 mr-2">4.</Text>
+                                            <Text className="text-xs text-gray-700 flex-1">Konfirmasi pembayaran di aplikasi hingga berhasil.</Text>
+                                        </View>
+                                        <View className="flex-row">
+                                            <Text className="text-xs text-gray-500 mr-2">5.</Text>
+                                            <Text className="text-xs text-gray-700 flex-1">Tekan tombol &quot;Konfirmasi Pembayaran&quot; di bawah untuk menyelesaikan transaksi.</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                {/* Bank Transfer Instructions */}
+                {selectedCard && selectedCard.method === 'bank_transfer' && (
+                    <View className="mb-4">
+                        <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+                            <Text className="text-sm font-bold text-gray-900 mb-3">Transfer Bank {selectedCard.bank ? selectedCard.bank.toUpperCase() : ''}</Text>
+
+                            <View className="bg-white border border-gray-200 rounded-xl p-3 mb-3">
+                                {selectedCard.bank && (
+                                    <Text className="text-xs text-gray-700">Bank: <Text className="font-semibold">{selectedCard.bank.toUpperCase()}</Text></Text>
+                                )}
+                                {selectedCard.account_number && (
+                                    <Text className="text-xs text-gray-700 mt-1">No. Rekening: <Text className="font-semibold">{selectedCard.account_number}</Text></Text>
+                                )}
+                                {selectedCard.holder_name && (
+                                    <Text className="text-xs text-gray-700 mt-1">Nama Pemilik: <Text className="font-semibold">{selectedCard.holder_name}</Text></Text>
+                                )}
+                            </View>
+
+                            <View className="mt-1">
+                                <Text className="text-xs text-gray-700 font-semibold mb-2">Langkah-langkah:</Text>
+                                <View className="flex-col gap-2">
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">1.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Buka mobile/Internet banking {selectedCard.bank ? selectedCard.bank.toUpperCase() : 'Anda'}.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">2.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Pilih Transfer ke rekening dan masukkan data rekening di atas.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">3.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Masukkan nominal {formatIDR(transaction?.total || 0)} dan konfirmasi.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">4.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Simpan bukti transfer bila diperlukan, lalu kembali ke kasir.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">5.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Tekan tombol &quot;Konfirmasi Pembayaran&quot; di bawah untuk menyelesaikan transaksi.</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Debit / Credit Card Instructions */}
+                {selectedCard && (selectedCard.method === 'debit_card' || selectedCard.method === 'credit_card') && (
+                    <View className="mb-4">
+                        <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+                            <Text className="text-sm font-bold text-gray-900 mb-3">Bayar dengan {getPaymentMethodLabel(selectedCard.method)}</Text>
+
+                            {selectedCard.bank && (
+                                <View className="bg-white border border-gray-200 rounded-xl p-3 mb-3">
+                                    <Text className="text-xs text-gray-700">Bank EDC: <Text className="font-semibold">{selectedCard.bank.toUpperCase()}</Text></Text>
+                                </View>
+                            )}
+
+                            <View className="mt-1">
+                                <Text className="text-xs text-gray-700 font-semibold mb-2">Langkah-langkah:</Text>
+                                <View className="flex-col gap-2">
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">1.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Gesek/Insert/Tap kartu pada mesin EDC.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">2.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Masukkan nominal {formatIDR(transaction?.total || 0)}.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">3.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Ikuti instruksi pada EDC (PIN/Tanda tangan) hingga berhasil.</Text>
+                                    </View>
+                                    <View className="flex-row">
+                                        <Text className="text-xs text-gray-500 mr-2">4.</Text>
+                                        <Text className="text-xs text-gray-700 flex-1">Tekan tombol &quot;Konfirmasi Pembayaran&quot; di bawah untuk menyelesaikan transaksi.</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 {/* Amount Paid (for cash payments) */}
                 {paymentMethod === 'cash' && selectedPaymentCardId === null && (

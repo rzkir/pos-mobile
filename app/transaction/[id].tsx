@@ -85,6 +85,9 @@ export default function TransactionDetail() {
         selectedSizeId,
         handleApplyFilters,
         handleResetFilters,
+        setCustomerSearchQuery,
+        customerSuggestions,
+        selectCustomerName,
     } = useStateCreateTransaction({
         transactionId,
         products,
@@ -153,8 +156,24 @@ export default function TransactionDetail() {
                                 placeholder="Masukkan nama pelanggan"
                                 placeholderTextColor="#9CA3AF"
                                 value={customerName}
-                                onChangeText={setCustomerName}
+                                onChangeText={(text: string) => {
+                                    setCustomerName(text);
+                                    setCustomerSearchQuery(text);
+                                }}
                             />
+                            {customerName?.length > 0 && customerSuggestions?.length > 0 && (
+                                <View className="mt-1 border border-gray-200 rounded-lg bg-white">
+                                    {customerSuggestions.map((name) => (
+                                        <TouchableOpacity
+                                            key={name}
+                                            className="px-3 py-2"
+                                            onPress={() => selectCustomerName(name)}
+                                        >
+                                            <Text className="text-gray-800">{name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
                         </View>
 
                         <TouchableOpacity

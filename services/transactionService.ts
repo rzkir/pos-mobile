@@ -221,16 +221,26 @@ export class TransactionService {
   static async updateTransactionTotals(transactionId: number): Promise<void> {
     try {
       const items = await this.getItemsByTransactionId(transactionId);
+      // Subtotal should represent original price sum (before discount)
       const subtotal = items.reduce(
         (sum, item) => sum + (item.subtotal || 0),
         0
       );
 
+      // Calculate total discount from items (percentage per item)
+      const totalItemsDiscount = items.reduce((sum, item) => {
+        const basePrice = item.price || 0;
+        const qty = item.quantity || 0;
+        const discountPercent = Number(item.discount || 0);
+        const discountAmountPerUnit = (basePrice * discountPercent) / 100;
+        return sum + discountAmountPerUnit * qty;
+      }, 0);
+
       const transaction = await this.getById(transactionId);
       if (transaction) {
-        const discount = transaction.discount || 0;
+        const discount = transaction.discount || 0; // additional promo/discount
         const tax = transaction.tax || 0;
-        const total = subtotal - discount + tax;
+        const total = subtotal - totalItemsDiscount - discount + tax;
 
         await this.update(transactionId, {
           subtotal,

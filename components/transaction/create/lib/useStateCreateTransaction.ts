@@ -51,6 +51,9 @@ export function useStateCreateTransaction({
     null
   );
   const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null);
+  // Customer search state
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [allCustomerNames, setAllCustomerNames] = useState<string[]>([]);
 
   // Helper functions for amount formatting
   const formatIdrNumber = (raw: string) => {
@@ -151,52 +154,56 @@ export function useStateCreateTransaction({
     return labels[method] || method;
   };
 
-  const loadTransaction = useCallback(async () => {
-    try {
-      setLoading(true);
-      const trans = await TransactionService.getById(transactionId);
-      if (trans) {
-        setTransaction(trans);
-        setCustomerName(trans.customer_name || "");
-        setPaymentMethod(trans.payment_method);
-        setAmountPaid("");
-        // Set selected payment card jika ada payment_card_id
-        if (trans.payment_card_id) {
-          setSelectedPaymentCardId(trans.payment_card_id);
-        } else {
-          setSelectedPaymentCardId(null);
+  const loadTransaction = useCallback(
+    async (options?: { showLoading?: boolean }) => {
+      const shouldShowLoading = options?.showLoading === true;
+      try {
+        if (shouldShowLoading) setLoading(true);
+        const trans = await TransactionService.getById(transactionId);
+        if (trans) {
+          setTransaction(trans);
+          setCustomerName(trans.customer_name || "");
+          setPaymentMethod(trans.payment_method);
+          setAmountPaid("");
+          // Set selected payment card jika ada payment_card_id
+          if (trans.payment_card_id) {
+            setSelectedPaymentCardId(trans.payment_card_id);
+          } else {
+            setSelectedPaymentCardId(null);
+          }
+
+          const transactionItems =
+            await TransactionService.getItemsByTransactionId(transactionId);
+          setItems(transactionItems);
+
+          // Load product details for each item
+          const itemsWithProducts = transactionItems.map((item) => {
+            const product = products.find((p: any) => p.id === item.product_id);
+            // Ensure discount is properly set - use product discount if available, otherwise use item discount
+            const itemWithProduct = {
+              ...item,
+              product,
+              // Ensure discount field is properly set from product or item
+              discount: Number(product?.discount ?? item.discount ?? 0) || 0,
+            };
+            return itemWithProduct;
+          });
+          setProductsWithDetails(itemsWithProducts);
         }
-
-        const transactionItems =
-          await TransactionService.getItemsByTransactionId(transactionId);
-        setItems(transactionItems);
-
-        // Load product details for each item
-        const itemsWithProducts = transactionItems.map((item) => {
-          const product = products.find((p: any) => p.id === item.product_id);
-          // Ensure discount is properly set - use product discount if available, otherwise use item discount
-          const itemWithProduct = {
-            ...item,
-            product,
-            // Ensure discount field is properly set from product or item
-            discount: Number(product?.discount ?? item.discount ?? 0) || 0,
-          };
-          return itemWithProduct;
+      } catch (error) {
+        console.error("Error loading transaction:", error);
+        Toast.show({
+          type: "error",
+          text1: "Kesalahan",
+          text2: "Gagal memuat data transaksi",
+          visibilityTime: 3000,
         });
-        setProductsWithDetails(itemsWithProducts);
+      } finally {
+        if (shouldShowLoading) setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading transaction:", error);
-      Toast.show({
-        type: "error",
-        text1: "Kesalahan",
-        text2: "Gagal memuat data transaksi",
-        visibilityTime: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [transactionId, products]);
+    },
+    [transactionId, products]
+  );
 
   const cleanupLocalStorage = useCallback(async () => {
     try {
@@ -234,14 +241,12 @@ export function useStateCreateTransaction({
             // Calculate discount from product
             const basePrice = product.price ?? 0;
             const productDiscount = Number(product.discount ?? 0) || 0;
-            // Discount is percentage, so calculate discounted price
-            const discountAmount = (basePrice * productDiscount) / 100;
-            const discountedPrice = basePrice - discountAmount;
 
             if (existingItem) {
               // Update quantity
               const newQty = existingItem.quantity + (qty as number);
-              const subtotal = newQty * discountedPrice;
+              // Store subtotal as original (before discount)
+              const subtotal = newQty * basePrice;
               await TransactionService.updateItem(existingItem.id, {
                 quantity: newQty,
                 discount: productDiscount,
@@ -249,7 +254,8 @@ export function useStateCreateTransaction({
               });
             } else {
               // Add new item
-              const subtotal = (qty as number) * discountedPrice;
+              // Store subtotal as original (before discount)
+              const subtotal = (qty as number) * basePrice;
               await TransactionService.addItem({
                 transaction_id: transactionId,
                 product_id: productId,
@@ -261,7 +267,7 @@ export function useStateCreateTransaction({
             }
           }
         }
-        loadTransaction();
+        loadTransaction({ showLoading: false });
         // Reset payment info when transaction items change
         setPaymentInfoFilled(false);
       } catch (error) {
@@ -423,7 +429,7 @@ export function useStateCreateTransaction({
     async (itemId: number) => {
       try {
         await TransactionService.deleteItem(itemId);
-        loadTransaction();
+        loadTransaction({ showLoading: false });
         // Reset payment info when transaction items change
         setPaymentInfoFilled(false);
       } catch (error) {
@@ -454,16 +460,15 @@ export function useStateCreateTransaction({
           // Use discount from product if available, otherwise use item discount
           const productDiscount =
             Number(product?.discount ?? item.discount ?? 0) || 0;
-          const discountAmount = (basePrice * productDiscount) / 100;
-          const discountedPrice = basePrice - discountAmount;
-          const newSubtotal = newQty * discountedPrice;
+          // Subtotal should reflect original price (before discount)
+          const newSubtotal = newQty * basePrice;
 
           await TransactionService.updateItem(itemId, {
             quantity: newQty,
             discount: productDiscount,
             subtotal: newSubtotal,
           });
-          loadTransaction();
+          loadTransaction({ showLoading: false });
           // Reset payment info when transaction items change
           setPaymentInfoFilled(false);
         }
@@ -487,7 +492,22 @@ export function useStateCreateTransaction({
       await TransactionService.update(transactionId, {
         customer_name: customerName || undefined,
       });
-      loadTransaction();
+      // Persist customer info to local storage
+      try {
+        await AsyncStorage.setItem(
+          "consumer_info",
+          JSON.stringify({
+            transaction_id: transactionId,
+            customer_name: customerName || undefined,
+          })
+        );
+      } catch (storageError) {
+        console.error(
+          "Error saving consumer_info to AsyncStorage:",
+          storageError
+        );
+      }
+      loadTransaction({ showLoading: false });
       Toast.show({
         type: "success",
         text1: "Sukses",
@@ -708,7 +728,7 @@ export function useStateCreateTransaction({
 
   // Load transaction and payment cards on mount
   useEffect(() => {
-    loadTransaction();
+    loadTransaction({ showLoading: true });
     loadPaymentCards();
 
     // Cleanup function: clear localStorage when component unmounts
@@ -716,6 +736,43 @@ export function useStateCreateTransaction({
       cleanupLocalStorage();
     };
   }, [loadTransaction, loadPaymentCards, cleanupLocalStorage]);
+
+  // Load distinct customer names from past transactions for suggestions
+  useEffect(() => {
+    const loadCustomerNames = async () => {
+      try {
+        const allTransactions = await TransactionService.getAll();
+        const names = allTransactions
+          .map((t) => t.customer_name)
+          .filter((n): n is string => Boolean(n && typeof n === "string"));
+        const unique = Array.from(new Set(names)).sort((a, b) =>
+          a.localeCompare(b, "id")
+        );
+        setAllCustomerNames(unique);
+      } catch {
+        // non-fatal
+      }
+    };
+    loadCustomerNames();
+  }, []);
+
+  // Keep query in sync with manual typing in name input
+  useEffect(() => {
+    setCustomerSearchQuery(customerName || "");
+  }, [customerName]);
+
+  const customerSuggestions = useMemo(() => {
+    const q = (customerSearchQuery || "").trim().toLowerCase();
+    if (!q) return allCustomerNames.slice(0, 5);
+    return allCustomerNames
+      .filter((name) => name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [allCustomerNames, customerSearchQuery]);
+
+  const selectCustomerName = useCallback((name: string) => {
+    setCustomerName(name);
+    setCustomerSearchQuery(name);
+  }, []);
 
   // Handle Android hardware back button
   useEffect(() => {
@@ -805,6 +862,11 @@ export function useStateCreateTransaction({
     setSelectedCategoryId,
     selectedSizeId,
     setSelectedSizeId,
+    // Customer search
+    customerSearchQuery,
+    setCustomerSearchQuery,
+    customerSuggestions,
+    selectCustomerName,
     // Helper functions
     formatIdrNumber,
     getAmountPaidValue,

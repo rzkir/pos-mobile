@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
+
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+
 import { useRouter } from 'expo-router';
+
 import { Ionicons } from '@expo/vector-icons';
+
 import { TransactionService } from '@/services/transactionService';
+
 import { formatIDR } from '@/helper/lib/FormatIdr';
 
 interface DailyTransaction {
