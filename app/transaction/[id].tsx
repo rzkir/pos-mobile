@@ -159,7 +159,7 @@ export default function TransactionDetail() {
 
                         <TouchableOpacity
                             onPress={saveCustomerInfo}
-                            className="bg-blue-600 rounded-xl py-3 items-center"
+                            className="bg-accent-primary rounded-xl py-3 items-center"
                         >
                             <Text className="text-white font-semibold">Simpan Data Pelanggan</Text>
                         </TouchableOpacity>
@@ -276,6 +276,7 @@ export default function TransactionDetail() {
                             </>
                         );
                     })()}
+
                     {transaction.status !== 'draft' && (
                         <>
                             <View className="h-px bg-gray-200 my-3" />

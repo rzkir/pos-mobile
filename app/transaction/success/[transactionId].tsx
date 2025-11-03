@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { TransactionService } from '@/services/transactionService';
 
-import { formatIDR } from '@/helper/lib/FormatIdr';
+import { useAppSettingsContext } from "@/context/AppSettingsContext";
 
 import { useProducts } from '@/hooks/useProducts';
 
@@ -24,7 +24,7 @@ export default function TransactionSuccess() {
     const { transactionId } = useLocalSearchParams();
     const router = useRouter();
     const id = parseInt(transactionId as string, 10);
-
+    const { formatIDR } = useAppSettingsContext();
     const { products } = useProducts();
     const { connectedAddress, printText } = usePrinter();
     const [transaction, setTransaction] = useState<Transaction | null>(null);
