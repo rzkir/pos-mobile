@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 
 import { router } from 'expo-router';
 
@@ -9,7 +9,7 @@ import HeaderGradient from '@/components/ui/HeaderGradient';
 import { useStatePaymentCard } from '@/components/profile/payment-card/useStatePaymentCard';
 
 export default function PaymentCardList() {
-    const { cards, loading, handleAdd, handleEdit, handleDelete } = useStatePaymentCard();
+    const { cards, loading, refreshing, onRefresh, handleAdd, handleEdit, handleDelete } = useStatePaymentCard();
 
     return (
         <View className="flex-1 bg-background">
@@ -33,7 +33,18 @@ export default function PaymentCardList() {
                 </View>
             </HeaderGradient>
 
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#FF9228']}
+                        tintColor="#FF9228"
+                    />
+                }
+            >
                 <View className="px-4 mt-4">
                     {loading ? (
                         <Text className="text-gray-500">Memuat...</Text>

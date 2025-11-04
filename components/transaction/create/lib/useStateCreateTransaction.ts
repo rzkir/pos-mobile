@@ -13,12 +13,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 
 import { Alert, BackHandler } from "react-native";
-interface UseStateCreateTransactionProps {
-  transactionId: number;
-  products: any[];
-  formatIDR: (amount: number) => string;
-  router: any;
-}
 
 export function useStateCreateTransaction({
   transactionId,

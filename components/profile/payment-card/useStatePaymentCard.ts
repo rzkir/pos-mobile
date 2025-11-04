@@ -9,6 +9,7 @@ import { Alert } from "react-native";
 export function useStatePaymentCard() {
   const [cards, setCards] = useState<PaymentCard[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const loadCards = useCallback(async () => {
     setLoading(true);
@@ -25,6 +26,18 @@ export function useStatePaymentCard() {
   useEffect(() => {
     loadCards();
   }, [loadCards]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const fetched = await PaymentCardService.getAll();
+      setCards(fetched);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const handleAdd = () => {
     router.push("/profile/payment-card/new");
@@ -51,7 +64,9 @@ export function useStatePaymentCard() {
   return {
     cards,
     loading,
+    refreshing,
     loadCards,
+    onRefresh,
     handleAdd,
     handleEdit,
     handleDelete,

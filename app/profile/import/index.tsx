@@ -10,6 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 
 import Toast from 'react-native-toast-message'
 
+import HeaderGradient from '@/components/ui/HeaderGradient';
+
 import { DataExportImportService } from '@/services/dataExportImportService'
 
 export default function ImportData() {
@@ -273,31 +275,29 @@ export default function ImportData() {
     return (
         <View className="flex-1 bg-gray-50">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                <LinearGradient
-                    colors={['#1e40af', '#3b82f6', '#8b5cf6']}
+                <HeaderGradient
+                    colors={['#FF9228', '#FF9228']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="pt-12 pb-8 px-6"
+                    title="Import Data"
+                    icon="📂"
                 >
-                    <View className="flex-row justify-between items-center">
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-4"
-                        >
-                            <Ionicons name="arrow-back" size={24} color="white" />
-                        </TouchableOpacity>
+                    <View className="flex-row justify-between items-center w-full">
                         <View className="flex-1">
-                            <Text className="text-3xl font-bold text-white mb-2">
-                                Import Data
-                            </Text>
-                            <Text className="text-blue-100 text-base">
-                                Impor data dari file JSON
-                            </Text>
+                            <Text className="text-2xl font-bold text-white mb-1">Import Data</Text>
+                            <Text className="text-white/80 text-md">Impor data dari file JSON</Text>
                         </View>
-                    </View>
-                </LinearGradient>
 
-                <View className="px-6 mt-8">
+                        <TouchableOpacity
+                            className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+                            onPress={() => router.back()}
+                        >
+                            <Ionicons name="arrow-back" size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                </HeaderGradient>
+
+                <View className="px-4 mt-4">
                     <View className="bg-white rounded-3xl overflow-hidden mb-6"
                         style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 8 }}
                     >
@@ -305,7 +305,7 @@ export default function ImportData() {
                             <View className="items-center mb-6">
                                 <LinearGradient
                                     colors={['#10b981', '#059669']}
-                                    className="w-20 h-20 rounded-full items-center justify-center mb-4"
+                                    className="w-20 h-20 rounded-full items-center justify-center mb-4 overflow-hidden"
                                 >
                                     <Ionicons name="cloud-upload" size={40} color="white" />
                                 </LinearGradient>
@@ -317,7 +317,7 @@ export default function ImportData() {
                                 </Text>
                             </View>
 
-                            <View className="space-y-4 mb-6">
+                            <View className="flex-col gap-2 mb-6">
                                 <View className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
                                     <View className="flex-row items-start">
                                         <Ionicons name="warning" size={24} color="#ef4444" className="mr-3 mt-1" />
@@ -351,7 +351,7 @@ export default function ImportData() {
                                 </View>
                             </View>
 
-                            <View className="space-y-3">
+                            <View className="flex-col gap-3">
                                 <TouchableOpacity
                                     onPress={handleImportData}
                                     disabled={isImporting}

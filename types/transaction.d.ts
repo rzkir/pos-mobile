@@ -139,3 +139,17 @@ type AllTransactionCardProps = {
     label: string;
   };
 };
+
+interface UseStateCreateTransactionProps {
+  transactionId: number;
+  products: any[];
+  formatIDR: (amount: number) => string;
+  router: any;
+}
+
+interface DailyTransaction {
+  date: string;
+  transactions: Transaction[];
+  totalRevenue: number;
+  totalCount: number;
+}
