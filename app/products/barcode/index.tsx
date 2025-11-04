@@ -59,35 +59,94 @@ export default function ProductsBarcodes() {
 
     const clearSelection = () => setSelectedIds(new Set());
 
-    const generateBarcodePattern = (code: string): number[] => {
-        const pattern: number[] = [];
-        pattern.push(1, 0, 1);
-        for (let i = 0; i < code.length; i++) {
-            const charCode = code.charCodeAt(i);
-            for (let j = 0; j < 5; j++) {
-                pattern.push((charCode >> j) & 1);
-            }
-        }
-        pattern.push(1, 0, 1);
-        return pattern;
-    };
-
     const buildTextBarcode = (name: string, code: string) => {
-        const pattern = generateBarcodePattern(code || '');
-        const barChar = '█';
-        const spaceChar = ' ';
-        const width = pattern.length;
-        let graphic = '';
-        for (let row = 0; row < 6; row++) {
-            let line = '';
-            for (let i = 0; i < width; i++) {
-                line += pattern[i] === 1 ? barChar : spaceChar;
-            }
-            graphic += line + '\n';
+        // ESC/POS Commands untuk printer RPP02N
+        const ESC = '\x1B';
+        const GS = '\x1D';
+        const INIT = `${ESC}@`; // Initialize printer
+        const ALIGN_CENTER = `${ESC}\x61\x01`; // Center align
+        const ALIGN_LEFT = `${ESC}\x61\x00`; // Left align
+        const NORMAL_TEXT = `${ESC}\x21\x00`; // Normal text
+        const BOLD_ON = `${ESC}\x45\x01`; // Bold on
+        const BOLD_OFF = `${ESC}\x45\x00`; // Bold off
+
+        // Barcode height (1-255, default sekitar 50)
+        const BARCODE_HEIGHT = '\x50'; // 80 dots
+
+        // Barcode width (0-6, default 2)
+        const BARCODE_WIDTH = '\x03'; // Medium width
+
+        // HRI position: 0 = none, 1 = above, 2 = below, 3 = above & below
+        const HRI_POSITION = '\x02'; // Below barcode
+
+        const parts: string[] = [];
+
+        // Initialize printer
+        parts.push(INIT);
+
+        // Product name (bold, centered)
+        if (name) {
+            parts.push(ALIGN_CENTER);
+            parts.push(BOLD_ON);
+            parts.push(`${name}\n`);
+            parts.push(BOLD_OFF);
+            parts.push('\n');
         }
-        const header = name ? `${name}\n` : '';
-        const codeLine = code ? `\n${code}\n` : '\n';
-        return `${header}${graphic}${codeLine}\n`;
+
+        // Barcode printing
+        if (code && code.trim()) {
+            const barcodeCode = code.trim();
+
+            // Center align for barcode
+            parts.push(ALIGN_CENTER);
+
+            // Set barcode height and width
+            parts.push(GS + 'h' + BARCODE_HEIGHT); // Height: GS h [height]
+            parts.push(GS + 'w' + BARCODE_WIDTH); // Width: GS w [width]
+
+            // Determine barcode type based on length and format
+            // Format: GS k [type] [n] [data] [HRI]
+            let barcodeType: number;
+            let barcodeData = barcodeCode;
+
+            if (/^\d{13}$/.test(barcodeCode)) {
+                // EAN13: 13 digits
+                barcodeType = 2;
+            } else if (/^\d{8}$/.test(barcodeCode)) {
+                // EAN8: 8 digits
+                barcodeType = 3;
+            } else if (/^\d{12}$/.test(barcodeCode)) {
+                // UPC-A: 12 digits
+                barcodeType = 5;
+            } else {
+                // CODE128: supports alphanumeric, flexible length
+                barcodeType = 73; // CODE128
+            }
+
+            // Print barcode command
+            // GS k [type] [n] [data] [HRI]
+            const dataLength = barcodeData.length;
+            parts.push(
+                GS + 'k' +
+                String.fromCharCode(barcodeType) +
+                String.fromCharCode(dataLength) +
+                barcodeData +
+                HRI_POSITION
+            );
+
+            parts.push('\n\n');
+
+            // Barcode number text (centered, normal text)
+            parts.push(ALIGN_CENTER);
+            parts.push(NORMAL_TEXT);
+            parts.push(`${barcodeCode}\n`);
+        }
+
+        // Reset to left align and add spacing
+        parts.push(ALIGN_LEFT);
+        parts.push('\n\n');
+
+        return parts.join('');
     };
 
     const printItem = async (item: any) => {

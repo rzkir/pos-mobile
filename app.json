@@ -1,13 +1,11 @@
 {
   "expo": {
-    "name": "Pos Mobile",
+    "name": "Kasir Mini",
     "slug": "pos-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": [
-      "posmobile"
-    ],
+    "scheme": ["posmobile"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
