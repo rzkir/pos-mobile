@@ -1,18 +1,18 @@
 import { Image, Text, TouchableOpacity, View, Switch } from 'react-native';
 
-import { Picker } from '@react-native-picker/picker';
-
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+import { Ionicons } from '@expo/vector-icons';
 
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 
 import Input from '@/components/ui/input';
 
-import Select from '@/components/ui/select';
-
 import { BarcodeVisual } from '@/components/ui/BarcodeVisual';
 
 import HeaderGradient from '@/components/ui/HeaderGradient';
+
+import BottomSheet from '@/helper/bottomsheets/BottomSheet';
 
 import { useStateCreateProducts } from '@/components/products/create/lib/useStateCreateProducts';
 
@@ -57,6 +57,16 @@ export default function EditProduct() {
         sizeOptions,
         supplierOptions,
         unitOptions,
+        showBarcodeActionSheet,
+        setShowBarcodeActionSheet,
+        showUnitSheet,
+        setShowUnitSheet,
+        showCategorySheet,
+        setShowCategorySheet,
+        showSizeSheet,
+        setShowSizeSheet,
+        showSupplierSheet,
+        setShowSupplierSheet,
     } = useStateCreateProducts();
 
     return (
@@ -128,23 +138,15 @@ export default function EditProduct() {
                                 />
                             </View>
                             <View style={{ width: 180 }}>
-                                <Select
-                                    options={[
-                                        { label: 'Scan', value: 'scan' },
-                                        { label: 'Generate Otomatis', value: 'generate' },
-                                    ]}
-                                    value={barcodeAction}
-                                    onSelect={(val) => {
-                                        const v = String(val);
-                                        setBarcodeAction(v);
-                                        if (v === 'scan') {
-                                            setShowScanner(true);
-                                        } else if (v === 'generate') {
-                                            handleBarcodeGenerate();
-                                        }
-                                    }}
-                                    placeholder="Pilih tindakan"
-                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowBarcodeActionSheet(true)}
+                                    className="border border-gray-300 rounded-lg p-3 bg-white flex-row items-center justify-between"
+                                >
+                                    <Text className={`text-base ${barcodeAction ? 'text-gray-900' : 'text-gray-500'}`}>
+                                        {barcodeAction === 'scan' ? 'Scan' : barcodeAction === 'generate' ? 'Generate Otomatis' : 'Pilih tindakan'}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                                </TouchableOpacity>
                             </View>
                         </View>
                         {formData.barcode ? (
@@ -235,66 +237,54 @@ export default function EditProduct() {
 
                         <View className="mb-3">
                             <Text className="text-gray-700 font-medium mb-2">Unit</Text>
-                            <View className="border border-gray-300 rounded-lg bg-white">
-                                <Picker
-                                    selectedValue={formData.unit}
-                                    onValueChange={handleUnitSelect}
-                                    style={{ height: 50 }}
-                                >
-                                    <Picker.Item label="Pilih satuan" value="" />
-                                    {unitOptions.map((option) => (
-                                        <Picker.Item key={option.value} label={option.label} value={option.value} />
-                                    ))}
-                                </Picker>
-                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowUnitSheet(true)}
+                                className="border border-gray-300 rounded-lg p-3 bg-white flex-row items-center justify-between"
+                            >
+                                <Text className={`text-base ${formData.unit ? 'text-gray-900' : 'text-gray-500'}`}>
+                                    {unitOptions.find(opt => opt.value === formData.unit)?.label || 'Pilih satuan'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
 
                         <View className="mb-3">
                             <Text className="text-gray-700 font-medium mb-2">Kategori</Text>
-                            <View className="border border-gray-300 rounded-lg bg-white">
-                                <Picker
-                                    selectedValue={formData.category_id}
-                                    onValueChange={handleCategorySelect}
-                                    style={{ height: 50 }}
-                                >
-                                    <Picker.Item label="Pilih kategori" value="" />
-                                    {categoryOptions.map((option: { label: string; value: number }) => (
-                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                                    ))}
-                                </Picker>
-                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowCategorySheet(true)}
+                                className="border border-gray-300 rounded-lg p-3 bg-white flex-row items-center justify-between"
+                            >
+                                <Text className={`text-base ${formData.category_id ? 'text-gray-900' : 'text-gray-500'}`}>
+                                    {categoryOptions.find((opt: { label: string; value: number }) => opt.value.toString() === formData.category_id)?.label || 'Pilih kategori'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
 
                         <View className="mb-3">
                             <Text className="text-gray-700 font-medium mb-2">Ukuran</Text>
-                            <View className="border border-gray-300 rounded-lg bg-white">
-                                <Picker
-                                    selectedValue={formData.size_id}
-                                    onValueChange={handleSizeSelect}
-                                    style={{ height: 50 }}
-                                >
-                                    <Picker.Item label="Pilih ukuran" value="" />
-                                    {sizeOptions.map((option: { label: string; value: number }) => (
-                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                                    ))}
-                                </Picker>
-                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowSizeSheet(true)}
+                                className="border border-gray-300 rounded-lg p-3 bg-white flex-row items-center justify-between"
+                            >
+                                <Text className={`text-base ${formData.size_id ? 'text-gray-900' : 'text-gray-500'}`}>
+                                    {sizeOptions.find((opt: { label: string; value: number }) => opt.value.toString() === formData.size_id)?.label || 'Pilih ukuran'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
 
                         <View>
                             <Text className="text-gray-700 font-medium mb-2">Supplier</Text>
-                            <View className="border border-gray-300 rounded-lg bg-white">
-                                <Picker
-                                    selectedValue={formData.supplier_id}
-                                    onValueChange={handleSupplierSelect}
-                                    style={{ height: 50 }}
-                                >
-                                    <Picker.Item label="Pilih supplier" value="" />
-                                    {supplierOptions.map((option: { label: string; value: number }) => (
-                                        <Picker.Item key={option.value} label={option.label} value={option.value.toString()} />
-                                    ))}
-                                </Picker>
-                            </View>
+                            <TouchableOpacity
+                                onPress={() => setShowSupplierSheet(true)}
+                                className="border border-gray-300 rounded-lg p-3 bg-white flex-row items-center justify-between"
+                            >
+                                <Text className={`text-base ${formData.supplier_id ? 'text-gray-900' : 'text-gray-500'}`}>
+                                    {supplierOptions.find((opt: { label: string; value: number }) => opt.value.toString() === formData.supplier_id)?.label || 'Pilih supplier'}
+                                </Text>
+                                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+                            </TouchableOpacity>
                         </View>
                     </View>
 
@@ -377,6 +367,180 @@ export default function EditProduct() {
                 onClose={() => setShowScanner(false)}
                 onScan={handleBarcodeScan}
             />
+
+            {/* Barcode Action Bottom Sheet */}
+            <BottomSheet
+                visible={showBarcodeActionSheet}
+                title="Pilih Tindakan Barcode"
+                onClose={() => setShowBarcodeActionSheet(false)}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        setBarcodeAction('scan');
+                        setShowBarcodeActionSheet(false);
+                        setShowScanner(true);
+                    }}
+                    className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${barcodeAction === 'scan' ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${barcodeAction === 'scan' ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Scan
+                    </Text>
+                    {barcodeAction === 'scan' && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => {
+                        setBarcodeAction('generate');
+                        setShowBarcodeActionSheet(false);
+                        handleBarcodeGenerate();
+                    }}
+                    className={`flex-row items-center justify-between p-4 ${barcodeAction === 'generate' ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${barcodeAction === 'generate' ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Generate Otomatis
+                    </Text>
+                    {barcodeAction === 'generate' && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+            </BottomSheet>
+
+            {/* Unit Bottom Sheet */}
+            <BottomSheet
+                visible={showUnitSheet}
+                title="Pilih Satuan"
+                onClose={() => setShowUnitSheet(false)}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        handleUnitSelect('');
+                        setShowUnitSheet(false);
+                    }}
+                    className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${!formData.unit ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${!formData.unit ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Pilih satuan
+                    </Text>
+                    {!formData.unit && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+                {unitOptions.map((option) => (
+                    <TouchableOpacity
+                        key={option.value}
+                        onPress={() => {
+                            handleUnitSelect(option.value);
+                            setShowUnitSheet(false);
+                        }}
+                        className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${formData.unit === option.value ? 'bg-blue-50' : 'bg-white'}`}
+                    >
+                        <Text className={`text-base ${formData.unit === option.value ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                            {option.label}
+                        </Text>
+                        {formData.unit === option.value && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                    </TouchableOpacity>
+                ))}
+            </BottomSheet>
+
+            {/* Category Bottom Sheet */}
+            <BottomSheet
+                visible={showCategorySheet}
+                title="Pilih Kategori"
+                onClose={() => setShowCategorySheet(false)}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        handleCategorySelect('');
+                        setShowCategorySheet(false);
+                    }}
+                    className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${!formData.category_id ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${!formData.category_id ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Pilih kategori
+                    </Text>
+                    {!formData.category_id && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+                {categoryOptions.map((option: { label: string; value: number }) => (
+                    <TouchableOpacity
+                        key={option.value}
+                        onPress={() => {
+                            handleCategorySelect(option.value.toString());
+                            setShowCategorySheet(false);
+                        }}
+                        className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${formData.category_id === option.value.toString() ? 'bg-blue-50' : 'bg-white'}`}
+                    >
+                        <Text className={`text-base ${formData.category_id === option.value.toString() ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                            {option.label}
+                        </Text>
+                        {formData.category_id === option.value.toString() && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                    </TouchableOpacity>
+                ))}
+            </BottomSheet>
+
+            {/* Size Bottom Sheet */}
+            <BottomSheet
+                visible={showSizeSheet}
+                title="Pilih Ukuran"
+                onClose={() => setShowSizeSheet(false)}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        handleSizeSelect('');
+                        setShowSizeSheet(false);
+                    }}
+                    className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${!formData.size_id ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${!formData.size_id ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Pilih ukuran
+                    </Text>
+                    {!formData.size_id && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+                {sizeOptions.map((option: { label: string; value: number }) => (
+                    <TouchableOpacity
+                        key={option.value}
+                        onPress={() => {
+                            handleSizeSelect(option.value.toString());
+                            setShowSizeSheet(false);
+                        }}
+                        className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${formData.size_id === option.value.toString() ? 'bg-blue-50' : 'bg-white'}`}
+                    >
+                        <Text className={`text-base ${formData.size_id === option.value.toString() ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                            {option.label}
+                        </Text>
+                        {formData.size_id === option.value.toString() && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                    </TouchableOpacity>
+                ))}
+            </BottomSheet>
+
+            {/* Supplier Bottom Sheet */}
+            <BottomSheet
+                visible={showSupplierSheet}
+                title="Pilih Supplier"
+                onClose={() => setShowSupplierSheet(false)}
+            >
+                <TouchableOpacity
+                    onPress={() => {
+                        handleSupplierSelect('');
+                        setShowSupplierSheet(false);
+                    }}
+                    className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${!formData.supplier_id ? 'bg-blue-50' : 'bg-white'}`}
+                >
+                    <Text className={`text-base ${!formData.supplier_id ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                        Pilih supplier
+                    </Text>
+                    {!formData.supplier_id && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                </TouchableOpacity>
+                {supplierOptions.map((option: { label: string; value: number }) => (
+                    <TouchableOpacity
+                        key={option.value}
+                        onPress={() => {
+                            handleSupplierSelect(option.value.toString());
+                            setShowSupplierSheet(false);
+                        }}
+                        className={`flex-row items-center justify-between p-4 border-b border-gray-200 ${formData.supplier_id === option.value.toString() ? 'bg-blue-50' : 'bg-white'}`}
+                    >
+                        <Text className={`text-base ${formData.supplier_id === option.value.toString() ? 'text-blue-600 font-semibold' : 'text-gray-900'}`}>
+                            {option.label}
+                        </Text>
+                        {formData.supplier_id === option.value.toString() && <Ionicons name="checkmark" size={20} color="#2563eb" />}
+                    </TouchableOpacity>
+                ))}
+            </BottomSheet>
         </View>
     );
 }

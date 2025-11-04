@@ -51,7 +51,7 @@ export default function FilterBottomSheet({
             {/* Category Section */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>
+                    <Text className="text-base font-semibold text-secondary-500">
                         Kategori
                     </Text>
                     {tempCategoryId !== null && (
@@ -74,7 +74,7 @@ export default function FilterBottomSheet({
                         activeOpacity={0.8}
                     >
                         <Text
-                            className={`text-sm font-medium ${tempCategoryId === null ? 'text-white' : 'text-gray-300'
+                            className={`text-sm font-medium ${tempCategoryId === null ? 'text-white' : 'text-secondary-500'
                                 }`}
                         >
                             Semua
@@ -91,7 +91,7 @@ export default function FilterBottomSheet({
                             activeOpacity={0.8}
                         >
                             <Text
-                                className={`text-sm font-medium ${tempCategoryId === category.id ? 'text-white' : 'text-gray-300'
+                                className={`text-sm font-medium ${tempCategoryId === category.id ? 'text-white' : 'text-secondary-500'
                                     }`}
                             >
                                 {category.name}
@@ -104,7 +104,7 @@ export default function FilterBottomSheet({
             {/* Size Section */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>
+                    <Text className="text-base font-semibold text-secondary-500">
                         Ukuran
                     </Text>
                     {tempSizeId !== null && (
@@ -127,7 +127,7 @@ export default function FilterBottomSheet({
                         activeOpacity={0.8}
                     >
                         <Text
-                            className={`text-sm font-medium ${tempSizeId === null ? 'text-white' : 'text-gray-300'
+                            className={`text-sm font-medium ${tempSizeId === null ? 'text-white' : 'text-secondary-500'
                                 }`}
                         >
                             Semua
@@ -144,7 +144,7 @@ export default function FilterBottomSheet({
                             activeOpacity={0.8}
                         >
                             <Text
-                                className={`text-sm font-medium ${tempSizeId === size.id ? 'text-white' : 'text-gray-300'
+                                className={`text-sm font-medium ${tempSizeId === size.id ? 'text-white' : 'text-secondary-500'
                                     }`}
                             >
                                 {size.name}
@@ -158,22 +158,22 @@ export default function FilterBottomSheet({
             <View className="flex-row gap-3 px-4 pt-4 border-t" style={{ borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
                 <TouchableOpacity
                     onPress={handleReset}
-                    className="flex-1 px-4 py-3 rounded-xl border"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+                    className="flex-1 px-4 py-3 rounded-xl bg-red-600"
                     activeOpacity={0.8}
                 >
                     <View className="flex-row items-center justify-center">
-                        <Ionicons name="refresh-outline" size={18} color="#fff" />
+                        <Ionicons name="refresh-outline" size={18} color="white" />
                         <Text className="text-white font-semibold ml-2 text-center">Reset Filter</Text>
                     </View>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                     onPress={handleApply}
-                    className="flex-1 px-4 py-3 rounded-xl bg-blue-500"
+                    className="flex-1 px-4 py-3 rounded-xl bg-accent-primary"
                     activeOpacity={0.8}
                 >
                     <View className="flex-row items-center justify-center">
-                        <Ionicons name="checkmark" size={18} color="#fff" />
+                        <Ionicons name="checkmark" size={18} color="white" />
                         <Text className="text-white font-semibold ml-2 text-center">Terapkan</Text>
                     </View>
                 </TouchableOpacity>

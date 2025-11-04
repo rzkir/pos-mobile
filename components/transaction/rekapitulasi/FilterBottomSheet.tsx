@@ -13,7 +13,7 @@ export default function FilterBottomSheet({ visible, onClose, showCharts, setSho
             maxHeightPercent={0.45}
         >
             <View className="mb-4 px-4">
-                <Text className="text-xs text-gray-500">Pilih cara menampilkan ringkasan agar mudah dibaca.</Text>
+                <Text className="text-xs text-secondary-500">Pilih cara menampilkan ringkasan agar mudah dibaca.</Text>
             </View>
 
             <TouchableOpacity
@@ -26,14 +26,14 @@ export default function FilterBottomSheet({ visible, onClose, showCharts, setSho
             >
                 <View className="flex-row items-center gap-3">
                     <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: showCharts ? '#3b82f615' : '#e5e7eb' }}>
-                        <Ionicons name="pie-chart" size={18} color={showCharts ? '#3b82f6' : '#6b7280'} />
+                        <Ionicons name="pie-chart" size={18} color={showCharts ? '#3b82f6' : '#6c757d'} />
                     </View>
                     <View>
                         <Text className="text-gray-900 font-medium">Tampilkan semua sebagai chart</Text>
-                        <Text className="text-xs text-gray-500">Visual paling cepat dipahami</Text>
+                        <Text className="text-xs text-secondary-500">Visual paling cepat dipahami</Text>
                     </View>
                 </View>
-                <Ionicons name={showCharts ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={showCharts ? '#2563eb' : '#9ca3af'} />
+                <Ionicons name={showCharts ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={showCharts ? '#2563eb' : '#6c757d'} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -46,14 +46,14 @@ export default function FilterBottomSheet({ visible, onClose, showCharts, setSho
             >
                 <View className="flex-row items-center gap-3">
                     <View className="w-8 h-8 rounded-full items-center justify-center" style={{ backgroundColor: !showCharts ? '#3b82f615' : '#e5e7eb' }}>
-                        <Ionicons name="reader" size={18} color={!showCharts ? '#3b82f6' : '#6b7280'} />
+                        <Ionicons name="reader" size={18} color={!showCharts ? '#3b82f6' : '#6c757d'} />
                     </View>
                     <View>
                         <Text className="text-gray-900 font-medium">Tampilkan ringkasan teks</Text>
-                        <Text className="text-xs text-gray-500">Detail angka yang ringkas</Text>
+                        <Text className="text-xs text-secondary-500">Detail angka yang ringkas</Text>
                     </View>
                 </View>
-                <Ionicons name={!showCharts ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={!showCharts ? '#2563eb' : '#9ca3af'} />
+                <Ionicons name={!showCharts ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={!showCharts ? '#2563eb' : '#6c757d'} />
             </TouchableOpacity>
         </BottomSheet>
     )

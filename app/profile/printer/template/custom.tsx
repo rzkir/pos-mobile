@@ -108,6 +108,19 @@ export default function CustomTemplate() {
                             />
                         </View>
 
+                        <View className="mb-4">
+                            <Text className="text-sm font-semibold text-gray-700 mb-2">Website</Text>
+                            <TextInput
+                                className="bg-gray-50 rounded-xl px-4 py-3 text-gray-900 border border-gray-200"
+                                placeholder="Masukkan website (contoh: www.tokokasir.com)"
+                                placeholderTextColor="#9CA3AF"
+                                value={settings.storeWebsite}
+                                onChangeText={(text) => setSettings({ ...settings, storeWebsite: text })}
+                                keyboardType="url"
+                                autoCapitalize="none"
+                            />
+                        </View>
+
                         {/* Logo Section */}
                         <View className="mb-4">
                             <View className="flex-row items-center justify-between mb-2">
@@ -283,7 +296,10 @@ export default function CustomTemplate() {
                                 <Text className="text-center text-gray-600 text-sm mb-1">{settings.storeAddress}</Text>
                             )}
                             {settings.storePhone && (
-                                <Text className="text-center text-gray-600 text-sm mb-3">Telp: {settings.storePhone}</Text>
+                                <Text className="text-center text-gray-600 text-sm mb-1">Telp: {settings.storePhone}</Text>
+                            )}
+                            {settings.storeWebsite && (
+                                <Text className="text-center text-gray-600 text-sm mb-3">{settings.storeWebsite}</Text>
                             )}
                             <View className="h-px bg-gray-300 my-3" />
                             {settings.showFooter && settings.footerMessage && (

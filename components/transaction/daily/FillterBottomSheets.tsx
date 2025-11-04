@@ -61,12 +61,12 @@ export default function FillterBottomSheets({
                                 <TouchableOpacity
                                     key={d.key}
                                     onPress={() => setPendingDayTab(d.day)}
-                                    className={`flex-1 mr-2 px-4 py-3 rounded-lg ${active ? 'bg-white/15' : 'bg-white/5'}`}
+                                    className={`flex-1 mr-2 px-4 py-3 rounded-lg ${active ? 'bg-accent-primary border-accent-primary' : 'bg-gray-50 border-gray-200'}`}
                                     activeOpacity={0.85}
                                 >
                                     <View className="flex-row items-center justify-between">
-                                        <Text className="text-white text-sm">{dayName(d.day)}</Text>
-                                        {active && <Ionicons name="checkmark" size={18} color="#fff" />}
+                                        <Text className={`text-sm ${active ? 'text-white' : 'text-secondary-500'}`}>{dayName(d.day)}</Text>
+                                        {active && <Ionicons name="checkmark" size={18} color={active ? '#fff' : '#6c757d'} />}
                                     </View>
                                 </TouchableOpacity>
                             );

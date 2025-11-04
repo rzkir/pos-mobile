@@ -9,63 +9,6 @@ import { DataExportImportService } from "@/services/dataExportImportService";
 export function useStateExport() {
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleUploadToCloudinary = async () => {
-    try {
-      setIsExporting(true);
-      const jsonData = await DataExportImportService.exportAllData();
-
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, 19);
-      const fileName = `pos_data_export_${timestamp}.json`;
-
-      const FileSystem = await import("expo-file-system" as any);
-      const FS = (FileSystem as any).default || FileSystem;
-      const cacheDir =
-        (FS as any).cacheDirectory || (FS as any).documentDirectory;
-      if (!cacheDir) throw new Error("Direktori sementara tidak tersedia");
-      const tempUri = `${cacheDir}${fileName}`;
-      const writeMethod =
-        (FS as any).writeAsStringAsync ||
-        (FS as any).default?.writeAsStringAsync;
-      if (!writeMethod) throw new Error("writeAsStringAsync tidak tersedia");
-      await writeMethod(tempUri, jsonData);
-
-      const SharingModule = await import("expo-sharing" as any);
-      const Sharing = (SharingModule as any).default || SharingModule;
-      const isAvailable = await ((Sharing as any).isAvailableAsync?.() ||
-        (Sharing as any).isAvailableAsync());
-      if (!isAvailable) throw new Error("Fitur Share tidak tersedia");
-      const shareMethod =
-        (Sharing as any).shareAsync || (Sharing as any).default?.shareAsync;
-      await shareMethod(tempUri, {
-        mimeType: "application/json",
-        dialogTitle: "Simpan ke Google Drive",
-        UTI: "public.json",
-      });
-
-      Toast.show({
-        type: "success",
-        text1: "Berhasil",
-        text2: "Pilih Google Drive pada menu Share",
-        visibilityTime: 4000,
-      });
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Gagal",
-        text2:
-          error instanceof Error
-            ? error.message
-            : "Tidak dapat membuka menu Share",
-        visibilityTime: 5000,
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const handleExportData = async () => {
     try {
       setIsExporting(true);
@@ -204,5 +147,5 @@ export function useStateExport() {
     }
   };
 
-  return { isExporting, handleExportData, handleUploadToCloudinary };
+  return { isExporting, handleExportData };
 }

@@ -42,14 +42,14 @@ export default function PaymentModal({
         >
             <View className="pb-4 px-3">
                 {/* Summary in Modal */}
-                <View className="bg-gray-50 rounded-2xl p-4 mb-4">
-                    <Text className="text-sm font-bold text-gray-900 mb-3">Total Pembayaran</Text>
-                    <Text className="text-lg font-bold text-orange-500">{formatIDR(transaction?.total || 0)}</Text>
+                <View className="bg-background border border-border rounded-2xl p-4 mb-4">
+                    <Text className="text-sm font-bold text-secondary-500 mb-3">Total Pembayaran</Text>
+                    <Text className="text-lg font-bold text-accent-primary">{formatIDR(transaction?.total || 0)}</Text>
                 </View>
 
                 {/* Payment Method */}
                 <View className="mb-4 flex-col gap-2">
-                    <Text className="text-sm text-secondary-50 mb-2 font-semibold">Metode Pembayaran</Text>
+                    <Text className="text-sm text-secondary-500 mb-2 font-semibold">Metode Pembayaran</Text>
 
                     {/* Cash Option */}
                     <TouchableOpacity
@@ -58,7 +58,7 @@ export default function PaymentModal({
                             onPaymentCardSelect(null);
                         }}
                         className={`mb-2 p-3 rounded-xl border-2 ${paymentMethod === 'cash' && !selectedPaymentCardId
-                            ? 'bg-orange-500 border-orange-500'
+                            ? 'bg-accent-primary border-accent-primary'
                             : 'bg-gray-50 border-gray-200'
                             }`}
                     >
@@ -66,7 +66,7 @@ export default function PaymentModal({
                             <Ionicons
                                 name="cash"
                                 size={20}
-                                color={paymentMethod === 'cash' && !selectedPaymentCardId ? 'white' : '#6B7280'}
+                                color={paymentMethod === 'cash' && !selectedPaymentCardId ? 'white' : 'text-secondary-500'}
                             />
                             <Text
                                 className={`ml-2 text-sm font-semibold ${paymentMethod === 'cash' && !selectedPaymentCardId ? 'text-white' : 'text-gray-700'
@@ -80,13 +80,13 @@ export default function PaymentModal({
                     {/* Payment Cards */}
                     {paymentCards.length > 0 && (
                         <View className="mt-2">
-                            <Text className="text-xs text-gray-500 mb-2">Metode Pembayaran Digital</Text>
+                            <Text className="text-xs text-secondary-500 mb-2">Metode Pembayaran Digital</Text>
                             {paymentCards.map((card) => (
                                 <TouchableOpacity
                                     key={card.id}
                                     onPress={() => onPaymentCardSelect(card.id)}
                                     className={`mb-2 p-3 rounded-xl border-2 ${selectedPaymentCardId === card.id
-                                        ? 'bg-orange-500 border-orange-500'
+                                        ? 'bg-accent-primary border-accent-primary'
                                         : 'bg-gray-50 border-gray-200'
                                         }`}
                                 >
@@ -356,7 +356,7 @@ export default function PaymentModal({
                 {/* Amount Paid (for cash payments) */}
                 {paymentMethod === 'cash' && selectedPaymentCardId === null && (
                     <View className="flex-col gap-2 mb-4">
-                        <Text className="text-sm text-gray-300 mb-1 font-semibold">Jumlah Dibayar</Text>
+                        <Text className="text-sm text-secondary-500 mb-1 font-semibold">Jumlah Dibayar</Text>
 
                         <TextInput
                             className={`bg-gray-50 rounded-xl px-4 py-3 text-gray-900 border ${isAmountInsufficient() ? 'border-red-500 bg-red-50' : 'border-gray-200'
@@ -369,7 +369,7 @@ export default function PaymentModal({
 
                         {/* Quick Price Selection Buttons */}
                         <View className="mt-2">
-                            <Text className="text-xs text-gray-500 mb-2">Pilihan Cepat</Text>
+                            <Text className="text-xs text-secondary-500 mb-2">Pilihan Cepat</Text>
                             <View className="flex-row flex-wrap gap-2">
                                 {getSuggestedAmounts().map((amount) => {
                                     const isExactTotal = amount === transaction?.total;
@@ -425,4 +425,3 @@ export default function PaymentModal({
         </BottomSheet>
     );
 }
-

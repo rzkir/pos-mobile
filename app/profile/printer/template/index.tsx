@@ -39,6 +39,7 @@ export const DEFAULT_TEMPLATE: TemplateSettings = {
   storeName: "TOKO KASIR",
   storeAddress: "",
   storePhone: "",
+  storeWebsite: "",
   footerMessage: "Terima kasih atas kunjungan Anda!\nBarang yang sudah dibeli tidak dapat ditukar/dikembalikan",
   showFooter: true,
   logoUrl: "",
@@ -275,6 +276,7 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
     storeName = customSettings?.storeName || props.storeName || 'TOKO KASIR',
     storeAddress = customSettings?.storeAddress || props.storeAddress,
     storePhone = customSettings?.storePhone || props.storePhone,
+    storeWebsite = customSettings?.storeWebsite || props.storeWebsite,
     footerMessage = customSettings?.footerMessage || props.footerMessage,
     showFooter = customSettings?.showFooter !== undefined ? customSettings.showFooter : (props.showFooter !== undefined ? props.showFooter : true),
     logoUrl = customSettings?.logoUrl || props.logoUrl,
@@ -336,6 +338,7 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
       NORMAL_TEXT, // Normal text
       storeAddress ? `${storeAddress}\n` : '',
       storePhone ? `Telp: ${storePhone}\n` : '',
+      storeWebsite ? `${storeWebsite}\n` : '',
       '\n',
       '================================\n', // 32 karakter untuk 80mm (disesuaikan)
       DOUBLE_WIDTH, // Double width
@@ -390,13 +393,27 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
 
   // Calculate totals
   const subtotal = transaction.subtotal || 0;
-  const discount = transaction.discount || 0;
+  const transactionDiscount = transaction.discount || 0; // Discount tambahan di level transaksi
+
+  // Calculate total discount from all items (percentage per item)
+  const totalItemsDiscount = items.reduce((sum, item) => {
+    const basePrice = item.price || 0;
+    const qty = item.quantity || 0;
+    // Get discount from product if available, otherwise use item discount
+    const productDiscount = item.product?.discount ?? item.discount ?? 0;
+    const discountPercent = Number(productDiscount) || 0;
+    const discountAmountPerUnit = (basePrice * discountPercent) / 100;
+    return sum + discountAmountPerUnit * qty;
+  }, 0);
+
+  // Total discount = discount from items + transaction level discount
+  const totalDiscount = totalItemsDiscount + transactionDiscount;
   const total = transaction.total || 0;
 
   // Summary with totals - disesuaikan untuk 80mm (32 karakter)
   // Format prices using app settings - remove "Rp " prefix for receipt format
   const formattedSubtotal = formatIDR(subtotal).replace('Rp ', '');
-  const formattedDiscount = formatIDR(discount).replace('Rp ', '');
+  const formattedDiscount = formatIDR(totalDiscount).replace('Rp ', '');
   const formattedTotal = formatIDR(total).replace('Rp ', '');
 
   receiptParts.push(
@@ -404,7 +421,7 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
       '================================\n', // 32 karakter
       BOLD_ON, // Bold on
       `SUBTOTAL   : Rp ${formattedSubtotal}\n`,
-      discount > 0 ? `DISKON     : Rp ${formattedDiscount}\n` : '',
+      totalDiscount > 0 ? `DISKON     : Rp ${formattedDiscount}\n` : '',
       `TOTAL      : Rp ${formattedTotal}\n`,
       BOLD_OFF, // Bold off
       '================================\n', // 32 karakter
@@ -470,6 +487,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
     storeName = customSettings?.storeName || 'TOKO KASIR',
     storeAddress = customSettings?.storeAddress,
     storePhone = customSettings?.storePhone,
+    storeWebsite = customSettings?.storeWebsite,
     footerMessage = customSettings?.footerMessage,
     showFooter = customSettings?.showFooter !== false,
     logoUrl = customSettings?.logoUrl,
@@ -536,7 +554,21 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
 
   // Calculate totals
   const subtotal = transaction.subtotal || 0;
-  const discount = transaction.discount || 0;
+  const transactionDiscount = transaction.discount || 0; // Discount tambahan di level transaksi
+
+  // Calculate total discount from all items (percentage per item)
+  const totalItemsDiscount = items.reduce((sum, item) => {
+    const basePrice = item.price || 0;
+    const qty = item.quantity || 0;
+    // Get discount from product if available, otherwise use item discount
+    const productDiscount = item.product?.discount ?? item.discount ?? 0;
+    const discountPercent = Number(productDiscount) || 0;
+    const discountAmountPerUnit = (basePrice * discountPercent) / 100;
+    return sum + discountAmountPerUnit * qty;
+  }, 0);
+
+  // Total discount = discount from items + transaction level discount
+  const totalDiscount = totalItemsDiscount + transactionDiscount;
   const total = transaction.total || 0;
 
   return `
@@ -681,6 +713,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         <h1>${storeName}</h1>
         ${storeAddress ? `<div class="address">${storeAddress}</div>` : ''}
         ${storePhone ? `<div class="phone">Telp: ${storePhone}</div>` : ''}
+        ${storeWebsite ? `<div class="phone">${storeWebsite}</div>` : ''}
       </div>
       
       <div class="divider-thick"></div>
@@ -739,10 +772,10 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         <span class="summary-label">SUBTOTAL:</span>
         <span class="summary-value">${formatIDR(subtotal)}</span>
       </div>
-      ${discount > 0 ? `
+      ${totalDiscount > 0 ? `
       <div class="summary-row" style="font-weight: bold;">
         <span class="summary-label">DISKON:</span>
-        <span class="summary-value">${formatIDR(discount)}</span>
+        <span class="summary-value">${formatIDR(totalDiscount)}</span>
       </div>
       ` : ''}
       
@@ -845,6 +878,7 @@ export const testReceiptOutput = async () => {
     storeName: customSettings?.storeName || DEFAULT_TEMPLATE.storeName,
     storeAddress: customSettings?.storeAddress || DEFAULT_TEMPLATE.storeAddress,
     storePhone: customSettings?.storePhone || DEFAULT_TEMPLATE.storePhone,
+    storeWebsite: customSettings?.storeWebsite || DEFAULT_TEMPLATE.storeWebsite,
     footerMessage: customSettings?.footerMessage || DEFAULT_TEMPLATE.footerMessage,
     showFooter: customSettings?.showFooter !== undefined ? customSettings.showFooter : DEFAULT_TEMPLATE.showFooter,
   };
@@ -859,6 +893,7 @@ export const testReceiptOutput = async () => {
     console.log('   - Nama Toko:', testProps.storeName);
     console.log('   - Alamat:', testProps.storeAddress || '(kosong)');
     console.log('   - Telepon:', testProps.storePhone || '(kosong)');
+    console.log('   - Website:', testProps.storeWebsite || '(kosong)');
     console.log('   - Show Footer:', testProps.showFooter);
     if (testProps.footerMessage) {
       console.log('   - Footer Message:', testProps.footerMessage.substring(0, 50) + '...');

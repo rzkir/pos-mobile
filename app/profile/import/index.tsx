@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 
-import { ScrollView, Text, TouchableOpacity, View, TextInput, Modal } from 'react-native'
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 
 import { Ionicons } from '@expo/vector-icons'
 
@@ -12,14 +12,9 @@ import { useStateImport } from '@/components/profile/backup/useStateImport'
 
 export default function ImportData() {
     const {
-        showImportModal,
-        importJsonText,
-        setImportJsonText,
         isImporting,
         handleImportData,
-        handleConfirmImport,
-        handleCancelImport,
-        handleManualPaste,
+        handleImportTxtFile,
     } = useStateImport()
 
     return (
@@ -93,8 +88,8 @@ export default function ImportData() {
                                 <View className="flex-row items-start">
                                     <Ionicons name="information-circle" size={24} color="#3b82f6" className="mr-3 mt-1" />
                                     <View className="flex-1">
-                                        <Text className="text-base font-semibold text-gray-900 mb-1">Manual Paste</Text>
-                                        <Text className="text-gray-600 text-sm">Jika file picker tidak berfungsi, Anda dapat paste JSON secara manual</Text>
+                                        <Text className="text-base font-semibold text-gray-900 mb-1">Format File</Text>
+                                        <Text className="text-gray-600 text-sm">File dapat berformat JSON atau TXT yang berisi data JSON</Text>
                                     </View>
                                 </View>
                             </View>
@@ -109,76 +104,23 @@ export default function ImportData() {
                                     {isImporting ? (
                                         <Text className="text-white text-lg font-bold">Mengimpor Data...</Text>
                                     ) : (
-                                        <Text className="text-white text-lg font-bold">Pilih File untuk Import</Text>
+                                        <Text className="text-white text-lg font-bold">Pilih File JSON untuk Import</Text>
                                     )}
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
-                                    onPress={handleManualPaste}
+                                    onPress={handleImportTxtFile}
                                     disabled={isImporting}
-                                    className="rounded-2xl py-4 items-center bg-gray-200"
+                                    className={`rounded-2xl py-4 items-center ${isImporting ? 'bg-gray-300' : 'bg-blue-600'}`}
                                     style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
                                 >
-                                    <Text className="text-gray-700 text-lg font-bold">Paste JSON Manual</Text>
+                                    <Text className="text-white text-lg font-bold">Pilih File TXT untuk Import</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
                     </View>
                 </View>
             </ScrollView>
-
-            {/* Import Data Modal */}
-            <Modal
-                visible={showImportModal}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={handleCancelImport}
-            >
-                <View className="flex-1 bg-black/50 justify-end">
-                    <View className="bg-white rounded-t-3xl p-6 max-h-[90%]">
-                        <View className="flex-row items-center justify-between mb-4">
-                            <Text className="text-xl font-bold text-gray-900">Import Data</Text>
-                            <TouchableOpacity onPress={handleCancelImport}>
-                                <Ionicons name="close" size={24} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <Text className="text-sm text-gray-600 mb-3">
-                            Paste JSON data yang ingin diimpor di bawah ini:
-                        </Text>
-
-                        <TextInput
-                            className="border border-gray-300 rounded-lg p-4 mb-4 text-gray-900 min-h-[200px] text-base"
-                            multiline
-                            numberOfLines={10}
-                            value={importJsonText}
-                            onChangeText={setImportJsonText}
-                            placeholder="Paste JSON data di sini..."
-                            placeholderTextColor="#9CA3AF"
-                            style={{ textAlignVertical: 'top' }}
-                        />
-
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity
-                                onPress={handleCancelImport}
-                                className="flex-1 bg-gray-200 rounded-lg py-3 items-center"
-                                disabled={isImporting}
-                            >
-                                <Text className="text-base font-semibold text-gray-700">Batal</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleConfirmImport}
-                                className="flex-1 bg-blue-600 rounded-lg py-3 items-center"
-                                disabled={isImporting || !importJsonText.trim()}
-                            >
-                                <Text className="text-base font-semibold text-white">
-                                    {isImporting ? 'Mengimpor...' : 'Import'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
         </View>
     )
 }

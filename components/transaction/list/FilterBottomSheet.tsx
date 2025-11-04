@@ -54,7 +54,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             className={`px-4 py-3 rounded-xl border ${selected ? 'bg-blue-500 border-blue-400' : 'bg-white/10 border-white/20'}`}
             activeOpacity={0.8}
         >
-            <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-gray-300'}`}>{label}</Text>
+            <Text className={`text-sm font-medium ${selected ? 'text-white' : 'text-secondary-500'}`}>{label}</Text>
         </TouchableOpacity>
     )
 
@@ -68,7 +68,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             {/* Layout Section */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>Tampilan</Text>
+                    <Text className="text-base font-semibold text-secondary-500">Tampilan</Text>
                 </View>
                 <View className="flex-row flex-wrap gap-2">
                     <Pill selected={temp.layout === 'list'} label="List" onPress={() => setField('layout', 'list')} />
@@ -80,7 +80,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             {/* Date Preset */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>Tanggal</Text>
+                    <Text className="text-base font-semibold text-secondary-500">Tanggal</Text>
                     {temp.datePreset !== 'all' && (
                         <TouchableOpacity onPress={() => setField('datePreset', 'all')} className="px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
                             <Text className="text-xs text-red-400 font-medium">Reset</Text>
@@ -102,7 +102,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             {/* Payment Method */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>Metode Pembayaran</Text>
+                    <Text className="text-base font-semibold text-secondary-500">Metode Pembayaran</Text>
                     {temp.paymentMethod !== 'all' && (
                         <TouchableOpacity onPress={() => setField('paymentMethod', 'all')} className="px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
                             <Text className="text-xs text-red-400 font-medium">Reset</Text>
@@ -119,7 +119,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             {/* Payment Status */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>Status Pembayaran</Text>
+                    <Text className="text-base font-semibold text-secondary-500">Status Pembayaran</Text>
                     {temp.paymentStatus !== 'all' && (
                         <TouchableOpacity onPress={() => setField('paymentStatus', 'all')} className="px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
                             <Text className="text-xs text-red-400 font-medium">Reset</Text>
@@ -136,7 +136,7 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
             {/* Status */}
             <View className="mb-6 px-4">
                 <View className="flex-row items-center justify-between mb-3">
-                    <Text className="text-base font-semibold" style={{ color: '#fff' }}>Status Transaksi</Text>
+                    <Text className="text-base font-semibold text-secondary-500">Status Transaksi</Text>
                     {temp.status !== 'all' && (
                         <TouchableOpacity onPress={() => setField('status', 'all')} className="px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)' }}>
                             <Text className="text-xs text-red-400 font-medium">Reset</Text>
@@ -152,15 +152,15 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
 
             {/* Customer Name */}
             <View className="mb-6 px-4">
-                <Text className="text-base font-semibold mb-2" style={{ color: '#fff' }}>Nama Pelanggan</Text>
+                <Text className="text-base font-semibold mb-2 text-secondary-500">Nama Pelanggan</Text>
                 <View className="flex-row items-center px-3 py-2 rounded-xl border" style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.15)' }}>
-                    <Ionicons name="search" size={18} color="#9ca3af" />
+                    <Ionicons name="search" size={18} color="#6c757d" />
                     <TextInput
                         value={temp.customerName}
                         onChangeText={(t) => setField('customerName', t)}
                         placeholder="Cari nama pelanggan"
-                        placeholderTextColor="#9ca3af"
-                        className="flex-1 ml-2 text-white"
+                        placeholderTextColor="#6c757d"
+                        className="flex-1 ml-2 text-secondary-500"
                     />
                 </View>
             </View>

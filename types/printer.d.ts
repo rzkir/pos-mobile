@@ -4,6 +4,7 @@ interface PrintTemplateProps {
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;
+  storeWebsite?: string;
   footerMessage?: string;
   showFooter?: boolean;
   logoUrl?: string;
@@ -16,18 +17,7 @@ interface TemplateSettings {
   storeName: string;
   storeAddress: string;
   storePhone: string;
-  footerMessage: string;
-  showFooter: boolean;
-  logoUrl?: string;
-  showLogo?: boolean;
-  logoWidth?: number;
-  logoHeight?: number;
-}
-
-interface TemplateSettings {
-  storeName: string;
-  storeAddress: string;
-  storePhone: string;
+  storeWebsite: string;
   footerMessage: string;
   showFooter: boolean;
   logoUrl?: string;

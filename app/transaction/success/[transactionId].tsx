@@ -113,10 +113,28 @@ export default function TransactionSuccess() {
                             <Text className="text-gray-600">Subtotal</Text>
                             <Text className="text-gray-900 font-semibold">{formatIDR(transaction.subtotal)}</Text>
                         </View>
-                        <View className="flex-row justify-between mb-2">
-                            <Text className="text-gray-600">Diskon</Text>
-                            <Text className="text-gray-900 font-semibold">{formatIDR(transaction.discount)}</Text>
-                        </View>
+                        {(() => {
+                            // Calculate total discount from all items (percentage per item)
+                            const totalItemsDiscount = items.reduce((sum, item) => {
+                                const basePrice = item.price || 0;
+                                const qty = item.quantity || 0;
+                                // Get discount from product if available, otherwise use item discount
+                                const productDiscount = item.product?.discount ?? item.discount ?? 0;
+                                const discountPercent = Number(productDiscount) || 0;
+                                const discountAmountPerUnit = (basePrice * discountPercent) / 100;
+                                return sum + discountAmountPerUnit * qty;
+                            }, 0);
+
+                            // Total discount = discount from items + transaction level discount
+                            const totalDiscount = totalItemsDiscount + (transaction.discount || 0);
+
+                            return totalDiscount > 0 ? (
+                                <View className="flex-row justify-between mb-2">
+                                    <Text className="text-gray-600">Diskon</Text>
+                                    <Text className="text-gray-900 font-semibold">{formatIDR(totalDiscount)}</Text>
+                                </View>
+                            ) : null;
+                        })()}
                         {/* Pajak dihapus */}
                         <View className="h-px bg-gray-100 my-3" />
                         <View className="flex-row justify-between mb-2">

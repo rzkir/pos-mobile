@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import HeaderGradient from '@/components/ui/HeaderGradient'
 
 export default function ExportData() {
-    const { isExporting, handleExportData, handleUploadToCloudinary } = useStateExport()
+    const { isExporting, handleExportData } = useStateExport()
 
     return (
         <View className="flex-1 bg-background">
@@ -105,18 +105,6 @@ export default function ExportData() {
                                     <Text className="text-white text-lg font-bold">Bagikan / Simpan via Share</Text>
                                 )}
                             </TouchableOpacity>
-
-                            {/* Hapus opsi Simpan ke Folder Aplikasi sesuai permintaan */}
-                            <View className="mt-3">
-                                <TouchableOpacity
-                                    onPress={handleUploadToCloudinary}
-                                    disabled={isExporting}
-                                    className={`rounded-2xl py-4 items-center ${isExporting ? 'bg-gray-300' : 'bg-purple-600'}`}
-                                    style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 }}
-                                >
-                                    <Text className="text-white text-lg font-bold">Simpan ke Google Drive</Text>
-                                </TouchableOpacity>
-                            </View>
                         </View>
                     </View>
                 </View>

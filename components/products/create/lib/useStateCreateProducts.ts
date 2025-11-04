@@ -25,6 +25,13 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
   const isEdit = Array.isArray(id) ? id[0] !== "new" : id !== "new";
   const productId = Array.isArray(id) ? id[0] : id;
 
+  // State untuk mengontrol visibility bottom sheet
+  const [showBarcodeActionSheet, setShowBarcodeActionSheet] = useState(false);
+  const [showUnitSheet, setShowUnitSheet] = useState(false);
+  const [showCategorySheet, setShowCategorySheet] = useState(false);
+  const [showSizeSheet, setShowSizeSheet] = useState(false);
+  const [showSupplierSheet, setShowSupplierSheet] = useState(false);
+
   // Hooks untuk data
   const {
     products,
@@ -698,5 +705,17 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
     sizeOptions,
     supplierOptions,
     unitOptions,
+
+    // Bottom Sheet states
+    showBarcodeActionSheet,
+    setShowBarcodeActionSheet,
+    showUnitSheet,
+    setShowUnitSheet,
+    showCategorySheet,
+    setShowCategorySheet,
+    showSizeSheet,
+    setShowSizeSheet,
+    showSupplierSheet,
+    setShowSupplierSheet,
   };
 }

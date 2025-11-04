@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useCallback, useEffect, useState } from "react";
 
-import { Platform, Share as RNShare } from "react-native";
+import { Platform, Share as RNShare, BackHandler } from "react-native";
 
 import { TransactionService } from "@/services/transactionService";
 
@@ -72,9 +72,22 @@ export function useStateSuccessTransaction() {
     loadTransaction();
   }, [loadTransaction]);
 
-  const handleBackToHome = () => {
+  const handleBackToHome = useCallback(() => {
     router.replace("/(tabs)/beranda");
-  };
+  }, [router]);
+
+  // Handle Android/iOS hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        handleBackToHome();
+        return true; // Prevent default behavior
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [handleBackToHome]);
 
   const handlePrint = async () => {
     if (!transaction) return;
@@ -123,7 +136,9 @@ export function useStateSuccessTransaction() {
 
       let transactionForReceipt = transaction;
       try {
-        const consumerInfoRaw = await AsyncStorage.getItem("consumer_info");
+        const consumerInfoRaw = await AsyncStorage.getItem(
+          process.env.EXPO_PUBLIC_CONSUMER_INFO as string
+        );
         if (consumerInfoRaw) {
           const consumerInfo = JSON.parse(consumerInfoRaw);
           if (
