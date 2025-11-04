@@ -25,7 +25,7 @@ const PermissionScreen = () => {
                 const hasVisitedPermissions = await AsyncStorage.getItem('has_visited_permissions');
                 if (hasVisitedPermissions === 'true' && !hasRedirected.current) {
                     hasRedirected.current = true;
-                    router.replace('/welcome');
+                    router.replace('/(tabs)/beranda');
                 }
             } catch {
             }
@@ -39,7 +39,7 @@ const PermissionScreen = () => {
         if (allPermissionsGranted && !hasRedirected.current) {
             hasRedirected.current = true;
             AsyncStorage.setItem('has_visited_permissions', 'true');
-            router.replace('/welcome');
+            router.replace('/(tabs)/beranda');
         }
     }, [allPermissionsGranted]);
 
@@ -60,11 +60,11 @@ const PermissionScreen = () => {
             await Promise.race([requestPermissions(), timeoutPromise]);
 
             await AsyncStorage.setItem('has_visited_permissions', 'true');
-            router.replace('/welcome');
+            router.replace('/(tabs)/beranda');
         } catch {
             // Still navigate to welcome even if permission request fails
             await AsyncStorage.setItem('has_visited_permissions', 'true');
-            router.replace('/welcome');
+            router.replace('/(tabs)/beranda');
         } finally {
             setIsProcessing(false);
         }
@@ -72,7 +72,7 @@ const PermissionScreen = () => {
 
     const handleSkip = () => {
         AsyncStorage.setItem('has_visited_permissions', 'true');
-        router.replace('/welcome');
+        router.replace('/(tabs)/beranda');
     };
 
     return (
@@ -157,7 +157,7 @@ const PermissionScreen = () => {
                             onPress={() => {
                                 console.log('🚨 Emergency skip triggered');
                                 AsyncStorage.setItem('has_visited_permissions', 'true');
-                                router.replace('/welcome');
+                                router.replace('/(tabs)/beranda');
                             }}
                         >
                             <Text className="text-white text-sm font-medium">Langsung Masuk (Skip)</Text>

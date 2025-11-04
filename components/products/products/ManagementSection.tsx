@@ -10,7 +10,8 @@ export default function ManagementSection({
     onNavigateCategory,
     onNavigateSize,
     onNavigateSupplier,
-    handleNavigateAllProducts
+    handleNavigateAllProducts,
+    onNavigateBarcode
 }: ManagementSectionProps) {
     return (
         <View className="flex-row flex-wrap">
@@ -96,6 +97,24 @@ export default function ManagementSection({
                         </View>
                         <View className="bg-blue-100 px-3 py-2 rounded-xl absolute top-0 right-0">
                             <Text className="text-blue-700 text-sm font-bold">{productsCount}</Text>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </View>
+
+            {/* Barcode Section */}
+            <View className="w-1/2 px-1 mb-4">
+                <TouchableOpacity
+                    onPress={onNavigateBarcode}
+                    className="bg-white p-5 rounded-2xl border border-border"
+                >
+                    <View className="flex-col items-start justify-start relative gap-4">
+                        <View className="w-12 h-12 bg-gray-700 rounded-2xl items-center justify-center">
+                            <Ionicons name="barcode-outline" size={24} color="white" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-lg font-bold text-gray-800">Barcode</Text>
+                            <Text className="text-sm text-gray-600">Kelola barcode produk</Text>
                         </View>
                     </View>
                 </TouchableOpacity>

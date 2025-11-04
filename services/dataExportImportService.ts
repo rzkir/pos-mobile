@@ -1,8 +1,131 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
 
 export class DataExportImportService {
   // Exclude system keys that shouldn't be exported/imported
   private static readonly EXCLUDED_KEYS = ["isLoggedIn"];
+
+  private static isLocalUri(uri: string): boolean {
+    return (
+      typeof uri === "string" &&
+      (uri.startsWith("file://") || uri.startsWith("content://"))
+    );
+  }
+
+  private static guessMimeFromUri(uri: string): string {
+    const lower = uri.toLowerCase();
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+    if (lower.endsWith(".png")) return "image/png";
+    if (lower.endsWith(".webp")) return "image/webp";
+    if (lower.endsWith(".gif")) return "image/gif";
+    return "image/*";
+  }
+
+  private static extFromMime(mime: string): string {
+    if (mime.includes("jpeg")) return "jpg";
+    if (mime.includes("png")) return "png";
+    if (mime.includes("webp")) return "webp";
+    if (mime.includes("gif")) return "gif";
+    return "bin";
+  }
+
+  private static async embedImagesInObject(input: any): Promise<any> {
+    if (Array.isArray(input)) {
+      const mapped = await Promise.all(
+        input.map((v) => this.embedImagesInObject(v))
+      );
+      return mapped;
+    }
+    if (input && typeof input === "object") {
+      const cloned: any = {};
+      const entries = Object.entries(input);
+      for (const [k, v] of entries) {
+        if (
+          k === "image_url" &&
+          typeof v === "string" &&
+          this.isLocalUri(v as string)
+        ) {
+          try {
+            // Ensure file exists before reading
+            const info = await FileSystem.getInfoAsync(v as string).catch(
+              () => ({ exists: false } as any)
+            );
+            if (info && (info as any).exists) {
+              const base64 = await FileSystem.readAsStringAsync(v as string, {
+                encoding: "base64" as any,
+              });
+              const mime = this.guessMimeFromUri(v as string);
+              cloned[k] = `data:${mime};base64,${base64}`;
+              cloned._original_image_uri = v;
+              continue;
+            }
+          } catch {
+            // Fallback: keep original uri if read fails
+          }
+        }
+        cloned[k] = await this.embedImagesInObject(v);
+      }
+      return cloned;
+    }
+    return input;
+  }
+
+  private static async restoreImagesInObject(input: any): Promise<any> {
+    if (Array.isArray(input)) {
+      const mapped = await Promise.all(
+        input.map((v) => this.restoreImagesInObject(v))
+      );
+      return mapped;
+    }
+    if (input && typeof input === "object") {
+      const cloned: any = {};
+      const entries = Object.entries(input);
+      for (const [k, v] of entries) {
+        if (
+          k === "image_url" &&
+          typeof v === "string" &&
+          v.startsWith("data:image")
+        ) {
+          try {
+            const [meta, b64] = (v as string).split(",", 2);
+            const mime = meta.substring(5, meta.indexOf(";")) || "image/jpeg";
+            const ext = this.extFromMime(mime);
+            const baseDir =
+              (FileSystem as any).documentDirectory ||
+              (FileSystem as any).cacheDirectory ||
+              "";
+            const imagesDir = `${baseDir}kasir-mini-images/`;
+            try {
+              const dirInfo = await FileSystem.getInfoAsync(imagesDir);
+              if (!dirInfo.exists) {
+                await FileSystem.makeDirectoryAsync(imagesDir, {
+                  intermediates: true,
+                });
+              }
+            } catch {}
+            const unique = `img_${Date.now()}_${Math.random()
+              .toString(36)
+              .slice(2)}.${ext}`;
+            const target = `${imagesDir}${unique}`;
+            await FileSystem.writeAsStringAsync(target, b64 || "", {
+              encoding: "base64" as any,
+            });
+            cloned[k] = target;
+            continue;
+          } catch {
+            // If write fails, keep the data URI as is (last resort)
+          }
+        }
+        if (k === "_original_image_uri") {
+          // Drop helper key on restore
+          continue;
+        }
+        cloned[k] = await this.restoreImagesInObject(v);
+      }
+      return cloned;
+    }
+    return input;
+  }
 
   /**
    * Export all data from AsyncStorage to JSON
@@ -39,6 +162,9 @@ export class DataExportImportService {
         }
       });
 
+      // Embed local images as base64 data URIs so export is self-contained
+      exportData.data = await this.embedImagesInObject(exportData.data);
+
       return JSON.stringify(exportData, null, 2);
     } catch (error) {
       console.error("Error exporting data:", error);
@@ -58,6 +184,9 @@ export class DataExportImportService {
       if (!importData.data || typeof importData.data !== "object") {
         throw new Error("Format data tidak valid");
       }
+
+      // Restore any embedded images back to files and update URLs
+      importData.data = await this.restoreImagesInObject(importData.data);
 
       // Prepare data for AsyncStorage
       const entries: [string, string][] = [];

@@ -45,12 +45,8 @@ export default function Profil() {
         router.push('/profile/payment-card')
     }
 
-    const handleExportData = () => {
-        router.push('/profile/export')
-    }
-
-    const handleImportData = () => {
-        router.push('/profile/import')
+    const handleBackup = () => {
+        router.push('/profile/backup')
     }
 
     return (
@@ -97,7 +93,6 @@ export default function Profil() {
             >
                 {/* Management Sections */}
                 <View className="px-4 mt-4">
-                    <Text className="text-2xl font-bold text-text-primary mb-4">Kelola Profil</Text>
                     <View className="flex-col gap-4">
                         {/* Edit Profile */}
                         <TouchableOpacity
@@ -177,40 +172,21 @@ export default function Profil() {
                                 <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                             </View>
                         </TouchableOpacity>
-                        {/* Export Data */}
+                        {/* Backup (Import & Export) */}
                         <TouchableOpacity
-                            onPress={handleExportData}
+                            onPress={handleBackup}
                             className="bg-card rounded-2xl overflow-hidden border border-border"
                         >
                             <View className="flex-row items-center p-6">
                                 <LinearGradient
-                                    colors={['#3b82f6', '#1d4ed8']}
+                                    colors={['#f59e0b', '#d97706']}
                                     className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
                                 >
-                                    <Ionicons name="download" size={28} color="white" />
+                                    <Ionicons name="cloud" size={28} color="white" />
                                 </LinearGradient>
                                 <View className="flex-1">
-                                    <Text className="text-lg font-bold text-text-primary mb-1">Export Data</Text>
-                                    <Text className="text-text-secondary">Ekspor semua data ke file JSON</Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
-                            </View>
-                        </TouchableOpacity>
-                        {/* Import Data */}
-                        <TouchableOpacity
-                            onPress={handleImportData}
-                            className="bg-card rounded-2xl overflow-hidden border border-border"
-                        >
-                            <View className="flex-row items-center p-6">
-                                <LinearGradient
-                                    colors={['#10b981', '#059669']}
-                                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
-                                >
-                                    <Ionicons name="cloud-upload" size={28} color="white" />
-                                </LinearGradient>
-                                <View className="flex-1">
-                                    <Text className="text-lg font-bold text-text-primary mb-1">Import Data</Text>
-                                    <Text className="text-text-secondary">Impor data dari file JSON</Text>
+                                    <Text className="text-lg font-bold text-text-primary mb-1">Backup</Text>
+                                    <Text className="text-text-secondary">Import atau Export data</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                             </View>

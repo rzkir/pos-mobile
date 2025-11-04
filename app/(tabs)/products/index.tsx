@@ -16,6 +16,8 @@ import HeaderGradient from '@/components/ui/HeaderGradient';
 
 import { useRouter } from 'expo-router';
 
+import ProductLoading from "@/components/products/products/ProductLoading"
+
 export default function Products() {
     const router = useRouter();
 
@@ -57,18 +59,7 @@ export default function Products() {
 
     if (loading) {
         return (
-            <ScrollView
-                className="flex-1 bg-gradient-to-br from-slate-50 to-blue-50"
-                contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-            >
-                <View className="bg-white p-8 rounded-3xl items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8 }}>
-                    <View className="w-16 h-16 bg-blue-100 rounded-2xl items-center justify-center mb-4">
-                        <Ionicons name="cube-outline" size={32} color="#3B82F6" />
-                    </View>
-                    <Text className="text-gray-700 font-semibold text-lg mb-2">Memuat Produk</Text>
-                    <Text className="text-gray-500 text-center">Mohon tunggu sebentar...</Text>
-                </View>
-            </ScrollView>
+            <ProductLoading />
         );
     }
 
@@ -106,16 +97,6 @@ export default function Products() {
                         </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity
-                            onPress={() => router.push('/products/barcode')}
-                            className="bg-orange-500 px-4 py-2 rounded-xl"
-                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 }}
-                        >
-                            <View className="flex-row items-center">
-                                <Ionicons name="barcode-outline" size={18} color="white" />
-                                <Text className="text-white font-semibold ml-2">Barcode</Text>
-                            </View>
-                        </TouchableOpacity>
                         <TouchableOpacity
                             onPress={handleAdd}
                             className="bg-green-500 px-4 py-2 rounded-xl"
@@ -170,6 +151,7 @@ export default function Products() {
                     onNavigateSize={handleNavigateToSize}
                     onNavigateSupplier={handleNavigateToSupplier}
                     handleNavigateAllProducts={handleNavigateAllProducts}
+                    onNavigateBarcode={() => router.push('/products/barcode')}
                 />
 
                 {/* CTA: Filter dan Lihat Semua Produk */}

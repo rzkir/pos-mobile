@@ -12,6 +12,7 @@ export default function PaymentModal({
     selectedPaymentCardId,
     paymentCards,
     amountPaid,
+    validationError,
     formatIDR,
     formatIdrNumber,
     getAmountPaidValue,
@@ -389,6 +390,17 @@ export default function PaymentModal({
                                 })}
                             </View>
                         </View>
+
+                        {validationError && (
+                            <View className="mt-2 bg-red-50 border border-red-200 rounded-xl p-3">
+                                <View className="flex-row items-center mb-1">
+                                    <Ionicons name="alert-circle" size={16} color="#DC2626" />
+                                    <Text className="ml-2 text-sm font-semibold text-red-700">
+                                        {validationError}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
 
                         {isAmountInsufficient() && (
                             <View className="mt-2 bg-red-50 border border-red-200 rounded-xl p-3">

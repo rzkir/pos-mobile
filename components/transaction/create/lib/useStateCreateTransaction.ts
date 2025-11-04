@@ -45,17 +45,20 @@ export function useStateCreateTransaction({
     null
   );
   const [selectedSizeId, setSelectedSizeId] = useState<number | null>(null);
+  const [paymentValidationError, setPaymentValidationError] = useState<
+    string | null
+  >(null);
   // Customer search state
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [allCustomerNames, setAllCustomerNames] = useState<string[]>([]);
 
   // Helper functions for amount formatting
-  const formatIdrNumber = (raw: string) => {
+  const formatIdrNumber = useCallback((raw: string) => {
     if (!raw) return "";
     const digitsOnly = raw.replace(/[^0-9]/g, "");
     if (!digitsOnly) return "";
     return new Intl.NumberFormat("id-ID").format(Number(digitsOnly));
-  };
+  }, []);
 
   const unformatIdrNumber = (formatted: string) => {
     if (!formatted) return "";
@@ -522,6 +525,7 @@ export function useStateCreateTransaction({
   const handlePaymentCardSelect = useCallback(
     (cardId: number | null) => {
       setSelectedPaymentCardId(cardId);
+      setPaymentValidationError(null);
       if (cardId) {
         const selectedCard = paymentCards.find((card) => card.id === cardId);
         if (selectedCard) {
@@ -539,6 +543,14 @@ export function useStateCreateTransaction({
       }
     },
     [paymentCards]
+  );
+
+  const handlePaymentMethodChange = useCallback(
+    (method: "cash" | "card" | "transfer") => {
+      setPaymentMethod(method);
+      setPaymentValidationError(null);
+    },
+    []
   );
 
   const processPayment = useCallback(async () => {
@@ -634,23 +646,24 @@ export function useStateCreateTransaction({
     // Validate amount paid for cash payments
     if (paymentMethod === "cash" && selectedPaymentCardId === null) {
       const paid = getAmountPaidValue();
-      if (amountPaid && paid > 0 && paid < transaction.total) {
+      // Block when amount is empty or zero (show inline in BottomSheet)
+      if (!amountPaid || paid <= 0) {
+        setPaymentValidationError("Input jumlah bayar belum diisi");
+        return;
+      }
+      if (paid > 0 && paid < transaction.total) {
         const shortage = transaction.total - paid;
-        Toast.show({
-          type: "error",
-          text1: "Jumlah Pembayaran Kurang",
-          text2: `Jumlah yang dibayar ${formatIDR(
-            paid
-          )} kurang dari total ${formatIDR(
+        setPaymentValidationError(
+          `Jumlah yang dibayar ${formatIDR(paid)} kurang dari total ${formatIDR(
             transaction.total
-          )}. Kekurangan: ${formatIDR(shortage)}`,
-          visibilityTime: 4000,
-        });
+          )}. Kekurangan: ${formatIDR(shortage)}`
+        );
         return;
       }
     }
 
     // Close the BottomSheet modal and mark payment info as filled
+    setPaymentValidationError(null);
     setShowPaymentModal(false);
     setPaymentInfoFilled(true);
   }, [
@@ -661,6 +674,21 @@ export function useStateCreateTransaction({
     getAmountPaidValue,
     formatIDR,
   ]);
+
+  const handleAmountPaidChange = useCallback(
+    (text: string) => {
+      const formatted = formatIdrNumber(text);
+      setAmountPaid(formatted);
+      if (paymentValidationError) {
+        // Clear error when user starts typing a non-empty value
+        const digits = formatted.replace(/\./g, "");
+        if (digits && parseFloat(digits) > 0) {
+          setPaymentValidationError(null);
+        }
+      }
+    },
+    [formatIdrNumber, paymentValidationError]
+  );
 
   const handleBayar = useCallback(() => {
     // Reset payment info filled state when opening modal again
@@ -918,8 +946,11 @@ export function useStateCreateTransaction({
     deleteItem,
     saveCustomerInfo,
     handlePaymentCardSelect,
+    handlePaymentMethodChange,
     processPayment,
     savePaymentInfo,
+    paymentValidationError,
+    handleAmountPaidChange,
     handleBayar,
     handleMarkCancelled,
     handleBatal,

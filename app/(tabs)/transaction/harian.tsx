@@ -14,6 +14,7 @@ import HeaderGradient from '@/components/ui/HeaderGradient';
 
 export default function Harian() {
     const { formatIDR } = useAppSettingsContext();
+
     const {
         dailyTransactions,
         loading,

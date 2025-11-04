@@ -2,6 +2,8 @@ import { View, Text, ScrollView } from 'react-native';
 
 import { PieChart, BarChart, LineChart } from 'react-native-gifted-charts';
 
+import SectionTitle from '@/components/ui/SectionTitle';
+
 const Legend = ({ items }: { items: { label: string; color: string; value: number; total?: number }[] }) => {
     const percentage = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
     return (
@@ -19,16 +21,6 @@ const Legend = ({ items }: { items: { label: string; color: string; value: numbe
     );
 };
 
-const SectionHeader = ({ title }: { title: string }) => (
-    <View className="mb-3">
-        <View className="flex-row items-center">
-            <View className="w-1.5 h-1.5 rounded-full bg-blue-600 mr-2" />
-            <Text className="text-sm font-semibold text-gray-900">{title}</Text>
-        </View>
-        <View className="mt-2 h-[1px] bg-gray-100" />
-    </View>
-);
-
 export default function Chart({
     chartWidth,
     statusChartData,
@@ -44,7 +36,7 @@ export default function Chart({
 }: ChartProps) {
     return (
         <View className="px-4 mt-4">
-            <SectionHeader title="Grafik Status Transaksi" />
+            <SectionTitle title="Grafik Status Transaksi" />
             <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {statusChartData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
@@ -72,7 +64,7 @@ export default function Chart({
                 )}
             </View>
 
-            <SectionHeader title="Pendapatan Harian" />
+            <SectionTitle title="Pendapatan Harian" />
             <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {dailyRevenueData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
@@ -102,7 +94,7 @@ export default function Chart({
                 )}
             </View>
 
-            <SectionHeader title="Grafik Pendapatan per Metode" />
+            <SectionTitle title="Grafik Pendapatan per Metode" />
             <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {paymentChartData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
@@ -138,7 +130,7 @@ export default function Chart({
                 )}
             </View>
 
-            <SectionHeader title="Jumlah Transaksi per Metode" />
+            <SectionTitle title="Jumlah Transaksi per Metode" />
             <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {paymentCountPie.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>
@@ -158,7 +150,7 @@ export default function Chart({
                 )}
             </View>
 
-            <SectionHeader title="Rincian Keuangan" />
+            <SectionTitle title="Rincian Keuangan" />
             <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100">
                 {financialBarData.length === 0 ? (
                     <Text className="text-sm text-gray-500">Belum ada data untuk ditampilkan</Text>

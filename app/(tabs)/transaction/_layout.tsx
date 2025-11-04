@@ -80,6 +80,24 @@ export default function TransactionLayout() {
                     ),
                 }}
             />
+            <Tabs.Screen
+                name="costumers"
+                options={{
+                    title: 'Pelanggan',
+                    tabBarIcon: ({ focused }: { focused: boolean }) => (
+                        <View
+                            className={`relative flex-row items-center gap-2 rounded-full px-3 ${isTablet ? 'h-[44px] w-[128px]' : 'h-[36px] w-[92px]'} justify-center ${focused ? 'bg-[#3b82f6]' : ''}`}
+                        >
+                            <View>
+                                <Ionicons size={isTablet ? 24 : 20} name="people" color={focused ? '#ffffff' : (isDark ? '#a1a1aa' : '#6b7280')} />
+                            </View>
+                            <View>
+                                <Text className={`${isTablet ? 'text-sm' : 'text-xs'} font-medium ${focused ? 'text-white' : (isTablet ? (isDark ? 'text-zinc-400' : 'text-gray-500') : 'opacity-0 absolute')}`}>Pelanggan</Text>
+                            </View>
+                        </View>
+                    ),
+                }}
+            />
         </Tabs>
     );
 }

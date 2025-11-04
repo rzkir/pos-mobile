@@ -64,56 +64,33 @@ export default function SizeList() {
         router.push('/products/size/new')
     }
 
-    const renderTableHeader = () => (
-        <View className="bg-gray-100 flex-row items-center py-3 px-4 border-b border-gray-200 rounded-t-lg">
-            <View className="flex-1">
-                <Text className="font-semibold text-gray-700 text-xs">Ukuran</Text>
-            </View>
-            <View className="w-24 items-center">
-                <Text className="font-semibold text-gray-700 text-xs">Status</Text>
-            </View>
-            <View className="w-28 items-center">
-                <Text className="font-semibold text-gray-700 text-xs">Tanggal</Text>
-            </View>
-            <View className="w-24 items-end">
-                <Text className="font-semibold text-gray-700 text-xs">Aksi</Text>
-            </View>
-        </View>
-    )
-
-    const renderSizeRow = ({ item, index }: { item: any, index: number }) => (
-        <View className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} flex-row items-center py-3 px-4 border-b border-gray-100`}>
-            <View className="flex-1 pr-2">
-                <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
+    const renderSizeCard = ({ item }: { item: any }) => (
+        <View className="bg-white rounded-xl border border-gray-200 p-4 mx-2 mb-3 shadow-sm flex-1">
+            <View className="flex-row justify-between items-start mb-3">
+                <Text className="text-gray-900 font-semibold flex-1 mr-2" numberOfLines={2}>
                     {item.name}
                 </Text>
-            </View>
-            <View className="w-24 items-center">
                 <View className={`${item.is_active ? 'bg-emerald-100 border-emerald-200' : 'bg-rose-100 border-rose-200'} px-2 py-0.5 rounded-full border`}>
                     <Text className={`text-[10px] font-semibold text-center ${item.is_active ? 'text-emerald-700' : 'text-rose-700'}`}>
                         {item.is_active ? 'Aktif' : 'Tidak'}
                     </Text>
                 </View>
             </View>
-            <View className="w-28 items-center">
-                <Text className="text-gray-500 text-xs">
-                    {formatDate(item.created_at)}
-                </Text>
-            </View>
-            <View className="w-24 flex-row justify-end">
+            <Text className="text-gray-500 text-xs mb-3">{formatDate(item.created_at)}</Text>
+            <View className="flex-row justify-end">
                 <TouchableOpacity
                     onPress={() => handleEdit(item)}
-                    className="bg-blue-500/90 px-2 py-1 rounded-md mr-2"
+                    className="bg-blue-500/90 px-3 py-2 rounded-md mr-2"
                     accessibilityLabel="Edit ukuran"
                 >
-                    <Ionicons name="create-outline" size={14} color="#ffffff" />
+                    <Ionicons name="create-outline" size={16} color="#ffffff" />
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => handleDelete(item)}
-                    className="bg-red-500/90 px-2 py-1 rounded-md"
+                    className="bg-red-500/90 px-3 py-2 rounded-md"
                     accessibilityLabel="Hapus ukuran"
                 >
-                    <Ionicons name="trash-outline" size={14} color="#ffffff" />
+                    <Ionicons name="trash-outline" size={16} color="#ffffff" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -155,27 +132,27 @@ export default function SizeList() {
                 </View>
             </HeaderGradient>
 
-            {/* Table */}
+            {/* Grid */}
             {sizes.length > 0 ? (
-                <View className="mx-2 mt-4 rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    {renderTableHeader()}
-                    <FlatList
-                        data={sizes}
-                        keyExtractor={(item) => String(item.id)}
-                        renderItem={({ item, index }) => renderSizeRow({ item, index })}
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={onRefresh}
-                                colors={['#FF9228']}
-                                tintColor="#FF9228"
-                                title="Memuat ulang..."
-                                titleColor="#6B7280"
-                            />
-                        }
-                        ListFooterComponent={<View className="h-2" />}
-                    />
-                </View>
+                <FlatList
+                    className="px-1 mt-4"
+                    data={sizes}
+                    keyExtractor={(item) => String(item.id)}
+                    numColumns={2}
+                    columnWrapperStyle={{ paddingHorizontal: 2 }}
+                    renderItem={renderSizeCard}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={['#FF9228']}
+                            tintColor="#FF9228"
+                            title="Memuat ulang..."
+                            titleColor="#6B7280"
+                        />
+                    }
+                    ListFooterComponent={<View className="h-2" />}
+                />
             ) : (
                 <ScrollView
                     className="flex-1"

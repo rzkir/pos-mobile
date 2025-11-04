@@ -12,6 +12,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 
 import { ProductSizeService } from '@/services/productSizeService'
 
+import HeaderGradient from '@/components/ui/HeaderGradient'
+
 export default function SizeForm() {
     const { id } = useLocalSearchParams()
     const router = useRouter()
@@ -97,31 +99,21 @@ export default function SizeForm() {
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-background">
             {/* Header with actions */}
-            <View className="bg-white px-4 py-3 border-b border-gray-200">
-                <View className="flex-row items-center justify-between">
-                    <Text className="text-lg font-semibold text-gray-900">
-                        {isEdit ? 'Edit Ukuran' : 'Tambah Ukuran'}
-                    </Text>
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            disabled={loading}
-                            className={`px-3 py-2 rounded-lg mr-2 ${loading ? 'bg-gray-100' : 'bg-gray-100'}`}
-                        >
-                            <Text className="text-gray-700 font-medium">Batal</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleSave}
-                            disabled={loading}
-                            className={`px-4 py-2 rounded-lg ${loading ? 'bg-blue-300' : 'bg-blue-600'}`}
-                        >
-                            <Text className="text-white font-semibold">{loading ? 'Menyimpan...' : 'Simpan'}</Text>
-                        </TouchableOpacity>
-                    </View>
+            <HeaderGradient
+                title={isEdit ? 'Edit Ukuran' : 'Tambah Ukuran'}
+            >
+                <View className='flex-row items-center justify-between w-full'>
+                    <TouchableOpacity onPress={() => router.back()} className="px-3 py-2">
+                        <Text className="text-white text-base font-semibold">Batal</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleSave} disabled={loading} className="bg-white px-4 py-2 rounded-full">
+                        <Text className="text-orange-600 text-base font-semibold">Simpan</Text>
+                    </TouchableOpacity>
                 </View>
-            </View>
+            </HeaderGradient>
 
             <KeyboardAwareScrollView
                 className="flex-1"

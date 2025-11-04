@@ -42,6 +42,7 @@ interface PaymentModalProps {
   selectedPaymentCardId: number | null;
   paymentCards: PaymentCard[];
   amountPaid: string;
+  validationError?: string | null;
   formatIDR: (amount: number) => string;
   formatIdrNumber: (raw: string) => string;
   getAmountPaidValue: () => number;
@@ -153,3 +154,11 @@ interface DailyTransaction {
   totalRevenue: number;
   totalCount: number;
 }
+
+type CustomerSummary = {
+  name: string;
+  phone?: string;
+  totalSpent: number;
+  transactionsCount: number;
+  lastTransactionAt: string;
+};

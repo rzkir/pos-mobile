@@ -105,6 +105,15 @@ interface Supplier {
   updated_at: string;
 }
 
+type SupplierFormData = {
+  name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  address: string;
+  is_active: boolean;
+};
+
 interface ProductDetailsViewKaryawanProps {
   product: Product;
   categories: ProductCategory[];
@@ -127,6 +136,13 @@ interface ProductDetailsViewProps {
   ) => string;
 }
 
+type ProductsCategoryCardProps = {
+  item: any;
+  formatDate: (date: any) => string;
+  onEdit: (item: any) => void;
+  onDelete: (item: any) => void;
+};
+
 type ManagementSectionProps = {
   categoriesCount: number;
   sizesCount: number;
@@ -136,6 +152,7 @@ type ManagementSectionProps = {
   onNavigateSize: () => void;
   onNavigateSupplier: () => void;
   handleNavigateAllProducts: () => void;
+  onNavigateBarcode: () => void;
 };
 
 interface ProductContextType {

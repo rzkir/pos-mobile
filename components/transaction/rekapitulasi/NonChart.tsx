@@ -2,15 +2,7 @@ import { View, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
-const SectionHeader = ({ title }: { title: string }) => (
-    <View className="mb-3">
-        <View className="flex-row items-center">
-            <View className="w-1.5 h-1.5 rounded-full bg-blue-600 mr-2" />
-            <Text className="text-sm font-semibold text-gray-900">{title}</Text>
-        </View>
-        <View className="mt-2 h-[1px] bg-gray-100" />
-    </View>
-);
+import SectionTitle from '@/components/ui/SectionTitle';
 
 const StatCard = ({
     title,
@@ -67,7 +59,7 @@ export default function NonChart({
 
             {/* Transaction Status */}
             <View className="px-4 mb-2 mt-4">
-                <SectionHeader title="Status Transaksi" />
+                <SectionTitle title="Status Transaksi" />
             </View>
 
             <StatCard
@@ -104,7 +96,7 @@ export default function NonChart({
 
             {/* Financial Breakdown */}
             <View className="px-4 mb-2 mt-4">
-                <SectionHeader title="Rincian Keuangan" />
+                <SectionTitle title="Rincian Keuangan" />
             </View>
 
             <View className="bg-white rounded-2xl p-4 mb-3 mx-4 shadow-sm border border-gray-100">
@@ -125,7 +117,7 @@ export default function NonChart({
 
             {/* Payment Method Breakdown */}
             <View className="px-4 mb-2 mt-4">
-                <SectionHeader title="Metode Pembayaran" />
+                <SectionTitle title="Metode Pembayaran" />
             </View>
 
             <View className="bg-white rounded-2xl p-4 mb-3 mx-4 shadow-sm border border-gray-100">

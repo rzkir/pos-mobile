@@ -12,13 +12,14 @@ export default function Select({
 }: SelectProps) {
     const [isOpen, setIsOpen] = useState(false)
 
-    const selectedOption = options.find(option => option.value === value)
+    const selectedOption = options.find(
+        (option) => String(option.value) === String(value)
+    )
 
     const handleSelect = (option: SelectOption) => {
         onSelect(option.value)
         setIsOpen(false)
     }
-
 
     return (
         <View className={`relative ${className}`}>
@@ -47,12 +48,12 @@ export default function Select({
                     <View className="bg-white rounded-lg mx-4 w-80 max-h-80 shadow-lg">
                         {options.map((item) => (
                             <TouchableOpacity
-                                key={item.value.toString()}
+                                key={String(item.value)}
                                 onPress={() => handleSelect(item)}
-                                className={`p-4 border-b border-gray-200 ${item.value === value ? 'bg-blue-50' : ''
+                                className={`p-4 border-b border-gray-200 ${String(item.value) === String(value) ? 'bg-blue-50' : ''
                                     }`}
                             >
-                                <Text className={`text-base ${item.value === value ? 'text-blue-600 font-semibold' : 'text-gray-900'
+                                <Text className={`text-base ${String(item.value) === String(value) ? 'text-blue-600 font-semibold' : 'text-gray-900'
                                     }`}>
                                     {item.label}
                                 </Text>

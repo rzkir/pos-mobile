@@ -58,10 +58,27 @@ export default function DailyTrasactionCard({ item, formatIDR, getStatusColor }:
                                 })}
                             </Text>
                         </View>
-                        <View className={`px-2 py-1 rounded ${getStatusColor(transaction.status).split(' ')[0]}`}>
-                            <Text className={`text-xs font-medium capitalize ${getStatusColor(transaction.status).split(' ')[1]}`}>
-                                {transaction.status}
-                            </Text>
+                        <View className="items-end gap-1">
+                            <View className={`px-2 py-1 rounded ${getStatusColor(transaction.status).split(' ')[0]}`}>
+                                <Text className={`text-xs font-medium capitalize ${getStatusColor(transaction.status).split(' ')[1]}`}>
+                                    {transaction.status}
+                                </Text>
+                            </View>
+                            {(() => {
+                                const ps = transaction.payment_status;
+                                const styles = ps === 'paid'
+                                    ? { bg: 'bg-green-100', text: 'text-green-700', label: 'lunas' }
+                                    : ps === 'cancelled'
+                                        ? { bg: 'bg-red-100', text: 'text-red-700', label: 'dibatalkan' }
+                                        : ps === 'return'
+                                            ? { bg: 'bg-blue-100', text: 'text-blue-700', label: 'retur' }
+                                            : { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'menunggu' };
+                                return (
+                                    <View className={`px-2 py-1 rounded ${styles.bg}`}>
+                                        <Text className={`text-[10px] font-medium capitalize ${styles.text}`}>{styles.label}</Text>
+                                    </View>
+                                );
+                            })()}
                         </View>
                     </View>
 

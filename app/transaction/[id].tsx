@@ -34,7 +34,9 @@ export default function TransactionDetail() {
     const transactionId = parseInt(id as string, 10);
 
     const { products } = useProducts();
+
     const { categories } = useCategories();
+
     const { sizes } = useSizes();
 
     const {
@@ -44,9 +46,7 @@ export default function TransactionDetail() {
         customerName,
         setCustomerName,
         paymentMethod,
-        setPaymentMethod,
         amountPaid,
-        setAmountPaid,
         paymentCards,
         selectedPaymentCardId,
         showPaymentModal,
@@ -70,8 +70,11 @@ export default function TransactionDetail() {
         updateItemQty,
         saveCustomerInfo,
         handlePaymentCardSelect,
+        handlePaymentMethodChange,
         processPayment,
         savePaymentInfo,
+        paymentValidationError,
+        handleAmountPaidChange,
         handleBayar,
         handleMarkCancelled,
         handleSettings,
@@ -397,15 +400,16 @@ export default function TransactionDetail() {
                 selectedPaymentCardId={selectedPaymentCardId}
                 paymentCards={paymentCards}
                 amountPaid={amountPaid}
+                validationError={paymentValidationError}
                 formatIDR={formatIDR}
                 formatIdrNumber={formatIdrNumber}
                 getAmountPaidValue={getAmountPaidValue}
                 getSuggestedAmounts={getSuggestedAmounts}
                 isAmountInsufficient={isAmountInsufficient}
                 getPaymentMethodLabel={getPaymentMethodLabel}
-                onPaymentMethodChange={setPaymentMethod}
+                onPaymentMethodChange={handlePaymentMethodChange}
                 onPaymentCardSelect={handlePaymentCardSelect}
-                onAmountPaidChange={(text: string) => setAmountPaid(formatIdrNumber(text))}
+                onAmountPaidChange={handleAmountPaidChange}
                 onSavePaymentInfo={savePaymentInfo}
             />
 

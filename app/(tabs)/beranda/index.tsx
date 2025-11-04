@@ -11,6 +11,7 @@ import { FlatList, Image, RefreshControl, ScrollView, Text, TextInput, Touchable
 import { Ionicons } from '@expo/vector-icons'
 
 import HeaderGradient from '@/components/ui/HeaderGradient';
+import SectionTitle from '@/components/ui/SectionTitle';
 
 export default function Beranda() {
     const {
@@ -56,6 +57,17 @@ export default function Beranda() {
                 formatIDR={formatIDR}
             />
         )
+    }
+
+    const getCategoryIcon = (label: string) => {
+        if (!label) return 'grid-outline' as const
+        const l = label.toLowerCase()
+        if (l.includes('minum') || l.includes('kopi') || l.includes('teh') || l.includes('jus')) return 'cafe-outline' as const
+        if (l.includes('snack') || l.includes('cemil') || l.includes('kue') || l.includes('roti')) return 'pizza-outline' as const
+        if (l.includes('buah') || l.includes('sayur')) return 'leaf-outline' as const
+        if (l.includes('bumbu') || l.includes('pedas')) return 'flame-outline' as const
+        if (l.includes('makan') || l.includes('nasi') || l.includes('ayam') || l.includes('daging')) return 'fast-food-outline' as const
+        return 'grid-outline' as const
     }
 
     return (
@@ -145,7 +157,7 @@ export default function Beranda() {
                                     >
                                         <View className={`w-12 h-12 rounded-full ${activeCategoryId === item.id || (item.id === 'all' && activeCategoryId === 'all') ? 'bg-orange-500' : 'bg-white'} items-center justify-center`}>
                                             <Ionicons
-                                                name="fast-food-outline"
+                                                name={item.id === 'all' ? 'grid-outline' : getCategoryIcon(item.name)}
                                                 size={20}
                                                 color={(activeCategoryId === item.id || (item.id === 'all' && activeCategoryId === 'all')) ? '#ffffff' : '#111827'}
                                             />
@@ -192,7 +204,7 @@ export default function Beranda() {
                     {/* Section title */}
                     {filtered.length > 0 && (
                         <View className="px-4 mt-4 mb-2 flex-row items-center justify-between">
-                            <Text className="text-base font-extrabold text-gray-900">Menu Spesial Hari Ini</Text>
+                            <SectionTitle title="Menu Spesial Hari Ini" />
                         </View>
                     )}
 

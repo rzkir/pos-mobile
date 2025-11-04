@@ -131,11 +131,41 @@ export default function TransactionSuccess() {
                                     transaction.payment_method === 'card' ? 'Kartu' : 'Transfer'}
                             </Text>
                         </View>
+                        <View className="flex-row justify-between mb-1">
+                            <Text className="text-sm text-gray-600">Status Transaksi</Text>
+                            {(() => {
+                                const status = transaction.status;
+                                const classes = status === 'completed'
+                                    ? { bg: 'bg-green-100', text: 'text-green-700', label: 'Selesai' }
+                                    : status === 'cancelled'
+                                        ? { bg: 'bg-red-100', text: 'text-red-700', label: 'Dibatalkan' }
+                                        : status === 'return'
+                                            ? { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Retur' }
+                                            : { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' };
+                                return (
+                                    <View className={`px-2 py-1 rounded ${classes.bg}`}>
+                                        <Text className={`text-xs font-semibold ${classes.text}`}>{classes.label}</Text>
+                                    </View>
+                                );
+                            })()}
+                        </View>
                         <View className="flex-row justify-between">
-                            <Text className="text-sm text-gray-600">Status</Text>
-                            <View className="px-2 py-1 rounded bg-orange-50">
-                                <Text className="text-xs font-semibold text-orange-700">Lunas</Text>
-                            </View>
+                            <Text className="text-sm text-gray-600">Status Pembayaran</Text>
+                            {(() => {
+                                const ps = transaction.payment_status;
+                                const classes = ps === 'paid'
+                                    ? { bg: 'bg-green-100', text: 'text-green-700', label: 'Lunas' }
+                                    : ps === 'cancelled'
+                                        ? { bg: 'bg-red-100', text: 'text-red-700', label: 'Dibatalkan' }
+                                        : ps === 'return'
+                                            ? { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Retur' }
+                                            : { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Menunggu' };
+                                return (
+                                    <View className={`px-2 py-1 rounded ${classes.bg}`}>
+                                        <Text className={`text-xs font-semibold ${classes.text}`}>{classes.label}</Text>
+                                    </View>
+                                );
+                            })()}
                         </View>
                     </View>
                 </View>
