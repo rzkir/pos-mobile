@@ -108,8 +108,8 @@ export default function Checkout() {
                     title={companyProfile?.name || "Kasir Mini"}
                     subtitle={companyProfile?.address || "Jalan Leuwiliang, Kota Bogor"}
                 >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View className='flex-row items-center flex-1 justify-between mb-4' >
+                        <View className='flex-row items-center' >
                             {companyProfile?.logo_url ? (
                                 <View className="w-10 h-10 rounded-full bg-white/30 items-center justify-center mr-3 overflow-hidden">
                                     <Image
@@ -126,7 +126,7 @@ export default function Checkout() {
                             <View>
                                 <Text className="text-white font-bold">{companyProfile?.name || "Kasir Mini"}</Text>
                                 {companyProfile?.address && (
-                                    <Text className="text-white/80 text-xs">{companyProfile.address}</Text>
+                                    <Text className="text-white/80 text-xs max-w-[250px] line-clamp-1">{companyProfile.address}</Text>
                                 )}
                             </View>
                         </View>

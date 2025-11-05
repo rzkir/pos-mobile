@@ -70,7 +70,7 @@ export const loadTemplateSettings = async (): Promise<TemplateSettings | null> =
 const convertImageToBitmap = async (
   imageUri: string,
   targetWidth: number = 384
-): Promise<{ width: number; height: number; bitmap: number[] } | null> => {
+): Promise<{ widthBytes: number; height: number; data: number[] } | null> => {
   try {
     let processedUri = imageUri;
 
@@ -135,29 +135,60 @@ const convertImageToBitmap = async (
 
     try {
       const base64Data = manipulatedImage.base64;
-      const FileSystem = await import('expo-file-system' as any);
-      const FS = FileSystem.default || FileSystem;
-      const baseDir = FS.documentDirectory || FS.cacheDirectory;
-      if (!baseDir) {
-        throw new Error('FileSystem directory tidak tersedia');
+
+      // base64 -> Uint8Array (JPEG binary)
+      const base64ToUint8Array = (b64: string): Uint8Array => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        let outputLength = (b64.length / 4) * 3;
+        if (b64.endsWith('==')) outputLength -= 2;
+        else if (b64.endsWith('=')) outputLength -= 1;
+        const bytes = new Uint8Array(outputLength);
+        let byteIndex = 0;
+        let buffer = 0;
+        let bitsCollected = 0;
+        for (let i = 0; i < b64.length; i++) {
+          const c = b64.charAt(i);
+          if (c === '=') break;
+          const v = chars.indexOf(c);
+          if (v < 0) continue;
+          buffer = (buffer << 6) | v;
+          bitsCollected += 6;
+          if (bitsCollected >= 8) {
+            bitsCollected -= 8;
+            bytes[byteIndex++] = (buffer >> bitsCollected) & 0xff;
+          }
+        }
+        return bytes;
+      };
+
+      const jpegData = base64ToUint8Array(base64Data);
+      const jpegMod: any = await import('jpeg-js' as any);
+      const jpegLib = jpegMod.default || jpegMod;
+      const decoded = jpegLib.decode(jpegData, { useTArray: true });
+      const width = decoded.width;
+      const height = decoded.height;
+      const rgba: Uint8Array = decoded.data;
+
+      // Threshold to monochrome 1-bit and pack 8 pixels per byte (MSB first)
+      const widthBytes = Math.ceil(width / 8);
+      const out = new Array<number>(widthBytes * height).fill(0);
+      const threshold = 170; // 0..255, lower = darker
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          const r = rgba[idx];
+          const g = rgba[idx + 1];
+          const b = rgba[idx + 2];
+          const a = rgba[idx + 3];
+          const gray = a === 0 ? 255 : (0.299 * r + 0.587 * g + 0.114 * b);
+          const bit = gray < threshold ? 1 : 0; // 1 = black
+          const byteIndex = y * widthBytes + (x >> 3);
+          const bitPos = 7 - (x & 7);
+          if (bit) out[byteIndex] |= (1 << bitPos);
+        }
       }
-      const tempBitmapFile = `${baseDir}bitmap_${Date.now()}.jpg`;
-      await FS.writeAsStringAsync(tempBitmapFile, base64Data, {
-        encoding: 'base64',
-      });
 
-      console.warn('Decode pixel data untuk logo belum diimplementasikan, skip logo printing. Logo tetap muncul di HTML/PDF version.');
-
-      // Cleanup temporary file
-      try {
-        const FileSystem = await import('expo-file-system' as any);
-        const FS = FileSystem.default || FileSystem;
-        await FS.deleteAsync(tempBitmapFile, { idempotent: true });
-      } catch {
-        // Ignore cleanup errors
-      }
-
-      return null;
+      return { widthBytes, height, data: out };
 
     } catch (decodeError) {
       console.warn('Failed to decode pixel data:', decodeError);
@@ -177,7 +208,7 @@ const convertImageToBitmap = async (
  * @param bitmap Bitmap data array (1-bit per pixel)
  * @returns ESC/POS command string
  */
-const bitmapToESCPOS = (width: number, height: number, bitmap: number[]): string => {
+const bitmapToESCPOS = (widthBytes: number, height: number, data: number[]): string => {
   const GS = '\x1D';
 
   // ESC/POS format: GS v 0 m xL xH yL yH d1...dk
@@ -186,14 +217,14 @@ const bitmapToESCPOS = (width: number, height: number, bitmap: number[]): string
   // yL, yH = low and high bytes of height
   // d1...dk = bitmap data
 
-  const xL = width & 0xFF;
-  const xH = (width >> 8) & 0xFF;
+  const xL = widthBytes & 0xFF;
+  const xH = (widthBytes >> 8) & 0xFF;
   const yL = height & 0xFF;
   const yH = (height >> 8) & 0xFF;
   const mode = 0; // Normal mode
 
   // Convert bitmap array ke byte string
-  const bitmapBytes = bitmap.map((byte) => String.fromCharCode(byte)).join('');
+  const bitmapBytes = data.map((byte) => String.fromCharCode(byte)).join('');
 
   // Generate ESC/POS command
   return GS + 'v' + String.fromCharCode(0) + String.fromCharCode(mode) +
@@ -237,7 +268,7 @@ const convertImageToESCPOS = async (
       targetWidth
     );
 
-    if (!bitmapResult || !bitmapResult.bitmap) {
+    if (!bitmapResult || !bitmapResult.data) {
       // Jika konversi gagal atau tidak tersedia, skip logo printing
       // Logo tetap akan muncul di HTML/PDF version
       console.warn('Bitmap conversion tidak tersedia, skip logo printing');
@@ -246,9 +277,9 @@ const convertImageToESCPOS = async (
 
     // Convert bitmap ke ESC/POS format
     const escPosCommand = bitmapToESCPOS(
-      bitmapResult.width,
+      bitmapResult.widthBytes,
       bitmapResult.height,
-      bitmapResult.bitmap
+      bitmapResult.data
     );
 
     return escPosCommand + '\n';
