@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { TransactionService } from "@/services/transactionService";
 
@@ -16,6 +16,8 @@ export function useStateDaily() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const dayName = useCallback(
     (day: number): string =>
@@ -154,9 +156,34 @@ export function useStateDaily() {
     setDailyTransactions(filtered);
   }, [activeDayTab, allDailyTransactions]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(handler);
+  }, [searchText]);
+
+  const displayedDailyTransactions = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return dailyTransactions;
+    return dailyTransactions
+      .map((d) => {
+        const filtered = d.transactions.filter((t) =>
+          (t.customer_name || "").toLowerCase().includes(q)
+        );
+        const totalRevenue = filtered.reduce((sum, t) => sum + t.total, 0);
+        return {
+          ...d,
+          transactions: filtered,
+          totalRevenue,
+          totalCount: filtered.length,
+        };
+      })
+      .filter((d) => d.transactions.length > 0);
+  }, [dailyTransactions, debouncedSearch]);
+
   return {
     // data
     dailyTransactions,
+    displayedDailyTransactions,
     loading,
     refreshing,
     onRefresh,
@@ -165,6 +192,9 @@ export function useStateDaily() {
     isSheetOpen,
     pendingDayTab,
     setPendingDayTab,
+    // search states
+    searchText,
+    setSearchText,
     dayName,
     getStatusColor,
     formatDateLabel,

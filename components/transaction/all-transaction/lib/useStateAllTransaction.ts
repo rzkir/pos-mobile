@@ -17,6 +17,7 @@ export function useStateAllTransaction() {
     customerName: "",
     layout: "list",
   });
+  const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(1);
 
   const loadTransactions = async () => {
@@ -38,6 +39,13 @@ export function useStateAllTransaction() {
   useEffect(() => {
     loadTransactions();
   }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, customerName: searchText }));
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchText, setFilters]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -154,6 +162,8 @@ export function useStateAllTransaction() {
     setLayout,
     setFilters,
     setPage,
+    searchText,
+    setSearchText,
     // data
     filteredTransactions,
     visibleTransactions,

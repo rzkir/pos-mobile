@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Text, TouchableOpacity, View } from 'react-native'
 
 import BottomSheet from '@/helper/bottomsheets/BottomSheet'
 
@@ -147,21 +147,6 @@ export default function FilterBottomSheet({ visible, onClose, value, onApply, on
                     {statusOptions.map(s => (
                         <Pill key={s} selected={temp.status === s} label={s === 'all' ? 'Semua' : s.charAt(0).toUpperCase() + s.slice(1)} onPress={() => setField('status', s)} />
                     ))}
-                </View>
-            </View>
-
-            {/* Customer Name */}
-            <View className="mb-6 px-4">
-                <Text className="text-base font-semibold mb-2 text-secondary-500">Nama Pelanggan</Text>
-                <View className="flex-row items-center px-3 py-2 rounded-xl border" style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.15)' }}>
-                    <Ionicons name="search" size={18} color="#6c757d" />
-                    <TextInput
-                        value={temp.customerName}
-                        onChangeText={(t) => setField('customerName', t)}
-                        placeholder="Cari nama pelanggan"
-                        placeholderTextColor="#6c757d"
-                        className="flex-1 ml-2 text-secondary-500"
-                    />
                 </View>
             </View>
 

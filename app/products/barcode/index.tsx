@@ -104,20 +104,23 @@ export default function ProductsBarcodes() {
             parts.push(GS + 'h' + BARCODE_HEIGHT); // Height: GS h [height]
             parts.push(GS + 'w' + BARCODE_WIDTH); // Width: GS w [width]
 
+            // Set HRI position properly (GS H n)
+            parts.push(GS + 'H' + HRI_POSITION);
+
             // Determine barcode type based on length and format
             // Format: GS k [type] [n] [data] [HRI]
             let barcodeType: number;
             let barcodeData = barcodeCode;
 
             if (/^\d{13}$/.test(barcodeCode)) {
-                // EAN13: 13 digits
-                barcodeType = 2;
+                // EAN13 (length-prefixed variant)
+                barcodeType = 67; // EAN13 with length byte
             } else if (/^\d{8}$/.test(barcodeCode)) {
-                // EAN8: 8 digits
-                barcodeType = 3;
+                // EAN8 (length-prefixed variant)
+                barcodeType = 68; // EAN8 with length byte
             } else if (/^\d{12}$/.test(barcodeCode)) {
-                // UPC-A: 12 digits
-                barcodeType = 5;
+                // UPC-A (length-prefixed variant)
+                barcodeType = 65; // UPC-A with length byte
             } else {
                 // CODE128: supports alphanumeric, flexible length
                 barcodeType = 73; // CODE128
@@ -130,8 +133,7 @@ export default function ProductsBarcodes() {
                 GS + 'k' +
                 String.fromCharCode(barcodeType) +
                 String.fromCharCode(dataLength) +
-                barcodeData +
-                HRI_POSITION
+                barcodeData
             );
 
             parts.push('\n\n');

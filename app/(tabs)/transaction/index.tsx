@@ -10,9 +10,13 @@ import FilterBottomSheet from '@/components/transaction/list/FilterBottomSheet';
 
 import HeaderGradient from '@/components/ui/HeaderGradient';
 
+import Input from '@/components/ui/input';
+
 import { useAppSettingsContext } from '@/context/AppSettingsContext';
 
 import AllTransactionCard from '@/components/transaction/all-transaction/AllTransactionCard';
+
+import AllTransactionLoading from '@/components/transaction/all-transaction/TransactionLoading';
 
 export default function Transaction() {
     const router = useRouter();
@@ -34,6 +38,8 @@ export default function Transaction() {
         getPaymentMethodIcon,
         getPaymentStatusStyles,
         hasMore,
+        searchText,
+        setSearchText,
     } = useStateAllTransaction();
 
     const renderTransaction = ({ item }: { item: Transaction }) => (
@@ -51,9 +57,7 @@ export default function Transaction() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-background justify-center items-center">
-                <Text className="text-gray-500">Memuat transaksi...</Text>
-            </View>
+            <AllTransactionLoading />
         );
     }
 
@@ -133,6 +137,22 @@ export default function Transaction() {
                     );
                 })()
             )}
+
+            <View className="w-full mt-3 px-2">
+                <Input
+                    placeholder="Cari nama pelanggan..."
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    leftIcon={<Ionicons name="search" size={16} color="#6B7280" />}
+                    rightIcon={searchText ? (
+                        <TouchableOpacity onPress={() => setSearchText('')}>
+                            <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                        </TouchableOpacity>
+                    ) : undefined}
+                    containerStyle={{ marginBottom: 0 }}
+                    inputStyle={{ fontSize: 14 }}
+                />
+            </View>
 
             <FilterBottomSheet
                 visible={filterVisible}

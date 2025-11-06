@@ -253,20 +253,28 @@ const convertImageToESCPOS = async (
   logoHeight?: number
 ): Promise<string> => {
   try {
-    // Extract base64 data (remove data:image/...;base64, prefix)
-    const base64Data = base64Image.includes(',')
-      ? base64Image.split(',')[1]
-      : base64Image;
-
     // Printer width untuk 80mm printer = 384 dots
     const printerWidth = 384;
     const targetWidth = Math.min(logoWidth || printerWidth, printerWidth);
 
     // Convert image ke bitmap
-    const bitmapResult = await convertImageToBitmap(
-      `base64:${base64Data}`,
-      targetWidth
-    );
+    // Normalisasi input:
+    // - data URL ("data:") atau "base64:" -> gunakan apa adanya
+    // - file:// atau http(s):// -> gunakan apa adanya
+    // - string tanpa skema dan panjang (dugaan base64 mentah) -> tambahkan prefix "base64:"
+    let imageInput = base64Image?.trim() || '';
+    const lower = imageInput.toLowerCase();
+    const isDataOrPrefixedBase64 = lower.startsWith('data:') || lower.startsWith('base64:');
+    const isFileOrRemote = lower.startsWith('file:') || lower.startsWith('http://') || lower.startsWith('https://');
+    if (!isDataOrPrefixedBase64 && !isFileOrRemote) {
+      // Heuristik sederhana: jika string cukup panjang dan hanya berisi karakter base64 yang valid
+      const looksLikeBase64 = /^[a-z0-9+/=]+$/i.test(imageInput) && imageInput.length > 100;
+      if (looksLikeBase64) {
+        imageInput = `base64:${imageInput}`;
+      }
+    }
+
+    const bitmapResult = await convertImageToBitmap(imageInput, targetWidth);
 
     if (!bitmapResult || !bitmapResult.data) {
       // Jika konversi gagal atau tidak tersedia, skip logo printing

@@ -12,6 +12,8 @@ import { useAppSettingsContext } from '@/context/AppSettingsContext';
 
 import { useProducts } from '@/hooks/useProducts';
 
+import { usePrinter } from '@/hooks/usePrinter';
+
 export default function TransactionDetails() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -19,6 +21,7 @@ export default function TransactionDetails() {
 
     const { formatIDR, formatDateTime } = useAppSettingsContext();
     const { products } = useProducts();
+    const { onPressPrint, onPressShare } = usePrinter();
 
     const [transaction, setTransaction] = useState<Transaction | null>(null);
     const [items, setItems] = useState<(TransactionItem & { product?: any })[]>([]);
@@ -158,6 +161,60 @@ export default function TransactionDetails() {
                     </View>
                 </View>
 
+                {/* CTA Print & Share hanya saat status sukses */}
+                {transaction.payment_status === 'paid' && transaction.status === 'completed' && (
+                    <View className="mx-4 mt-4 bg-white rounded-lg border border-gray-200 p-4">
+                        <Text className="text-sm font-semibold text-gray-800 mb-3">Cetak & Bagikan</Text>
+                        <View className="flex-row gap-3">
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const textLines: string[] = [];
+                                    textLines.push(`No: ${transaction.transaction_number}`);
+                                    textLines.push(`Tanggal: ${formatDateTime(transaction.created_at)}`);
+                                    if (transaction.customer_name) textLines.push(`Pelanggan: ${transaction.customer_name}`);
+                                    textLines.push('------------------------------');
+                                    items.forEach((it) => {
+                                        const name = it.product?.name || `Produk #${it.product_id}`;
+                                        textLines.push(`${name}`);
+                                        textLines.push(`${it.quantity} x ${formatIDR(it.price)} = ${formatIDR(it.subtotal)}`);
+                                    });
+                                    textLines.push('------------------------------');
+                                    textLines.push(`Subtotal: ${formatIDR(transaction.subtotal)}`);
+                                    textLines.push(`Diskon: ${formatIDR(transaction.discount || 0)}`);
+                                    textLines.push(`Total: ${formatIDR(transaction.total)}`);
+                                    textLines.push(`Metode: ${transaction.payment_method}`);
+                                    textLines.push(`Status: Lunas`);
+                                    textLines.push('Terima kasih!');
+                                    await onPressPrint(textLines.join('\n'));
+                                }}
+                                className="flex-1 bg-white border border-gray-300 rounded-xl py-3 items-center flex-row justify-center"
+                            >
+                                <Ionicons name="print" size={18} color="#111827" style={{ marginRight: 8 }} />
+                                <Text className="text-gray-800 font-semibold text-sm">Print</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    const shareLines: string[] = [];
+                                    shareLines.push(`Transaksi ${transaction.transaction_number}`);
+                                    shareLines.push(`${formatDateTime(transaction.created_at)}`);
+                                    if (transaction.customer_name) shareLines.push(`Pelanggan: ${transaction.customer_name}`);
+                                    items.forEach((it) => {
+                                        const name = it.product?.name || `Produk #${it.product_id}`;
+                                        shareLines.push(`${name} — ${it.quantity} x ${formatIDR(it.price)} = ${formatIDR(it.subtotal)}`);
+                                    });
+                                    shareLines.push(`Total: ${formatIDR(transaction.total)}`);
+                                    shareLines.push(`Metode: ${transaction.payment_method} • Lunas`);
+                                    await onPressShare(shareLines.join('\n'));
+                                }}
+                                className="flex-1 bg-white border border-gray-300 rounded-xl py-3 items-center flex-row justify-center"
+                            >
+                                <Ionicons name="share-social" size={18} color="#111827" style={{ marginRight: 8 }} />
+                                <Text className="text-gray-800 font-semibold text-sm">Share</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
                 {transaction.payment_status === 'pending' && (
                     <View className="mx-4 mt-4 bg-white rounded-lg border border-gray-200 p-4">
                         <Text className="text-sm font-semibold text-gray-800 mb-3">Tindakan</Text>
@@ -169,30 +226,6 @@ export default function TransactionDetails() {
                                 className="flex-1 bg-blue-600 rounded-xl py-3 items-center"
                             >
                                 <Text className="text-white font-semibold text-sm">Lanjutkan Pembayaran</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    Alert.alert('Konfirmasi', 'Hapus transaksi ini?', [
-                                        { text: 'Batal', style: 'cancel' },
-                                        {
-                                            text: 'Hapus', style: 'destructive', onPress: async () => {
-                                                try {
-                                                    const items = await TransactionService.getItemsByTransactionId(transactionId);
-                                                    for (const it of items) {
-                                                        await TransactionService.deleteItem(it.id);
-                                                    }
-                                                    await TransactionService.delete(transactionId);
-                                                    router.back();
-                                                } catch (e) {
-                                                    console.error('Failed to delete pending transaction:', e);
-                                                }
-                                            }
-                                        }
-                                    ]);
-                                }}
-                                className="flex-1 bg-white border border-red-300 rounded-xl py-3 items-center"
-                            >
-                                <Text className="text-red-600 font-semibold text-sm">Hapus</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -217,6 +250,38 @@ export default function TransactionDetails() {
                                                     router.back();
                                                 } catch (e) {
                                                     console.error('Failed to delete cancelled transaction:', e);
+                                                }
+                                            }
+                                        }
+                                    ]);
+                                }}
+                                className="flex-1 bg-white border border-red-300 rounded-xl py-3 items-center"
+                            >
+                                <Text className="text-red-600 font-semibold text-sm">Hapus</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+                {transaction.payment_status === 'return' && (
+                    <View className="mx-4 mt-4 bg-white rounded-lg border border-gray-200 p-4">
+                        <Text className="text-sm font-semibold text-gray-800 mb-3">Tindakan</Text>
+                        <View className="flex-row gap-3">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    Alert.alert('Konfirmasi', 'Hapus transaksi retur ini?', [
+                                        { text: 'Batal', style: 'cancel' },
+                                        {
+                                            text: 'Hapus', style: 'destructive', onPress: async () => {
+                                                try {
+                                                    const items = await TransactionService.getItemsByTransactionId(transactionId);
+                                                    for (const it of items) {
+                                                        await TransactionService.deleteItem(it.id);
+                                                    }
+                                                    await TransactionService.delete(transactionId);
+                                                    router.back();
+                                                } catch (e) {
+                                                    console.error('Failed to delete returned transaction:', e);
                                                 }
                                             }
                                         }

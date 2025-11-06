@@ -4,6 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Toast from "react-native-toast-message";
 
+import { Share } from "react-native";
+
 const RN_BC = "react-native-bluetooth-classic" as const;
 
 const STORAGE_KEY = process.env.EXPO_PUBLIC_PRINTER_CONNECTED as string;
@@ -224,6 +226,39 @@ export const usePrinter = () => {
     }
   };
 
+  // Share text via native share sheet
+  const shareText = async (text: string) => {
+    try {
+      if (!text || text.trim().length === 0) {
+        Toast.show({ type: "info", text1: "Tidak ada konten untuk dibagikan" });
+        return false;
+      }
+      await Share.share({ message: text });
+      return true;
+    } catch (e: any) {
+      console.error("Share error:", e);
+      Toast.show({
+        type: "error",
+        text1: "Gagal membagikan",
+        text2: e.message,
+      });
+      return false;
+    }
+  };
+
+  // CTA-friendly handlers for buttons
+  const onPressPrint = async (text: string) => {
+    try {
+      await printText(text);
+    } catch {
+      // error toast already handled in printText
+    }
+  };
+
+  const onPressShare = async (text: string) => {
+    await shareText(text);
+  };
+
   // Get connected printer device info
   const getConnectedDevice = (): PrinterDevice | null => {
     if (!connectedAddress) return null;
@@ -239,6 +274,9 @@ export const usePrinter = () => {
     connectToPrinter,
     disconnectPrinter,
     printText,
+    shareText,
+    onPressPrint,
+    onPressShare,
     getConnectedDevice,
     loadSavedPrinter,
   };
