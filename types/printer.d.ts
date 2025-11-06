@@ -11,6 +11,11 @@ interface PrintTemplateProps {
   showLogo?: boolean;
   logoWidth?: number;
   logoHeight?: number;
+  logoBitmapData?: {
+    widthBytes: number;
+    height: number;
+    data: number[];
+  };
 }
 
 interface TemplateSettings {
@@ -24,4 +29,9 @@ interface TemplateSettings {
   showLogo?: boolean;
   logoWidth?: number;
   logoHeight?: number;
+  logoBitmapData?: {
+    widthBytes: number;
+    height: number;
+    data: number[];
+  };
 }

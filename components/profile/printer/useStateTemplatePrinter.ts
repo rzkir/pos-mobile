@@ -12,7 +12,10 @@ import Toast from "react-native-toast-message";
 
 import { router } from "expo-router";
 
-import { DEFAULT_TEMPLATE } from "@/app/profile/printer/template/index";
+import {
+  DEFAULT_TEMPLATE,
+  convertImageToBitmap,
+} from "@/app/profile/printer/template/index";
 
 const STORAGE_KEY = process.env.EXPO_PUBLIC_PRINTER_CUSTUM as string;
 
@@ -106,18 +109,57 @@ export function useStateTemplatePrinter() {
           // Create data URI format for HTML/printer use
           const base64DataUri = `data:${mimeType};base64,${base64}`;
 
-          setSettings({ ...settings, logoUrl: base64DataUri, showLogo: true });
+          // Convert to bitmap untuk printer monokrom (sekali saja saat upload)
+          // Printer width untuk 80mm printer = 384 dots
+          const printerWidth = 384;
+          const targetWidth = Math.min(
+            settings.logoWidth || printerWidth,
+            printerWidth
+          );
+
           Toast.show({
-            type: "success",
-            text1: "Berhasil",
-            text2: "Logo berhasil dipilih dan dikonversi ke base64",
+            type: "info",
+            text1: "Memproses...",
+            text2: "Mengonversi logo ke format printer",
           });
+
+          const bitmapData = await convertImageToBitmap(
+            base64DataUri,
+            targetWidth
+          );
+
+          if (bitmapData) {
+            setSettings({
+              ...settings,
+              logoUrl: base64DataUri,
+              showLogo: true,
+              logoBitmapData: bitmapData, // Simpan bitmap data untuk digunakan saat printing
+            });
+            Toast.show({
+              type: "success",
+              text1: "Berhasil",
+              text2: "Logo berhasil dipilih dan dikonversi",
+            });
+          } else {
+            // Jika konversi bitmap gagal, tetap simpan base64 untuk preview
+            setSettings({
+              ...settings,
+              logoUrl: base64DataUri,
+              showLogo: true,
+            });
+            Toast.show({
+              type: "success",
+              text1: "Berhasil",
+              text2:
+                "Logo berhasil dipilih (konversi printer akan dilakukan saat printing)",
+            });
+          }
         } catch (convertError) {
           console.error("Error converting to base64:", convertError);
           Toast.show({
             type: "error",
             text1: "Gagal",
-            text2: "Gagal mengonversi logo ke base64",
+            text2: "Gagal mengonversi logo",
           });
         }
       }
@@ -138,7 +180,12 @@ export function useStateTemplatePrinter() {
         text: "Hapus",
         style: "destructive",
         onPress: () => {
-          setSettings({ ...settings, logoUrl: "", showLogo: false });
+          setSettings({
+            ...settings,
+            logoUrl: "",
+            showLogo: false,
+            logoBitmapData: undefined,
+          });
           Toast.show({
             type: "success",
             text1: "Berhasil",

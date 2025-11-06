@@ -66,7 +66,6 @@ export default function ProductsBarcodes() {
         const INIT = `${ESC}@`; // Initialize printer
         const ALIGN_CENTER = `${ESC}\x61\x01`; // Center align
         const ALIGN_LEFT = `${ESC}\x61\x00`; // Left align
-        const NORMAL_TEXT = `${ESC}\x21\x00`; // Normal text
         const BOLD_ON = `${ESC}\x45\x01`; // Bold on
         const BOLD_OFF = `${ESC}\x45\x00`; // Bold off
 
@@ -137,11 +136,6 @@ export default function ProductsBarcodes() {
             );
 
             parts.push('\n\n');
-
-            // Barcode number text (centered, normal text)
-            parts.push(ALIGN_CENTER);
-            parts.push(NORMAL_TEXT);
-            parts.push(`${barcodeCode}\n`);
         }
 
         // Reset to left align and add spacing

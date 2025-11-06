@@ -67,65 +67,58 @@ export const loadTemplateSettings = async (): Promise<TemplateSettings | null> =
  * @param targetWidth Target width dalam dots (default 384 untuk 80mm printer)
  * @returns Object dengan width, height, dan bitmap data array
  */
-const convertImageToBitmap = async (
+export const convertImageToBitmap = async (
   imageUri: string,
   targetWidth: number = 384
 ): Promise<{ widthBytes: number; height: number; data: number[] } | null> => {
   try {
+    // ImageManipulator bisa langsung menerima data URI, tidak perlu file temporary
+    // Normalisasi URI: pastikan format data URI benar
     let processedUri = imageUri;
 
-    // Jika base64, simpan ke temporary file dulu
-    if (imageUri.startsWith('data:') || imageUri.startsWith('base64:')) {
-      // Extract base64 data
-      const base64Data = imageUri.includes(',') ? imageUri.split(',')[1] : imageUri.replace(/^base64:/, '');
-
-      // Simpan ke temporary file
-      const FileSystem = await import('expo-file-system' as any);
-      const FS = FileSystem.default || FileSystem;
-      const baseDir = FS.documentDirectory || FS.cacheDirectory;
-      if (!baseDir) {
-        throw new Error('FileSystem directory tidak tersedia');
-      }
-      const tempFileName = `${baseDir}temp_logo_${Date.now()}.jpg`;
-      await FS.writeAsStringAsync(tempFileName, base64Data, {
-        encoding: 'base64',
-      });
-      processedUri = tempFileName;
+    // Jika format base64: tanpa prefix, tambahkan data URI prefix
+    if (imageUri.startsWith('base64:')) {
+      // Extract base64 data dan tambahkan prefix data URI
+      const base64Data = imageUri.replace(/^base64:/, '');
+      // Deteksi format dari data base64
+      // JPEG base64 biasanya dimulai dengan /9j/4AAQ, PNG dengan iVBORw0KGgo
+      const mimeType = (base64Data.startsWith('/9j/') || base64Data.startsWith('/9j') || base64Data.startsWith('i/9j'))
+        ? 'image/jpeg'
+        : 'image/png';
+      processedUri = `data:${mimeType};base64,${base64Data}`;
+    } else if (!imageUri.startsWith('data:') && !imageUri.startsWith('file:') && !imageUri.startsWith('http://') && !imageUri.startsWith('https://')) {
+      // Jika string base64 murni tanpa prefix, tambahkan prefix
+      // Deteksi format dari karakter pertama base64
+      const mimeType = (imageUri.startsWith('/9j/') || imageUri.startsWith('/9j') || imageUri.startsWith('i/9j'))
+        ? 'image/jpeg'
+        : 'image/png';
+      processedUri = `data:${mimeType};base64,${imageUri}`;
     }
 
-    // Resize dan convert ke grayscale menggunakan ImageManipulator
+    // Resize menggunakan ImageManipulator
     // Target width: 384 dots untuk 80mm printer
-    const manipulatedImage = await ImageManipulator.manipulateAsync(
-      processedUri,
-      [
-        {
-          resize: {
-            width: targetWidth,
-            // Height akan dihitung secara proporsional
-          },
-        },
-      ],
-      {
-        compress: 1,
-        format: ImageManipulator.SaveFormat.JPEG,
-        base64: true,
-      }
-    );
-
-    // Cleanup temporary file jika dibuat
+    // ImageManipulator bisa langsung menerima data URI
+    let manipulatedImage;
     try {
-      const FileSystem = await import('expo-file-system' as any);
-      const FS = FileSystem.default || FileSystem;
-      const baseDir = FS.documentDirectory || FS.cacheDirectory;
-      if (baseDir && processedUri.startsWith(baseDir)) {
-        try {
-          await FS.deleteAsync(processedUri, { idempotent: true });
-        } catch {
-          // Ignore cleanup errors
+      manipulatedImage = await ImageManipulator.manipulateAsync(
+        processedUri,
+        [
+          {
+            resize: {
+              width: targetWidth,
+              // Height akan dihitung secara proporsional
+            },
+          },
+        ],
+        {
+          compress: 1,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
         }
-      }
-    } catch {
-      // Ignore jika FileSystem tidak tersedia
+      );
+    } catch (manipulateError) {
+      console.warn('ImageManipulator error:', manipulateError);
+      throw new Error(`Failed to resize image: ${manipulateError instanceof Error ? manipulateError.message : String(manipulateError)}`);
     }
 
     if (!manipulatedImage.base64 || !manipulatedImage.width || !manipulatedImage.height) {
@@ -162,26 +155,102 @@ const convertImageToBitmap = async (
       };
 
       const jpegData = base64ToUint8Array(base64Data);
-      const jpegMod: any = await import('jpeg-js' as any);
-      const jpegLib = jpegMod.default || jpegMod;
-      const decoded = jpegLib.decode(jpegData, { useTArray: true });
+
+      // Import jpeg-js library
+      let jpegLib;
+      try {
+        const jpegMod: any = await import('jpeg-js' as any);
+        jpegLib = jpegMod.default || jpegMod;
+        if (!jpegLib || !jpegLib.decode) {
+          throw new Error('jpeg-js library tidak tersedia atau tidak valid');
+        }
+      } catch (importError) {
+        console.warn('Failed to import jpeg-js:', importError);
+        throw new Error(`Failed to import jpeg-js: ${importError instanceof Error ? importError.message : String(importError)}`);
+      }
+
+      // Decode JPEG
+      let decoded;
+      try {
+        decoded = jpegLib.decode(jpegData, { useTArray: true });
+      } catch (decodeError) {
+        console.warn('Failed to decode JPEG:', decodeError);
+        throw new Error(`Failed to decode JPEG: ${decodeError instanceof Error ? decodeError.message : String(decodeError)}`);
+      }
+
+      if (!decoded || !decoded.width || !decoded.height || !decoded.data) {
+        throw new Error('Decoded image data tidak valid');
+      }
+
       const width = decoded.width;
       const height = decoded.height;
       const rgba: Uint8Array = decoded.data;
 
-      // Threshold to monochrome 1-bit and pack 8 pixels per byte (MSB first)
-      const widthBytes = Math.ceil(width / 8);
-      const out = new Array<number>(widthBytes * height).fill(0);
-      const threshold = 170; // 0..255, lower = darker
+      // Convert to grayscale first and calculate average for adaptive threshold
+      const grayscale: number[] = [];
+      let sumGray = 0;
+      let pixelCount = 0;
+      const grayValues: number[] = []; // Untuk menghitung median
+
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const idx = (y * width + x) * 4;
-          const r = rgba[idx];
-          const g = rgba[idx + 1];
-          const b = rgba[idx + 2];
-          const a = rgba[idx + 3];
-          const gray = a === 0 ? 255 : (0.299 * r + 0.587 * g + 0.114 * b);
-          const bit = gray < threshold ? 1 : 0; // 1 = black
+          const r = rgba[idx] || 0;
+          const g = rgba[idx + 1] || 0;
+          const b = rgba[idx + 2] || 0;
+          const a = rgba[idx + 3] || 255;
+
+          // Convert to grayscale using luminance formula (standard ITU-R BT.601)
+          const gray = a === 0 ? 255 : Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+          grayscale.push(gray);
+          grayValues.push(gray);
+
+          if (a > 0) {
+            sumGray += gray;
+            pixelCount++;
+          }
+        }
+      }
+
+      // Calculate adaptive threshold menggunakan Otsu's method yang lebih baik
+      const meanGray = pixelCount > 0 ? sumGray / pixelCount : 128;
+
+      // Sort untuk mendapatkan median (lebih robust dari mean)
+      grayValues.sort((a, b) => a - b);
+      const medianGray = grayValues.length > 0
+        ? grayValues[Math.floor(grayValues.length / 2)]
+        : 128;
+
+      // Gunakan kombinasi mean dan median untuk threshold yang lebih baik
+      const adaptiveThreshold = (meanGray + medianGray) / 2;
+
+      // Threshold lebih agresif untuk memastikan hasil benar-benar monokrom
+      // Range: 70-150, dengan faktor 0.6 untuk lebih banyak hitam
+      const threshold = Math.max(70, Math.min(150, adaptiveThreshold * 0.6));
+
+      // Apply contrast enhancement and threshold to monochrome 1-bit
+      // Pack 8 pixels per byte (MSB first)
+      const widthBytes = Math.ceil(width / 8);
+      const out = new Array<number>(widthBytes * height).fill(0);
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          let gray = grayscale[idx];
+
+          // Enhance contrast untuk hasil monokrom yang lebih jelas
+          // Meningkatkan kontras secara agresif agar perbedaan hitam-putih sangat jelas
+          const contrast = 2.0; // 1.0 = no change, >1.0 = more contrast
+          // Normalize ke range 0-255 setelah contrast enhancement
+          gray = Math.max(0, Math.min(255, ((gray - 128) * contrast) + 128));
+
+          // Tambahkan gamma correction untuk hasil yang lebih baik
+          const gamma = 1.2;
+          gray = Math.pow(gray / 255, gamma) * 255;
+
+          // Threshold to monochrome: 1 = black, 0 = white
+          const bit = gray < threshold ? 1 : 0;
+
           const byteIndex = y * widthBytes + (x >> 3);
           const bitPos = 7 - (x & 7);
           if (bit) out[byteIndex] |= (1 << bitPos);
@@ -195,8 +264,11 @@ const convertImageToBitmap = async (
       return null;
     }
 
-  } catch {
-    console.warn('Failed to convert image to bitmap');
+  } catch (error) {
+    console.warn('Failed to convert image to bitmap:', error);
+    if (error instanceof Error) {
+      console.warn('Error details:', error.message, error.stack);
+    }
     return null;
   }
 };
@@ -237,11 +309,12 @@ const bitmapToESCPOS = (widthBytes: number, height: number, data: number[]): str
  * Convert base64 image to ESC/POS bitmap (untuk printer RPP02N)
  * 
  * Proses:
- * 1. Decode base64 image (data:image/png;base64,...)
- * 2. Load image dan resize ke lebar printer (384 dots untuk 80mm)
- * 3. Convert ke grayscale lalu 1-bit bitmap (black/white)
- * 4. Convert bitmap pixels ke byte array
- * 5. Generate ESC/POS commands dengan format yang benar
+ * 1. Jika bitmapData sudah ada, gunakan langsung (lebih cepat)
+ * 2. Jika tidak, decode base64 image (data:image/png;base64,...)
+ * 3. Load image dan resize ke lebar printer (384 dots untuk 80mm)
+ * 4. Convert ke grayscale lalu 1-bit bitmap (black/white)
+ * 5. Convert bitmap pixels ke byte array
+ * 6. Generate ESC/POS commands dengan format yang benar
  * 
  * Format ESC/POS untuk bitmap:
  * - ESC * m nL nH d1...dk (Raster bitmap)
@@ -250,31 +323,38 @@ const bitmapToESCPOS = (widthBytes: number, height: number, data: number[]): str
 const convertImageToESCPOS = async (
   base64Image: string,
   logoWidth?: number,
-  logoHeight?: number
+  logoHeight?: number,
+  bitmapData?: { widthBytes: number; height: number; data: number[] }
 ): Promise<string> => {
   try {
-    // Printer width untuk 80mm printer = 384 dots
-    const printerWidth = 384;
-    const targetWidth = Math.min(logoWidth || printerWidth, printerWidth);
+    let bitmapResult = bitmapData;
 
-    // Convert image ke bitmap
-    // Normalisasi input:
-    // - data URL ("data:") atau "base64:" -> gunakan apa adanya
-    // - file:// atau http(s):// -> gunakan apa adanya
-    // - string tanpa skema dan panjang (dugaan base64 mentah) -> tambahkan prefix "base64:"
-    let imageInput = base64Image?.trim() || '';
-    const lower = imageInput.toLowerCase();
-    const isDataOrPrefixedBase64 = lower.startsWith('data:') || lower.startsWith('base64:');
-    const isFileOrRemote = lower.startsWith('file:') || lower.startsWith('http://') || lower.startsWith('https://');
-    if (!isDataOrPrefixedBase64 && !isFileOrRemote) {
-      // Heuristik sederhana: jika string cukup panjang dan hanya berisi karakter base64 yang valid
-      const looksLikeBase64 = /^[a-z0-9+/=]+$/i.test(imageInput) && imageInput.length > 100;
-      if (looksLikeBase64) {
-        imageInput = `base64:${imageInput}`;
+    // Jika bitmap data sudah ada, gunakan langsung (tidak perlu konversi lagi)
+    if (!bitmapResult) {
+      // Printer width untuk 80mm printer = 384 dots
+      const printerWidth = 384;
+      const targetWidth = Math.min(logoWidth || printerWidth, printerWidth);
+
+      // Convert image ke bitmap
+      // Normalisasi input:
+      // - data URL ("data:") atau "base64:" -> gunakan apa adanya
+      // - file:// atau http(s):// -> gunakan apa adanya
+      // - string tanpa skema dan panjang (dugaan base64 mentah) -> tambahkan prefix "base64:"
+      let imageInput = base64Image?.trim() || '';
+      const lower = imageInput.toLowerCase();
+      const isDataOrPrefixedBase64 = lower.startsWith('data:') || lower.startsWith('base64:');
+      const isFileOrRemote = lower.startsWith('file:') || lower.startsWith('http://') || lower.startsWith('https://');
+      if (!isDataOrPrefixedBase64 && !isFileOrRemote) {
+        // Heuristik sederhana: jika string cukup panjang dan hanya berisi karakter base64 yang valid
+        const looksLikeBase64 = /^[a-z0-9+/=]+$/i.test(imageInput) && imageInput.length > 100;
+        if (looksLikeBase64) {
+          imageInput = `base64:${imageInput}`;
+        }
       }
-    }
 
-    const bitmapResult = await convertImageToBitmap(imageInput, targetWidth);
+      const converted = await convertImageToBitmap(imageInput, targetWidth);
+      bitmapResult = converted || undefined;
+    }
 
     if (!bitmapResult || !bitmapResult.data) {
       // Jika konversi gagal atau tidak tersedia, skip logo printing
@@ -322,6 +402,7 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
     showLogo = customSettings?.showLogo !== undefined ? customSettings.showLogo : (props.showLogo !== undefined ? props.showLogo : false),
     logoWidth = customSettings?.logoWidth || props.logoWidth || 200,
     logoHeight = customSettings?.logoHeight || props.logoHeight || 80,
+    logoBitmapData = customSettings?.logoBitmapData || (props as any).logoBitmapData,
   } = props;
 
   // Format functions using app settings
@@ -357,9 +438,9 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   if (showLogo && logoUrl) {
     try {
       receiptParts.push(ALIGN_CENTER); // Center align untuk logo
-      // Convert image to ESC/POS format dengan decode dan convert ke grayscale
-      // Pass logoWidth dan logoHeight untuk resize
-      const logoCommand = await convertImageToESCPOS(logoUrl, logoWidth, logoHeight);
+      // Convert image to ESC/POS format
+      // Jika logoBitmapData sudah ada, gunakan langsung (tidak perlu konversi lagi)
+      const logoCommand = await convertImageToESCPOS(logoUrl, logoWidth, logoHeight, logoBitmapData);
       receiptParts.push(logoCommand);
       receiptParts.push('\n'); // Extra line after logo
     } catch (error) {
@@ -637,18 +718,18 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           border-bottom: 2px solid #e5e7eb;
         }
         .header h1 {
-          font-size: 24px;
+          font-size: 22px;
           font-weight: bold;
           color: #059669;
           margin-bottom: 8px;
         }
         .header .address {
-          font-size: 12px;
+          font-size: 11px;
           color: #6b7280;
           margin-bottom: 4px;
         }
         .header .phone {
-          font-size: 12px;
+          font-size: 11px;
           color: #6b7280;
         }
         .divider {
@@ -663,7 +744,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           display: flex;
           justify-content: space-between;
           margin-bottom: 8px;
-          font-size: 14px;
+          font-size: 13px;
         }
         .label {
           color: #6b7280;
@@ -685,7 +766,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         .items-table th {
           text-align: left;
           padding: 10px 0;
-          font-size: 12px;
+          font-size: 11px;
           color: #6b7280;
           font-weight: 600;
         }
@@ -703,7 +784,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         .items-table td {
           padding: 8px 0;
           border-bottom: 1px solid #f3f4f6;
-          font-size: 13px;
+          font-size: 12px;
         }
         .items-table td:first-child {
           color: #111827;
@@ -722,7 +803,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           display: flex;
           justify-content: space-between;
           margin-bottom: 6px;
-          font-size: 14px;
+          font-size: 13px;
         }
         .summary-label {
           color: #6b7280;
@@ -732,7 +813,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           color: #111827;
         }
         .total-row {
-          font-size: 18px;
+          font-size: 16px;
           font-weight: bold;
           color: #059669;
           margin-top: 8px;
@@ -741,7 +822,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           text-align: center;
           margin-top: 30px;
           color: #6b7280;
-          font-size: 12px;
+          font-size: 11px;
           line-height: 1.6;
         }
       </style>
@@ -756,7 +837,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
       </div>
       
       <div class="divider-thick"></div>
-      <div style="text-align: center; font-size: 18px; font-weight: bold; margin: 15px 0;">
+      <div style="text-align: center; font-size: 16px; font-weight: bold; margin: 15px 0;">
         STRUK PEMBELIAN
       </div>
       <div class="divider-thick"></div>
