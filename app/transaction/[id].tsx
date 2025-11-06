@@ -24,6 +24,8 @@ import ProductsBottomSheet from '@/components/transaction/create/ProductsBottomS
 
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 
+import TransactionLoading from '@/components/transaction/create/TransactionLoading';
+
 export default function TransactionDetail() {
     const { formatIDR, formatDateTime } = useAppSettingsContext();
 
@@ -88,6 +90,8 @@ export default function TransactionDetail() {
         handleApplyFilters,
         handleResetFilters,
         setCustomerSearchQuery,
+        isCustomerSelected,
+        setIsCustomerSelected,
         customerSuggestions,
         selectCustomerName,
     } = useStateCreateTransaction({
@@ -107,9 +111,7 @@ export default function TransactionDetail() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-white items-center justify-center">
-                <Text className="text-gray-500">Memuat data...</Text>
-            </View>
+            <TransactionLoading />
         );
     }
 
@@ -161,19 +163,23 @@ export default function TransactionDetail() {
                                 onChangeText={(text: string) => {
                                     setCustomerName(text);
                                     setCustomerSearchQuery(text);
+                                    setIsCustomerSelected(false);
                                 }}
                             />
-                            {customerName?.length > 0 && customerSuggestions?.length > 0 && (
-                                <View className="mt-1 border border-gray-200 rounded-lg bg-white">
-                                    {customerSuggestions.map((name) => (
-                                        <TouchableOpacity
-                                            key={name}
-                                            className="px-3 py-2"
-                                            onPress={() => selectCustomerName(name)}
-                                        >
-                                            <Text className="text-gray-800">{name}</Text>
-                                        </TouchableOpacity>
-                                    ))}
+
+                            {customerName?.length > 0 && customerSuggestions?.length > 0 && !isCustomerSelected && (
+                                <View className="border mb-4 border-gray-200 rounded-lg bg-white">
+                                    <ScrollView style={{ maxHeight: 200 }} keyboardShouldPersistTaps='handled'>
+                                        {customerSuggestions.map((name) => (
+                                            <TouchableOpacity
+                                                key={name}
+                                                className="px-3 py-2"
+                                                onPress={() => selectCustomerName(name)}
+                                            >
+                                                <Text className="text-gray-800">{name}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
                                 </View>
                             )}
                         </View>

@@ -51,6 +51,7 @@ export function useStateCreateTransaction({
   // Customer search state
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [allCustomerNames, setAllCustomerNames] = useState<string[]>([]);
+  const [isCustomerSelected, setIsCustomerSelected] = useState(false);
 
   // Helper functions for amount formatting
   const formatIdrNumber = useCallback((raw: string) => {
@@ -160,6 +161,7 @@ export function useStateCreateTransaction({
         if (trans) {
           setTransaction(trans);
           setCustomerName(trans.customer_name || "");
+          setIsCustomerSelected(Boolean(trans.customer_name));
           setPaymentMethod(trans.payment_method);
           setAmountPaid("");
           // Set selected payment card jika ada payment_card_id
@@ -485,17 +487,24 @@ export function useStateCreateTransaction({
   const saveCustomerInfo = useCallback(async () => {
     if (!transaction) return;
 
+    const normalizedName = (customerName || "").trim();
+
+    // Skip update if nothing changed
+    if ((transaction.customer_name || "") === normalizedName) {
+      return;
+    }
+
     try {
       await TransactionService.update(transactionId, {
-        customer_name: customerName || undefined,
+        customer_name: normalizedName || undefined,
       });
-      // Persist customer info to local storage
+      // Persist to local storage only for this transaction (no new master customer data created)
       try {
         await AsyncStorage.setItem(
           "consumer_info",
           JSON.stringify({
             transaction_id: transactionId,
-            customer_name: customerName || undefined,
+            customer_name: normalizedName || undefined,
           })
         );
       } catch (storageError) {
@@ -832,10 +841,23 @@ export function useStateCreateTransaction({
       .slice(0, 8);
   }, [allCustomerNames, customerSearchQuery]);
 
-  const selectCustomerName = useCallback((name: string) => {
-    setCustomerName(name);
-    setCustomerSearchQuery(name);
-  }, []);
+  const selectCustomerName = useCallback(
+    async (name: string) => {
+      setCustomerName(name);
+      setCustomerSearchQuery(name);
+      setIsCustomerSelected(true);
+      // Immediately save the selected existing name to the current transaction without creating new customer data
+      try {
+        await TransactionService.update(transactionId, {
+          customer_name: (name || "").trim() || undefined,
+        });
+        loadTransaction({ showLoading: false });
+      } catch {
+        // non-fatal: keep name in input, user can press save
+      }
+    },
+    [transactionId, loadTransaction]
+  );
 
   // Handle Android hardware back button
   useEffect(() => {
@@ -927,6 +949,8 @@ export function useStateCreateTransaction({
     // Customer search
     customerSearchQuery,
     setCustomerSearchQuery,
+    isCustomerSelected,
+    setIsCustomerSelected,
     customerSuggestions,
     selectCustomerName,
     // Helper functions
