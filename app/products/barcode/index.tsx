@@ -146,7 +146,14 @@ export default function ProductsBarcodes() {
     };
 
     const printItem = async (item: any) => {
-        const payload = buildTextBarcode(String(item?.name ?? ''), String(item?.barcode ?? ''));
+        // Hanya gunakan barcode dari data produk, jangan membuat barcode baru
+        // Pastikan barcode hanya berisi angka
+        const productBarcode = item?.barcode ? String(item.barcode).replace(/[^0-9]/g, "") : '';
+        if (!productBarcode) {
+            // Skip jika produk tidak memiliki barcode
+            return;
+        }
+        const payload = buildTextBarcode(String(item?.name ?? ''), productBarcode);
         await printText(payload);
     };
 
@@ -154,8 +161,21 @@ export default function ProductsBarcodes() {
         if (selectedIds.size === 0) return;
         const selectedMap = new Set(selectedIds);
         const items = (products as any[]).filter(p => selectedMap.has(p.id));
-        const payload = items
-            .map(p => buildTextBarcode(String(p?.name ?? ''), String(p?.barcode ?? '')))
+        // Hanya gunakan barcode dari data produk, filter produk yang tidak memiliki barcode
+        // Pastikan barcode hanya berisi angka
+        const itemsWithBarcode = items.filter(p => {
+            const barcode = p?.barcode ? String(p.barcode).replace(/[^0-9]/g, "") : '';
+            return barcode.length > 0;
+        });
+        if (itemsWithBarcode.length === 0) {
+            // Tidak ada produk dengan barcode untuk dicetak
+            return;
+        }
+        const payload = itemsWithBarcode
+            .map(p => {
+                const barcode = p?.barcode ? String(p.barcode).replace(/[^0-9]/g, "") : '';
+                return buildTextBarcode(String(p?.name ?? ''), barcode);
+            })
             .join('\n\n');
         await printText(payload);
     };

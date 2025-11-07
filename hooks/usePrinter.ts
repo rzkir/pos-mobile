@@ -211,10 +211,31 @@ export const usePrinter = () => {
       }
 
       // Print to device
+      // Pastikan text adalah string yang valid
+      if (!text || typeof text !== "string") {
+        throw new Error("Data print tidak valid");
+      }
+
+      // Pastikan encoding benar - hapus karakter yang tidak valid
+      // ESC/POS commands harus tetap utuh, tapi pastikan tidak ada karakter yang merusak
+      let sanitizedText = text
+        .split("")
+        .map((char) => {
+          const code = char.charCodeAt(0);
+          // Izinkan karakter ASCII (0-127) dan karakter kontrol ESC/POS (0x1B, 0x1D, dll)
+          // Izinkan juga karakter extended ASCII (128-255) untuk bitmap data
+          if (code >= 0 && code <= 255) {
+            return char;
+          }
+          // Ganti karakter yang tidak valid dengan spasi
+          return " ";
+        })
+        .join("");
+
       if (RNB.writeToDevice) {
-        await RNB.writeToDevice(connectedAddress, text);
+        await RNB.writeToDevice(connectedAddress, sanitizedText);
       } else if (RNB.write) {
-        await RNB.write(text);
+        await RNB.write(sanitizedText);
       } else {
         throw new Error("Metode write tidak tersedia");
       }

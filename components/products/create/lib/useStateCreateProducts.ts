@@ -119,7 +119,9 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
         modal: modalValue,
         stock: formatIdrNumber(product.stock?.toString() || ""),
         unit: product.unit || "",
-        barcode: product.barcode || "",
+        barcode: product.barcode
+          ? String(product.barcode).replace(/[^0-9]/g, "")
+          : "",
         category_id: product.category_id?.toString() || "",
         size_id: product.size_id?.toString() || "",
         supplier_id: product.supplier_id?.toString() || "",
@@ -134,10 +136,19 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
   }, [isEdit, product?.id]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === "barcode") {
+      // Hanya terima angka untuk barcode
+      const numericOnly = value.replace(/[^0-9]/g, "");
+      setFormData((prev) => ({
+        ...prev,
+        [field]: numericOnly,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
   const handlePriceChange = (value: string) => {
@@ -155,9 +166,11 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
   };
 
   const handleBarcodeScan = (barcode: string) => {
+    // Hanya terima angka untuk barcode
+    const numericOnly = barcode ? String(barcode).replace(/[^0-9]/g, "") : "";
     setFormData((prev) => ({
       ...prev,
-      barcode: barcode,
+      barcode: numericOnly,
     }));
     setShowScanner(false);
   };
@@ -553,7 +566,9 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
         sold: 0,
         unit: formData.unit || "pcs",
         image_url: formData.image_url || "",
-        barcode: formData.barcode || `BC${Date.now()}`,
+        barcode: formData.barcode
+          ? String(formData.barcode).replace(/[^0-9]/g, "")
+          : generateEAN13(),
         is_active: true,
         category_id:
           formData.category_id && formData.category_id !== ""

@@ -274,109 +274,16 @@ export const convertImageToBitmap = async (
 };
 
 /**
- * Convert bitmap data ke ESC/POS format
- * @param width Width dalam dots
- * @param height Height dalam dots
- * @param bitmap Bitmap data array (1-bit per pixel)
- * @returns ESC/POS command string
+ * Convert bitmap data ke ESC/POS format - REMOVED
+ * Logo tidak akan dicetak di struk printer untuk menghindari masalah encoding
+ * Logo tetap akan muncul di HTML/PDF version
  */
-const bitmapToESCPOS = (widthBytes: number, height: number, data: number[]): string => {
-  const GS = '\x1D';
-
-  // ESC/POS format: GS v 0 m xL xH yL yH d1...dk
-  // m = 0 (normal mode)
-  // xL, xH = low and high bytes of width
-  // yL, yH = low and high bytes of height
-  // d1...dk = bitmap data
-
-  const xL = widthBytes & 0xFF;
-  const xH = (widthBytes >> 8) & 0xFF;
-  const yL = height & 0xFF;
-  const yH = (height >> 8) & 0xFF;
-  const mode = 0; // Normal mode
-
-  // Convert bitmap array ke byte string
-  const bitmapBytes = data.map((byte) => String.fromCharCode(byte)).join('');
-
-  // Generate ESC/POS command
-  return GS + 'v' + String.fromCharCode(0) + String.fromCharCode(mode) +
-    String.fromCharCode(xL) + String.fromCharCode(xH) +
-    String.fromCharCode(yL) + String.fromCharCode(yH) +
-    bitmapBytes;
-};
 
 /**
- * Convert base64 image to ESC/POS bitmap (untuk printer RPP02N)
- * 
- * Proses:
- * 1. Jika bitmapData sudah ada, gunakan langsung (lebih cepat)
- * 2. Jika tidak, decode base64 image (data:image/png;base64,...)
- * 3. Load image dan resize ke lebar printer (384 dots untuk 80mm)
- * 4. Convert ke grayscale lalu 1-bit bitmap (black/white)
- * 5. Convert bitmap pixels ke byte array
- * 6. Generate ESC/POS commands dengan format yang benar
- * 
- * Format ESC/POS untuk bitmap:
- * - ESC * m nL nH d1...dk (Raster bitmap)
- * - GS v 0 m xL xH yL yH d1...dk (Print raster bitmap)
+ * Convert base64 image to ESC/POS bitmap - REMOVED
+ * Logo tidak akan dicetak di struk printer untuk menghindari masalah encoding
+ * Logo tetap akan muncul di HTML/PDF version
  */
-const convertImageToESCPOS = async (
-  base64Image: string,
-  logoWidth?: number,
-  logoHeight?: number,
-  bitmapData?: { widthBytes: number; height: number; data: number[] }
-): Promise<string> => {
-  try {
-    let bitmapResult = bitmapData;
-
-    // Jika bitmap data sudah ada, gunakan langsung (tidak perlu konversi lagi)
-    if (!bitmapResult) {
-      // Printer width untuk 80mm printer = 384 dots
-      const printerWidth = 384;
-      const targetWidth = Math.min(logoWidth || printerWidth, printerWidth);
-
-      // Convert image ke bitmap
-      // Normalisasi input:
-      // - data URL ("data:") atau "base64:" -> gunakan apa adanya
-      // - file:// atau http(s):// -> gunakan apa adanya
-      // - string tanpa skema dan panjang (dugaan base64 mentah) -> tambahkan prefix "base64:"
-      let imageInput = base64Image?.trim() || '';
-      const lower = imageInput.toLowerCase();
-      const isDataOrPrefixedBase64 = lower.startsWith('data:') || lower.startsWith('base64:');
-      const isFileOrRemote = lower.startsWith('file:') || lower.startsWith('http://') || lower.startsWith('https://');
-      if (!isDataOrPrefixedBase64 && !isFileOrRemote) {
-        // Heuristik sederhana: jika string cukup panjang dan hanya berisi karakter base64 yang valid
-        const looksLikeBase64 = /^[a-z0-9+/=]+$/i.test(imageInput) && imageInput.length > 100;
-        if (looksLikeBase64) {
-          imageInput = `base64:${imageInput}`;
-        }
-      }
-
-      const converted = await convertImageToBitmap(imageInput, targetWidth);
-      bitmapResult = converted || undefined;
-    }
-
-    if (!bitmapResult || !bitmapResult.data) {
-      // Jika konversi gagal atau tidak tersedia, skip logo printing
-      // Logo tetap akan muncul di HTML/PDF version
-      console.warn('Bitmap conversion tidak tersedia, skip logo printing');
-      return '\n'; // Return blank line jika tidak bisa convert
-    }
-
-    // Convert bitmap ke ESC/POS format
-    const escPosCommand = bitmapToESCPOS(
-      bitmapResult.widthBytes,
-      bitmapResult.height,
-      bitmapResult.data
-    );
-
-    return escPosCommand + '\n';
-
-  } catch (error) {
-    console.warn('Failed to convert image to ESC/POS:', error);
-    return '\n'; // Fallback to blank line
-  }
-};
 
 /**
  * Generate ESC/POS receipt text for printer
@@ -398,11 +305,6 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
     storeWebsite = customSettings?.storeWebsite || props.storeWebsite,
     footerMessage = customSettings?.footerMessage || props.footerMessage,
     showFooter = customSettings?.showFooter !== undefined ? customSettings.showFooter : (props.showFooter !== undefined ? props.showFooter : true),
-    logoUrl = customSettings?.logoUrl || props.logoUrl,
-    showLogo = customSettings?.showLogo !== undefined ? customSettings.showLogo : (props.showLogo !== undefined ? props.showLogo : false),
-    logoWidth = customSettings?.logoWidth || props.logoWidth || 200,
-    logoHeight = customSettings?.logoHeight || props.logoHeight || 80,
-    logoBitmapData = customSettings?.logoBitmapData || (props as any).logoBitmapData,
   } = props;
 
   // Format functions using app settings
@@ -434,20 +336,11 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   // Initialize printer
   receiptParts.push(INIT);
 
-  // Add logo if enabled and available
-  if (showLogo && logoUrl) {
-    try {
-      receiptParts.push(ALIGN_CENTER); // Center align untuk logo
-      // Convert image to ESC/POS format
-      // Jika logoBitmapData sudah ada, gunakan langsung (tidak perlu konversi lagi)
-      const logoCommand = await convertImageToESCPOS(logoUrl, logoWidth, logoHeight, logoBitmapData);
-      receiptParts.push(logoCommand);
-      receiptParts.push('\n'); // Extra line after logo
-    } catch (error) {
-      console.warn('Failed to add logo to receipt:', error);
-      // Continue without logo if conversion fails
-    }
-  }
+  // Logo dihapus untuk menghindari masalah encoding
+  // Logo tetap akan muncul di HTML/PDF version
+  // if (showLogo && logoUrl) {
+  //   ... logo code removed ...
+  // }
 
   // Header with store info
   receiptParts.push(
@@ -576,7 +469,44 @@ export const generateReceiptText = async (props: PrintTemplateProps): Promise<st
   receiptParts.push(CUT); // Cut paper
 
   // Combine all parts
-  const receipt = receiptParts.join('');
+  let receipt = receiptParts.join('');
+
+  // Pastikan encoding benar - hapus karakter yang tidak valid
+  // Masalah utama: Data bitmap logo dikonversi menjadi string dengan karakter binary (0-255)
+  // Ketika string binary digabungkan dengan teks biasa, encoding bisa berubah
+  // Printer menginterpretasikan karakter binary sebagai teks biasa, menghasilkan karakter acak/garbled
+  // 
+  // Solusi: Pastikan data bitmap dikirim dengan benar sebagai binary data
+  // - Karakter binary (0-255) harus tetap utuh untuk data bitmap
+  // - Karakter kontrol ESC/POS (0x1B, 0x1D, dll) harus tetap utuh
+  // - Karakter teks biasa harus tetap utuh
+  // - Hanya karakter yang tidak valid (> 255) yang harus dihapus
+  try {
+    // Validasi bahwa string tidak mengandung karakter yang merusak encoding
+    // ESC/POS commands harus tetap utuh, tapi pastikan tidak ada karakter yang merusak
+    // Catatan: Karakter binary (0-255) dari bitmap data HARUS tetap utuh
+    // Masalah encoding terjadi karena karakter binary diinterpretasikan sebagai teks biasa
+    // Solusi: Pastikan printer dalam mode yang benar sebelum dan setelah bitmap
+    receipt = receipt
+      .split('')
+      .map((char) => {
+        const code = char.charCodeAt(0);
+        // Izinkan semua karakter dalam range 0-255
+        // - Karakter ASCII (0-127): teks biasa dan kontrol
+        // - Karakter extended ASCII (128-255): data bitmap
+        // - Karakter kontrol ESC/POS (0x1B, 0x1D, dll): perintah printer
+        if (code >= 0 && code <= 255) {
+          return char;
+        }
+        // Ganti karakter yang tidak valid (> 255) dengan spasi
+        // Karakter ini bisa merusak encoding dan menyebabkan masalah
+        console.warn(`Invalid character code: ${code}, replacing with space`);
+        return ' ';
+      })
+      .join('');
+  } catch (error) {
+    console.warn('Error validating receipt encoding:', error);
+  }
 
   // Log ke console untuk debugging (dalam development mode)
   if (__DEV__) {
@@ -718,18 +648,18 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           border-bottom: 2px solid #e5e7eb;
         }
         .header h1 {
-          font-size: 22px;
+          font-size: 20px;
           font-weight: bold;
           color: #059669;
           margin-bottom: 8px;
         }
         .header .address {
-          font-size: 11px;
+          font-size: 10px;
           color: #6b7280;
           margin-bottom: 4px;
         }
         .header .phone {
-          font-size: 11px;
+          font-size: 10px;
           color: #6b7280;
         }
         .divider {
@@ -744,7 +674,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           display: flex;
           justify-content: space-between;
           margin-bottom: 8px;
-          font-size: 13px;
+          font-size: 12px;
         }
         .label {
           color: #6b7280;
@@ -766,7 +696,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         .items-table th {
           text-align: left;
           padding: 10px 0;
-          font-size: 11px;
+          font-size: 10px;
           color: #6b7280;
           font-weight: 600;
         }
@@ -784,7 +714,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
         .items-table td {
           padding: 8px 0;
           border-bottom: 1px solid #f3f4f6;
-          font-size: 12px;
+          font-size: 11px;
         }
         .items-table td:first-child {
           color: #111827;
@@ -803,7 +733,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           display: flex;
           justify-content: space-between;
           margin-bottom: 6px;
-          font-size: 13px;
+          font-size: 12px;
         }
         .summary-label {
           color: #6b7280;
@@ -813,7 +743,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           color: #111827;
         }
         .total-row {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: bold;
           color: #059669;
           margin-top: 8px;
@@ -822,7 +752,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
           text-align: center;
           margin-top: 30px;
           color: #6b7280;
-          font-size: 11px;
+          font-size: 10px;
           line-height: 1.6;
         }
       </style>
@@ -837,7 +767,7 @@ export const generateReceiptHTML = async (props: PrintTemplateProps): Promise<st
       </div>
       
       <div class="divider-thick"></div>
-      <div style="text-align: center; font-size: 16px; font-weight: bold; margin: 15px 0;">
+      <div style="text-align: center; font-size: 15px; font-weight: bold; margin: 15px 0;">
         STRUK PEMBELIAN
       </div>
       <div class="divider-thick"></div>

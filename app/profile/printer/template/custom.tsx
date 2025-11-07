@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -17,8 +17,6 @@ export default function CustomTemplate() {
         loading,
         saving,
         saveSettings,
-        handlePickLogo,
-        handleRemoveLogo,
         resetToDefault,
     } = useStateTemplatePrinter();
 
@@ -121,105 +119,8 @@ export default function CustomTemplate() {
                             />
                         </View>
 
-                        {/* Logo Section */}
-                        <View className="mb-4">
-                            <View className="flex-row items-center justify-between mb-2">
-                                <Text className="text-sm font-semibold text-gray-700">Logo Toko</Text>
-                                <TouchableOpacity
-                                    onPress={() => setSettings({ ...settings, showLogo: !settings.showLogo })}
-                                    className={`px-3 py-1 rounded-lg ${settings.showLogo ? 'bg-green-100' : 'bg-gray-200'}`}
-                                >
-                                    <Text className={`text-xs font-semibold ${settings.showLogo ? 'text-green-700' : 'text-gray-600'}`}>
-                                        {settings.showLogo ? 'Aktif' : 'Nonaktif'}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {settings.logoUrl ? (
-                                <View className="mt-2">
-                                    <View className="bg-gray-50 rounded-xl p-4 border border-gray-200 items-center">
-                                        <Image
-                                            source={{ uri: settings.logoUrl }}
-                                            style={{
-                                                width: settings.logoWidth || 200,
-                                                height: settings.logoHeight || 80,
-                                                maxWidth: '100%',
-                                                marginBottom: 12
-                                            }}
-                                            className="rounded-lg"
-                                            resizeMode="contain"
-                                        />
-                                        {/* Ukuran Logo */}
-                                        <View className="w-full mt-3">
-                                            <Text className="text-sm font-semibold text-gray-700 mb-2">Ukuran Logo</Text>
-                                            <View className="flex-row gap-2 mb-2">
-                                                <View className="flex-1">
-                                                    <Text className="text-xs text-gray-600 mb-1">Lebar (px)</Text>
-                                                    <TextInput
-                                                        className="bg-white rounded-lg px-3 py-2 text-gray-900 border border-gray-300"
-                                                        placeholder="200"
-                                                        placeholderTextColor="#9CA3AF"
-                                                        value={settings.logoWidth?.toString() || '200'}
-                                                        onChangeText={(text) => {
-                                                            const num = parseInt(text) || 200;
-                                                            setSettings({ ...settings, logoWidth: Math.min(Math.max(num, 50), 500) });
-                                                        }}
-                                                        keyboardType="numeric"
-                                                    />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <Text className="text-xs text-gray-600 mb-1">Tinggi (px)</Text>
-                                                    <TextInput
-                                                        className="bg-white rounded-lg px-3 py-2 text-gray-900 border border-gray-300"
-                                                        placeholder="80"
-                                                        placeholderTextColor="#9CA3AF"
-                                                        value={settings.logoHeight?.toString() || '80'}
-                                                        onChangeText={(text) => {
-                                                            const num = parseInt(text) || 80;
-                                                            setSettings({ ...settings, logoHeight: Math.min(Math.max(num, 20), 300) });
-                                                        }}
-                                                        keyboardType="numeric"
-                                                    />
-                                                </View>
-                                            </View>
-                                            <Text className="text-xs text-gray-500">Rentang: Lebar 50-500px, Tinggi 20-300px</Text>
-                                        </View>
-                                        <View className="flex-row gap-2 mt-3">
-                                            <TouchableOpacity
-                                                onPress={handlePickLogo}
-                                                className="bg-blue-600 px-4 py-2 rounded-lg"
-                                            >
-                                                <Text className="text-white text-sm font-semibold">Ubah Logo</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={handleRemoveLogo}
-                                                className="bg-red-600 px-4 py-2 rounded-lg"
-                                            >
-                                                <Text className="text-white text-sm font-semibold">Hapus</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    onPress={handlePickLogo}
-                                    disabled={!settings.showLogo}
-                                    className={`mt-2 border-2 border-dashed rounded-xl p-6 items-center ${settings.showLogo ? 'border-purple-400 bg-purple-50' : 'border-gray-300 bg-gray-50'}`}
-                                >
-                                    <Ionicons
-                                        name="image-outline"
-                                        size={32}
-                                        color={settings.showLogo ? '#8b5cf6' : '#9CA3AF'}
-                                    />
-                                    <Text className={`mt-2 text-sm font-semibold ${settings.showLogo ? 'text-purple-600' : 'text-gray-500'}`}>
-                                        {settings.showLogo ? 'Pilih Logo Toko' : 'Aktifkan terlebih dahulu'}
-                                    </Text>
-                                    <Text className="text-xs text-gray-500 mt-1">
-                                        Format: JPG, PNG (Rasio 3:1)
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        {/* Logo Section - Dihapus untuk menghindari masalah encoding */}
+                        {/* Logo tidak akan dicetak di struk printer, tapi tetap muncul di HTML/PDF version */}
                     </View>
 
                     {/* Footer Message */}
@@ -275,20 +176,7 @@ export default function CustomTemplate() {
                         </View>
 
                         <View className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            {settings.showLogo && settings.logoUrl && (
-                                <View className="items-center mb-3">
-                                    <Image
-                                        source={{ uri: settings.logoUrl }}
-                                        style={{
-                                            width: settings.logoWidth || 200,
-                                            height: settings.logoHeight || 80,
-                                            maxWidth: '100%'
-                                        }}
-                                        className="rounded-lg"
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            )}
+                            {/* Logo tidak ditampilkan di preview karena tidak akan dicetak di struk printer */}
                             <Text className="text-center font-bold text-gray-900 mb-2" style={{ fontSize: 18 }}>
                                 {settings.storeName || 'Nama Toko'}
                             </Text>

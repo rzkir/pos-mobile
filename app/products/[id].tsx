@@ -131,7 +131,7 @@ export default function EditProduct() {
                                     defaultValue={formData.barcode}
                                     onChangeText={(text: string) => handleInputChange('barcode', text)}
                                     placeholder="Masukkan barcode atau scan"
-                                    keyboardType="default"
+                                    keyboardType="numeric"
                                     returnKeyType="next"
                                     onSubmitEditing={() => nameRef.current?.focus()}
                                     containerStyle={{ marginBottom: 0 }}

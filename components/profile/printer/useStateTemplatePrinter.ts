@@ -2,10 +2,6 @@ import { useState, useEffect } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import * as ImagePicker from "expo-image-picker";
-
-import * as FileSystem from "expo-file-system/legacy";
-
 import { Alert } from "react-native";
 
 import Toast from "react-native-toast-message";
@@ -14,7 +10,7 @@ import { router } from "expo-router";
 
 import {
   DEFAULT_TEMPLATE,
-  convertImageToBitmap,
+  // convertImageToBitmap removed - logo tidak akan dicetak di struk printer
 } from "@/app/profile/printer/template/index";
 
 const STORAGE_KEY = process.env.EXPO_PUBLIC_PRINTER_CUSTUM as string;
@@ -69,131 +65,24 @@ export function useStateTemplatePrinter() {
     }
   };
 
+  // Logo functions removed - logo tidak akan dicetak di struk printer
+  // Logo tetap bisa digunakan untuk HTML/PDF version jika diperlukan
   const handlePickLogo = async () => {
-    try {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Izin Diperlukan",
-          "Izin akses galeri diperlukan untuk memilih logo"
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [3, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-
-        // Convert image to base64 for printer compatibility
-        try {
-          const base64 = await FileSystem.readAsStringAsync(uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-
-          // Get file extension to determine MIME type
-          const fileExtension = uri.split(".").pop()?.toLowerCase() || "png";
-          const mimeType =
-            fileExtension === "jpg" || fileExtension === "jpeg"
-              ? "image/jpeg"
-              : fileExtension === "png"
-              ? "image/png"
-              : "image/png";
-
-          // Create data URI format for HTML/printer use
-          const base64DataUri = `data:${mimeType};base64,${base64}`;
-
-          // Convert to bitmap untuk printer monokrom (sekali saja saat upload)
-          // Printer width untuk 80mm printer = 384 dots
-          const printerWidth = 384;
-          const targetWidth = Math.min(
-            settings.logoWidth || printerWidth,
-            printerWidth
-          );
-
-          Toast.show({
-            type: "info",
-            text1: "Memproses...",
-            text2: "Mengonversi logo ke format printer",
-          });
-
-          const bitmapData = await convertImageToBitmap(
-            base64DataUri,
-            targetWidth
-          );
-
-          if (bitmapData) {
-            setSettings({
-              ...settings,
-              logoUrl: base64DataUri,
-              showLogo: true,
-              logoBitmapData: bitmapData, // Simpan bitmap data untuk digunakan saat printing
-            });
-            Toast.show({
-              type: "success",
-              text1: "Berhasil",
-              text2: "Logo berhasil dipilih dan dikonversi",
-            });
-          } else {
-            // Jika konversi bitmap gagal, tetap simpan base64 untuk preview
-            setSettings({
-              ...settings,
-              logoUrl: base64DataUri,
-              showLogo: true,
-            });
-            Toast.show({
-              type: "success",
-              text1: "Berhasil",
-              text2:
-                "Logo berhasil dipilih (konversi printer akan dilakukan saat printing)",
-            });
-          }
-        } catch (convertError) {
-          console.error("Error converting to base64:", convertError);
-          Toast.show({
-            type: "error",
-            text1: "Gagal",
-            text2: "Gagal mengonversi logo",
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error picking logo:", error);
-      Toast.show({
-        type: "error",
-        text1: "Gagal",
-        text2: "Gagal memilih logo",
-      });
-    }
+    // Logo functionality disabled
+    Toast.show({
+      type: "info",
+      text1: "Info",
+      text2: "Logo tidak akan dicetak di struk printer",
+    });
   };
 
   const handleRemoveLogo = () => {
-    Alert.alert("Hapus Logo", "Apakah Anda yakin ingin menghapus logo?", [
-      { text: "Batal", style: "cancel" },
-      {
-        text: "Hapus",
-        style: "destructive",
-        onPress: () => {
-          setSettings({
-            ...settings,
-            logoUrl: "",
-            showLogo: false,
-            logoBitmapData: undefined,
-          });
-          Toast.show({
-            type: "success",
-            text1: "Berhasil",
-            text2: "Logo berhasil dihapus",
-          });
-        },
-      },
-    ]);
+    // Logo functionality disabled
+    Toast.show({
+      type: "info",
+      text1: "Info",
+      text2: "Logo tidak akan dicetak di struk printer",
+    });
   };
 
   const resetToDefault = () => {
