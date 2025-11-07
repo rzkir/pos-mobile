@@ -294,6 +294,72 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
     }));
   };
 
+  const computeEANChecksum = (digits: string) => {
+    const nums = digits.split("").map((d) => parseInt(d, 10));
+    const len = nums.length;
+    let sum = 0;
+
+    if (len === 12) {
+      for (let i = 0; i < 12; i++) {
+        const value = nums[11 - i];
+        sum += i % 2 === 0 ? value * 3 : value;
+      }
+    } else if (len === 7) {
+      for (let i = 0; i < 7; i++) {
+        const value = nums[6 - i];
+        sum += i % 2 === 0 ? value * 3 : value;
+      }
+    } else if (len === 11) {
+      for (let i = 0; i < 11; i++) {
+        const value = nums[10 - i];
+        sum += i % 2 === 0 ? value * 3 : value;
+      }
+    }
+
+    const mod = sum % 10;
+    return (10 - mod) % 10;
+  };
+
+  const normalizeBarcode = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return "";
+
+    const numeric = trimmed.replace(/\s+/g, "");
+    if (!/^\d+$/.test(numeric)) {
+      return trimmed;
+    }
+
+    if (numeric.length === 13) {
+      const body = numeric.slice(0, 12);
+      const checksum = computeEANChecksum(body);
+      return body + checksum.toString();
+    }
+
+    if (numeric.length === 12) {
+      const body = numeric.slice(0, 11);
+      const checksum = computeEANChecksum(body);
+      return body + checksum.toString();
+    }
+
+    if (numeric.length === 8) {
+      const body = numeric.slice(0, 7);
+      const checksum = computeEANChecksum(body);
+      return body + checksum.toString();
+    }
+
+    if (numeric.length === 11) {
+      const checksum = computeEANChecksum(numeric);
+      return numeric + checksum.toString();
+    }
+
+    if (numeric.length === 7) {
+      const checksum = computeEANChecksum(numeric);
+      return numeric + checksum.toString();
+    }
+
+    return trimmed;
+  };
+
   const generateEAN13 = () => {
     let base = "";
     for (let i = 0; i < 12; i++) {
@@ -542,6 +608,25 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
     }
 
     try {
+      const hasBarcodeInput = Boolean(
+        formData.barcode && String(formData.barcode).trim().length > 0
+      );
+
+      const resolvedBarcode = hasBarcodeInput
+        ? normalizeBarcode(String(formData.barcode))
+        : generateEAN13();
+
+      if (
+        hasBarcodeInput &&
+        resolvedBarcode &&
+        resolvedBarcode !== String(formData.barcode).trim()
+      ) {
+        setFormData((prev) => ({
+          ...prev,
+          barcode: resolvedBarcode,
+        }));
+      }
+
       const productData = {
         uid: `PROD${Date.now()}`,
         name: formData.name,
@@ -553,9 +638,7 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
         sold: 0,
         unit: formData.unit || "pcs",
         image_url: formData.image_url || "",
-        barcode: formData.barcode
-          ? String(formData.barcode).trim()
-          : generateEAN13(),
+        barcode: resolvedBarcode,
         is_active: true,
         category_id:
           formData.category_id && formData.category_id !== ""

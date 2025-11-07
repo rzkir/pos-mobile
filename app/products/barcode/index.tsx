@@ -60,6 +60,67 @@ export default function ProductsBarcodes() {
     const clearSelection = () => setSelectedIds(new Set());
 
     const buildTextBarcode = (name: string, code: string) => {
+        const computeEANChecksum = (digits: string) => {
+            // digits: tanpa checksum, length 12 (EAN-13) atau 7 (EAN-8) atau 11 (UPC-A)
+            const nums = digits.split('').map(n => Number(n));
+            const len = nums.length;
+            let sum = 0;
+            if (len === 12) {
+                // EAN-13: posisi dari kanan tanpa checksum, ganjil/genap mengikuti standar
+                for (let i = 0; i < 12; i++) {
+                    const value = nums[11 - i];
+                    sum += (i % 2 === 0) ? value * 3 : value;
+                }
+            } else if (len === 7) {
+                // EAN-8
+                for (let i = 0; i < 7; i++) {
+                    const value = nums[6 - i];
+                    sum += (i % 2 === 0) ? value * 3 : value;
+                }
+            } else if (len === 11) {
+                // UPC-A (sama pola dengan EAN-13 pada 11 digit)
+                for (let i = 0; i < 11; i++) {
+                    const value = nums[10 - i];
+                    sum += (i % 2 === 0) ? value * 3 : value;
+                }
+            }
+            const mod = sum % 10;
+            return (10 - mod) % 10;
+        };
+
+        const prepareBarcodeForPrinter = (raw: string) => {
+            const barcodeCode = raw.trim();
+            let barcodeType: number;
+            let dataToSend = barcodeCode;
+            let expectedHRI = barcodeCode;
+
+            if (/^\d{13}$/.test(barcodeCode)) {
+                barcodeType = 67; // EAN-13
+                const body = barcodeCode.slice(0, 12);
+                const check = computeEANChecksum(body);
+                dataToSend = body; // kirim tanpa checksum
+                expectedHRI = body + String(check);
+            } else if (/^\d{8}$/.test(barcodeCode)) {
+                barcodeType = 68; // EAN-8
+                const body = barcodeCode.slice(0, 7);
+                const check = computeEANChecksum(body);
+                dataToSend = body;
+                expectedHRI = body + String(check);
+            } else if (/^\d{12}$/.test(barcodeCode)) {
+                barcodeType = 65; // UPC-A
+                const body = barcodeCode.slice(0, 11);
+                const check = computeEANChecksum(body);
+                dataToSend = body;
+                expectedHRI = body + String(check);
+            } else {
+                barcodeType = 73; // CODE128
+                dataToSend = barcodeCode;
+                expectedHRI = barcodeCode;
+            }
+
+            return { barcodeType, dataToSend, expectedHRI };
+        };
+
         // ESC/POS Commands untuk printer RPP02N
         const ESC = '\x1B';
         const GS = '\x1D';
@@ -94,7 +155,7 @@ export default function ProductsBarcodes() {
 
         // Barcode printing
         if (code && code.trim()) {
-            const barcodeCode = code.trim();
+            const { barcodeType, dataToSend, expectedHRI } = prepareBarcodeForPrinter(code);
 
             // Center align for barcode
             parts.push(ALIGN_CENTER);
@@ -106,36 +167,26 @@ export default function ProductsBarcodes() {
             // Set HRI position properly (GS H n)
             parts.push(GS + 'H' + HRI_POSITION);
 
-            // Determine barcode type based on length and format
-            // Format: GS k [type] [n] [data] [HRI]
-            let barcodeType: number;
-            let barcodeData = barcodeCode;
-
-            if (/^\d{13}$/.test(barcodeCode)) {
-                // EAN13 (length-prefixed variant)
-                barcodeType = 67; // EAN13 with length byte
-            } else if (/^\d{8}$/.test(barcodeCode)) {
-                // EAN8 (length-prefixed variant)
-                barcodeType = 68; // EAN8 with length byte
-            } else if (/^\d{12}$/.test(barcodeCode)) {
-                // UPC-A (length-prefixed variant)
-                barcodeType = 65; // UPC-A with length byte
-            } else {
-                // CODE128: supports alphanumeric, flexible length
-                barcodeType = 73; // CODE128
-            }
-
             // Print barcode command
             // GS k [type] [n] [data] [HRI]
-            const dataLength = barcodeData.length;
+            const dataLength = dataToSend.length;
             parts.push(
                 GS + 'k' +
                 String.fromCharCode(barcodeType) +
                 String.fromCharCode(dataLength) +
-                barcodeData
+                dataToSend
             );
 
             parts.push('\n\n');
+
+            // Log: tampilkan apa yang akan terlihat sebagai HRI di kertas
+            console.log('[PRINT BARCODE]', {
+                name,
+                input: String(code).trim(),
+                sentType: barcodeType,
+                sentData: dataToSend,
+                expectedHRI,
+            });
         }
 
         // Reset to left align and add spacing
