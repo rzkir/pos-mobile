@@ -119,9 +119,7 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
         modal: modalValue,
         stock: formatIdrNumber(product.stock?.toString() || ""),
         unit: product.unit || "",
-        barcode: product.barcode
-          ? String(product.barcode).replace(/[^0-9]/g, "")
-          : "",
+        barcode: product.barcode ? String(product.barcode).trim() : "",
         category_id: product.category_id?.toString() || "",
         size_id: product.size_id?.toString() || "",
         supplier_id: product.supplier_id?.toString() || "",
@@ -136,19 +134,10 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
   }, [isEdit, product?.id]);
 
   const handleInputChange = (field: string, value: string) => {
-    if (field === "barcode") {
-      // Hanya terima angka untuk barcode
-      const numericOnly = value.replace(/[^0-9]/g, "");
-      setFormData((prev) => ({
-        ...prev,
-        [field]: numericOnly,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [field]: field === "barcode" ? value : value,
+    }));
   };
 
   const handlePriceChange = (value: string) => {
@@ -166,11 +155,9 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
   };
 
   const handleBarcodeScan = (barcode: string) => {
-    // Hanya terima angka untuk barcode
-    const numericOnly = barcode ? String(barcode).replace(/[^0-9]/g, "") : "";
     setFormData((prev) => ({
       ...prev,
-      barcode: numericOnly,
+      barcode: barcode ? String(barcode).trim() : "",
     }));
     setShowScanner(false);
   };
@@ -567,7 +554,7 @@ export function useStateCreateProducts(props?: UseStateCreateProductsProps) {
         unit: formData.unit || "pcs",
         image_url: formData.image_url || "",
         barcode: formData.barcode
-          ? String(formData.barcode).replace(/[^0-9]/g, "")
+          ? String(formData.barcode).trim()
           : generateEAN13(),
         is_active: true,
         category_id:
