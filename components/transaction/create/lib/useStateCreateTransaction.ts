@@ -781,22 +781,36 @@ export function useStateCreateTransaction({
 
   const handleBack = useCallback(async () => {
     try {
-      if (transaction) {
-        await TransactionService.update(transactionId, {
-          payment_status: "pending",
-        });
+      // Don't modify payment_status when just viewing transaction details
+      // Only clear active transaction if this was an active transaction being edited
+      // Only clear for pending transactions that are being actively edited
+      if (
+        transaction &&
+        transaction.status === "pending" &&
+        transaction.payment_status !== "paid"
+      ) {
+        // Only clear active transaction, don't modify payment_status
+        // The payment_status should remain as it was when the transaction was loaded
       }
     } catch (error) {
       // non-fatal: still navigate back
-      console.error("Error setting payment_status to pending on back:", error);
+      console.error("Error in handleBack:", error);
     } finally {
       try {
-        await TransactionService.clearActiveTransaction();
+        // Only clear active transaction if this was an active transaction being edited
+        // Don't clear for completed or paid transactions that are just being viewed
+        if (
+          transaction &&
+          transaction.status === "pending" &&
+          transaction.payment_status !== "paid"
+        ) {
+          await TransactionService.clearActiveTransaction();
+        }
       } catch {}
       await cleanupLocalStorage();
       router.back();
     }
-  }, [transaction, transactionId, cleanupLocalStorage, router]);
+  }, [transaction, cleanupLocalStorage, router]);
 
   // Load transaction and payment cards on mount
   useEffect(() => {

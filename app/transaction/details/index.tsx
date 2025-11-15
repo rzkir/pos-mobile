@@ -14,6 +14,8 @@ import { useProducts } from '@/hooks/useProducts';
 
 import { usePrinter } from '@/hooks/usePrinter';
 
+import { generateReceiptText } from '@/app/profile/printer/template';
+
 export default function TransactionDetails() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -168,24 +170,15 @@ export default function TransactionDetails() {
                         <View className="flex-row gap-3">
                             <TouchableOpacity
                                 onPress={async () => {
-                                    const textLines: string[] = [];
-                                    textLines.push(`No: ${transaction.transaction_number}`);
-                                    textLines.push(`Tanggal: ${formatDateTime(transaction.created_at)}`);
-                                    if (transaction.customer_name) textLines.push(`Pelanggan: ${transaction.customer_name}`);
-                                    textLines.push('------------------------------');
-                                    items.forEach((it) => {
-                                        const name = it.product?.name || `Produk #${it.product_id}`;
-                                        textLines.push(`${name}`);
-                                        textLines.push(`${it.quantity} x ${formatIDR(it.price)} = ${formatIDR(it.subtotal)}`);
-                                    });
-                                    textLines.push('------------------------------');
-                                    textLines.push(`Subtotal: ${formatIDR(transaction.subtotal)}`);
-                                    textLines.push(`Diskon: ${formatIDR(transaction.discount || 0)}`);
-                                    textLines.push(`Total: ${formatIDR(transaction.total)}`);
-                                    textLines.push(`Metode: ${transaction.payment_method}`);
-                                    textLines.push(`Status: Lunas`);
-                                    textLines.push('Terima kasih!');
-                                    await onPressPrint(textLines.join('\n'));
+                                    try {
+                                        const receiptText = await generateReceiptText({
+                                            transaction,
+                                            items,
+                                        });
+                                        await onPressPrint(receiptText);
+                                    } catch (error: any) {
+                                        console.error('Failed to print:', error);
+                                    }
                                 }}
                                 className="flex-1 bg-white border border-gray-300 rounded-xl py-3 items-center flex-row justify-center"
                             >
@@ -194,17 +187,57 @@ export default function TransactionDetails() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={async () => {
-                                    const shareLines: string[] = [];
-                                    shareLines.push(`Transaksi ${transaction.transaction_number}`);
-                                    shareLines.push(`${formatDateTime(transaction.created_at)}`);
-                                    if (transaction.customer_name) shareLines.push(`Pelanggan: ${transaction.customer_name}`);
-                                    items.forEach((it) => {
-                                        const name = it.product?.name || `Produk #${it.product_id}`;
-                                        shareLines.push(`${name} — ${it.quantity} x ${formatIDR(it.price)} = ${formatIDR(it.subtotal)}`);
-                                    });
-                                    shareLines.push(`Total: ${formatIDR(transaction.total)}`);
-                                    shareLines.push(`Metode: ${transaction.payment_method} • Lunas`);
-                                    await onPressShare(shareLines.join('\n'));
+                                    try {
+                                        const receiptText = await generateReceiptText({
+                                            transaction,
+                                            items,
+                                        });
+
+                                        let shareText = '';
+                                        let i = 0;
+                                        while (i < receiptText.length) {
+                                            const char = receiptText[i];
+                                            const code = char.charCodeAt(0);
+
+                                            if (code === 0x1B) {
+                                                i++;
+                                                if (i < receiptText.length) {
+                                                    const next = receiptText[i].charCodeAt(0);
+                                                    i++;
+                                                    if ((next === 0x61 || next === 0x45 || next === 0x21) && i < receiptText.length) {
+                                                        i++;
+                                                    }
+                                                }
+                                                continue;
+                                            }
+
+                                            if (code === 0x1D) {
+                                                i++;
+                                                if (i < receiptText.length && receiptText[i] === '\x56') {
+                                                    i += 3;
+                                                    i += 3;
+                                                } else if (i < receiptText.length) {
+                                                    i += 2;
+                                                }
+                                                continue;
+                                            }
+
+                                            if (code >= 0x00 && code <= 0x1F) {
+                                                if (code === 0x0A || code === 0x0D || code === 0x09) {
+                                                    shareText += char;
+                                                }
+                                                i++;
+                                                continue;
+                                            }
+
+                                            shareText += char;
+                                            i++;
+                                        }
+
+                                        await onPressShare(shareText);
+                                    } catch (error: any) {
+                                        console.error('Failed to share:', error);
+                                    }
                                 }}
                                 className="flex-1 bg-white border border-gray-300 rounded-xl py-3 items-center flex-row justify-center"
                             >
