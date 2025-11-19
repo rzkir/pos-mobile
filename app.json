@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["kasirmini"],
+    "scheme": [
+      "kasirmini"
+    ],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,8 +20,10 @@
         "NSBluetoothAlwaysUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk mencetak struk dan terhubung dengan printer",
         "NSBluetoothWhenInUseUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk mencetak struk dan terhubung dengan printer",
         "NSBluetoothPeripheralUsageDescription": "Aplikasi memerlukan akses Bluetooth untuk mencetak struk dan terhubung dengan printer",
-        "NSLocationWhenInUseUsageDescription": "Aplikasi memerlukan akses lokasi untuk mencari perangkat Bluetooth di sekitar"
-      }
+        "NSLocationWhenInUseUsageDescription": "Aplikasi memerlukan akses lokasi untuk mencari perangkat Bluetooth di sekitar",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.kasirmini.kasirmini"
     },
     "android": {
       "versionCode": 1,
@@ -41,7 +45,8 @@
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
       ],
       "package": "com.kasirmini.kasirmini"
     },

@@ -6,8 +6,11 @@ npx expo-doctor
 # prebuild
 npx expo prebuild --no-install --platform android
 
-# build
+# build android
 eas build --platform android --profile production
+
+# build android
+eas build --platform ios
 
 Prepair for dependency
 npx expo install --fix
