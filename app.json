@@ -88,8 +88,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b8bb0c51-8a4a-4d1a-9c49-700ab0936489"
+        "projectId": "8814dff4-451a-4c26-878a-7c5398f690ff"
       }
-    }
+    },
+    "owner": "ryoki"
   }
 }
